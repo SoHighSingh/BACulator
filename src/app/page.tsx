@@ -1,8 +1,13 @@
-import Link from "next/link";
-import { auth } from "~/server/auth";
+"use client";
 
-export default async function Home() {
-  const session = await auth();
+import Link from "next/link";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import UserInfoSlideOut from "~/app/_components/UserInfoSlideOut"; // Adjust path as needed
+
+export default function Home() {
+  const { data: session } = useSession();
+  const [isUserInfoOpen, setIsUserInfoOpen] = useState(false);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
@@ -20,12 +25,16 @@ export default async function Home() {
             {session && <span>Welcome back, {session.user?.name}!</span>}
             {!session && <span>Sign in to save your calculations</span>}
           </p>
-          <Link
-            href={session ? "/api/auth/signout" : "/api/auth/signin"}
-            className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
-          >
-            {session ? "Sign out" : "Sign in with Google"}
-          </Link>
+          <div className="flex gap-4">
+            {!session && (
+              <Link
+                href="/api/auth/signin"
+                className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
+              >
+                Sign in with Google
+              </Link>
+            )}
+          </div>
         </div>
         
         {/* Add your BAC calculator here later */}
@@ -33,6 +42,16 @@ export default async function Home() {
           <p className="text-lg text-white/80">BAC Calculator coming soon...</p>
         </div>
       </div>
+
+      {/* User Info Slide-out */}
+      <UserInfoSlideOut
+        isOpen={isUserInfoOpen}
+        onClose={() => setIsUserInfoOpen(false)}
+        userName={session?.user?.name ?? undefined}
+        // TODO: Pass actual user weight and sex from database
+        // initialWeight={session?.user?.weight}
+        // initialSex={session?.user?.sex}
+      />
     </main>
   );
 }

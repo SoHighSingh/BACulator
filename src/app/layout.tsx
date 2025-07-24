@@ -3,6 +3,8 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { UserInfoIcon } from "./_components/UserInfoIcon";
+import { SessionProvider } from "next-auth/react";
+import UserInfoSlideOutProvider from "./_components/UserInfoSlideOutProvider";
 
 export const metadata: Metadata = {
   title: "BACulator",
@@ -21,12 +23,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
-        <TRPCReactProvider>
-          <div className="relative min-h-screen">
-            <UserInfoIcon />
-            {children}
-          </div>
-        </TRPCReactProvider>
+        <SessionProvider>
+          <TRPCReactProvider>
+            <UserInfoSlideOutProvider>
+              {children}
+            </UserInfoSlideOutProvider>
+          </TRPCReactProvider>
+        </SessionProvider>
       </body>
     </html>
   );
