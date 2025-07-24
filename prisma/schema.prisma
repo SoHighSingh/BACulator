@@ -58,6 +58,16 @@ model User {
     tabs          Tab[]
 }
 
+model Tab {
+  id         String   @id @default(cuid())
+  name       String
+  createdAt  DateTime @default(now())
+  finishedAt DateTime?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  drinks     Drink[]
+}
+
 model VerificationToken {
     identifier String
     token      String   @unique
@@ -66,21 +76,10 @@ model VerificationToken {
     @@unique([identifier, token])
 }
 
-model Tab {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  drinks    Drink[]
-}
-
 model Drink {
-  id             String   @id @default(cuid())
-  name           String
-  volume         Int      // in milliliters
-  alcoholPercent Float    // e.g. 5.0 for 5%
-  timestamp      DateTime @default(now())
-  tab            Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
-  tabId          String
+  id         String   @id @default(cuid())
+  tab        Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
+  tabId      String
+  standards  Int      // number of standard drinks
+  finishedAt DateTime // time when finished drinking
 }
