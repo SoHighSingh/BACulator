@@ -42,37 +42,40 @@ export default function UserInfoSlideOut({
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+          className="fixed inset-0 bg-black/50 z-[100] transition-opacity"
           onClick={onClose}
         />
       )}
       
       {/* Slide-out panel */}
       <div className={`
-        fixed top-0 right-0 h-full w-96 bg-gradient-to-b from-[#2e026d] to-[#15162c] 
-        text-white z-50 transform transition-transform duration-300 ease-in-out
+        fixed top-0 right-0 h-full w-96 bg-[#232323] text-[#e5e5e5] z-[110] transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
         <div className="p-6 h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-2xl font-bold text-[#e5e5e5]">
               {userName ? `Hi ${userName}!` : "User Details"}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              className="p-2 hover:bg-[#444] rounded-full transition-colors"
             >
+              <span className="sr-only">Close</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-[#e5e5e5]">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
 
           {/* Content */}
           <div className="flex-1">
-            <p className="text-lg mb-6 text-white/80">Your details:</p>
+            <p className="text-lg mb-6 text-[#e5e5e5]/80">Your details:</p>
             
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-white/90">
+                <label className="text-sm font-medium text-[#e5e5e5]">
                   Weight (kg):
                 </label>
                 <input
@@ -81,23 +84,23 @@ export default function UserInfoSlideOut({
                   max={300}
                   value={weight}
                   onChange={e => setWeight(e.target.value)}
-                  className="rounded-lg px-4 py-3 text-black bg-white border-2 border-transparent focus:border-purple-300 focus:outline-none transition-colors placeholder:text-gray-400 placeholder:opacity-70"
+                  className="rounded-lg px-4 py-3 text-[#232323] bg-[#e5e5e5] border-2 border-transparent focus:border-[#888] focus:outline-none transition-colors placeholder:text-gray-400 placeholder:opacity-70"
                   required
                   placeholder="Enter"
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-white/90">
+                <label className="text-sm font-medium text-[#e5e5e5]">
                   Sex at birth:
                 </label>
                 <select
                   value={sex}
                   onChange={e => setSex(e.target.value as "male" | "female" | "")}
-                  className="rounded-lg px-4 py-3 text-black bg-white border-2 border-transparent focus:border-purple-300 focus:outline-none transition-colors"
+                  className="rounded-lg px-4 py-3 text-[#232323] bg-[#e5e5e5] border-2 border-transparent focus:border-[#888] focus:outline-none transition-colors"
                   required
                 >
-                  <option value="" disabled>Select</option>
+                  <option value="" disabled className="text-white">Select</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
@@ -106,7 +109,7 @@ export default function UserInfoSlideOut({
               <button
                 type="submit"
                 disabled={submitted}
-                className="rounded-full bg-white/20 px-8 py-3 font-semibold transition hover:bg-white/30 text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-full bg-[#444] px-8 py-3 font-semibold transition hover:bg-[#555] text-[#e5e5e5] mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitted ? "Saved!" : "Save Details"}
               </button>

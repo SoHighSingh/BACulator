@@ -9,7 +9,7 @@ import UserInfoSlideOutProvider from "./_components/UserInfoSlideOutProvider";
 export const metadata: Metadata = {
   title: "BACulator",
   description: "An intuitive and easy to use BAC calculator",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [{ rel: "icon", url: "/BACULATOR.png" }],
 };
 
 const geist = Geist({
