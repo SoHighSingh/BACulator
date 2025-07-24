@@ -2,7 +2,6 @@ import "~/styles/globals.css";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
-import { UserInfoIcon } from "./_components/UserInfoIcon";
 import { SessionProvider } from "next-auth/react";
 import UserInfoSlideOutProvider from "./_components/UserInfoSlideOutProvider";
 

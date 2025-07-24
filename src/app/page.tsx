@@ -5,7 +5,24 @@ import Link from "next/link";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { TrendingUp } from "lucide-react";
+
+interface BacTooltipProps {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string | number;
+}
+
+function CustomTooltip({ active, payload, label }: BacTooltipProps) {
+  if (active && payload?.length) {
+    return (
+      <div className="rounded-lg bg-[#232323] px-4 py-2 border border-[#444] text-[#e5e5e5] shadow">
+        <div className="font-semibold">Hour: {label}</div>
+        <div>BAC%: {payload[0]?.value?.toFixed(3)}</div>
+      </div>
+    );
+  }
+  return null;
+}
 
 const bacData = [
   { hour: 0, bac: 0.08 },
@@ -18,18 +35,6 @@ const bacData = [
   { hour: 7, bac: 0.01 },
   { hour: 8, bac: 0.00 },
 ];
-
-function CustomTooltip({ active, payload, label }: any) {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg bg-[#232323] px-4 py-2 border border-[#444] text-[#e5e5e5] shadow">
-        <div className="font-semibold">Hour: {label}</div>
-        <div>BAC%: {payload[0].value.toFixed(3)}</div>
-      </div>
-    );
-  }
-  return null;
-}
 
 export default function Home() {
   const { data: session } = useSession();
