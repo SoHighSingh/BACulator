@@ -38,7 +38,6 @@ export default function UserInfoSlideOut({
       }
     }
     // Only update when opening
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfoQuery.data, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {

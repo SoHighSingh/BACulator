@@ -75,6 +75,50 @@ export const postRouter = createTRPCRouter({
         },
       });
     }),
+  updateDrink: protectedProcedure
+    .input(z.object({
+      drinkId: z.string(),
+      standards: z.number().int().min(1).max(20),
+      finishedAt: z.string(), // ISO string
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      // Verify the drink belongs to the user's current tab
+      const tab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
+      if (!tab) throw new Error("No open tab");
+      
+      const drink = await ctx.db.drink.findFirst({
+        where: { id: input.drinkId, tabId: tab.id },
+      });
+      if (!drink) throw new Error("Drink not found");
+      
+      return ctx.db.drink.update({
+        where: { id: input.drinkId },
+        data: {
+          standards: input.standards,
+          finishedAt: new Date(input.finishedAt),
+        },
+      });
+    }),
+  deleteDrink: protectedProcedure
+    .input(z.object({
+      drinkId: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      // Verify the drink belongs to the user's current tab
+      const tab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
+      if (!tab) throw new Error("No open tab");
+      
+      const drink = await ctx.db.drink.findFirst({
+        where: { id: input.drinkId, tabId: tab.id },
+      });
+      if (!drink) throw new Error("Drink not found");
+      
+      return ctx.db.drink.delete({
+        where: { id: input.drinkId },
+      });
+    }),
   getDrinks: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const tab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
