@@ -7,6 +7,7 @@ export interface GraphDataPoint {
   bac: number; // BAC level at this time
   time: string; // Formatted time display (e.g., "1h 30m")
   absoluteTime: Date; // Actual timestamp
+  clockTime: string; // Actual clock time (e.g., "16:00", "17:00")
   isCurrentTime: boolean; // True if this point represents "now"
   isPast: boolean; // True if this point is in the past
   isFuture: boolean; // True if this point is in the future
@@ -32,6 +33,7 @@ export interface TimelineResult {
   currentTimeHour: number;
   timelineStartTime: Date;
   totalTimelineHours: number;
+  hourlyTimeLabels: string[];
 }
 
 export function generateAdvancedBACTimeline(
@@ -43,7 +45,6 @@ export function generateAdvancedBACTimeline(
 ): TimelineResult {
   const {
     intervalMinutes = 5,
-    preStartMinutes = 15,
     postCurrentHours = 8
   } = config;
 
@@ -53,7 +54,8 @@ export function generateAdvancedBACTimeline(
       drinkMarkers: [],
       currentTimeHour: 0,
       timelineStartTime: currentTime,
-      totalTimelineHours: 0
+      totalTimelineHours: 0,
+      hourlyTimeLabels: []
     };
   }
   
@@ -63,8 +65,12 @@ export function generateAdvancedBACTimeline(
     new Date(drinks[0]?.finishedAt ?? currentTime)
   );
   
-  // Start timeline before first drink to show baseline
-  const timelineStartTime = new Date(earliestDrink.getTime() - preStartMinutes * 60 * 1000);
+  // Round down to the nearest hour for timeline start
+  const roundedStartTime = new Date(earliestDrink);
+  roundedStartTime.setMinutes(0, 0, 0); // Set minutes, seconds, and milliseconds to 0
+  
+  // Start timeline from the rounded hour (no pre-start minutes needed since we're starting from hour boundary)
+  const timelineStartTime = roundedStartTime;
   
   // End timeline after current time to show future predictions
   const timelineEndTime = new Date(currentTime.getTime() + postCurrentHours * 60 * 60 * 1000);
@@ -92,6 +98,12 @@ export function generateAdvancedBACTimeline(
       bac: Math.round(bac * 1000) / 1000, // Round to 3 decimal places
       time: formatTimeFromStart(hoursFromStart),
       absoluteTime: checkTime,
+      clockTime: checkTime.toLocaleTimeString('en-AU', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Australia/Sydney'
+      }),
       isCurrentTime,
       isPast,
       isFuture
@@ -115,12 +127,16 @@ export function generateAdvancedBACTimeline(
   // Find current time position
   const currentTimeHour = (currentTime.getTime() - timelineStartTime.getTime()) / (1000 * 60 * 60);
   
+  // Generate hourly time labels
+  const hourlyTimeLabels = generateHourlyTimeLabels(timelineStartTime, totalHours);
+  
   return {
     data: dataPoints,
     drinkMarkers,
     currentTimeHour,
     timelineStartTime,
-    totalTimelineHours: totalHours
+    totalTimelineHours: totalHours,
+    hourlyTimeLabels
   };
 }
 
@@ -132,6 +148,26 @@ export function formatTimeFromStart(hours: number): string {
   if (h === 0) return `${m}m`;
   if (m === 0) return `${h}h`;
   return `${h}h ${m}m`;
+}
+
+export function generateHourlyTimeLabels(timelineStartTime: Date, totalHours: number): string[] {
+  const labels: string[] = [];
+  
+  // Round timeline start time to the nearest hour
+  const roundedStartTime = new Date(timelineStartTime);
+  roundedStartTime.setMinutes(0, 0, 0); // Set minutes, seconds, and milliseconds to 0
+  
+  for (let hour = 0; hour <= Math.ceil(totalHours); hour++) {
+    const time = new Date(roundedStartTime.getTime() + hour * 60 * 60 * 1000);
+    const timeString = time.toLocaleTimeString('en-AU', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Australia/Sydney'
+    });
+    labels.push(timeString);
+  }
+  return labels;
 }
 
 export function formatTimeRelativeToCurrent(hoursFromCurrent: number): string {

@@ -15,21 +15,15 @@ import type { Drink } from "~/types/bac";
 
 interface BacTooltipProps {
   active?: boolean;
-  payload?: { value: number }[];
+  payload?: { value: number; payload: { clockTime: string } }[];
   label?: string | number;
 }
 
 function CustomTooltip({ active, payload, label }: BacTooltipProps) {
   if (active && payload?.length) {
-    let timeLabel = "";
-    if (typeof label === "number") {
-      // Convert hours to time format
-      const hours = Math.floor(label);
-      const minutes = Math.round((label - hours) * 60);
-      timeLabel = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    } else {
-      timeLabel = String(label ?? "");
-    }
+    // Use the clockTime from the data point if available, otherwise fall back to label
+    const timeLabel = payload[0]?.payload?.clockTime ?? String(label ?? "");
+    
     return (
       <div className="rounded-lg bg-[#232323] px-4 py-2 border border-[#444] text-[#e5e5e5] shadow">
         <div className="font-semibold">Time: {timeLabel}</div>
@@ -49,12 +43,15 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [newStandards, setNewStandards] = useState(1);
-  const [newTime, setNewTime] = useState(() => {
+  // Helper function to get current time in datetime-local format
+  const getCurrentTimeString = () => {
     const now = new Date();
     // Convert to Australian Eastern Time (UTC+10)
     const australianTime = new Date(now.getTime() + (10 * 60 * 60 * 1000));
     return australianTime.toISOString().slice(0, 16);
-  });
+  };
+
+  const [newTime, setNewTime] = useState(getCurrentTimeString);
   const [confirmStopOpen, setConfirmStopOpen] = useState(false);
   const [editingDrink, setEditingDrink] = useState<Drink | null>(null);
   const [editStandards, setEditStandards] = useState(1);
@@ -123,6 +120,15 @@ export default function Home() {
   }
 
   async function handleAddDrink() {
+    // Validate that the drink time is not in the future
+    const selectedTime = new Date(newTime);
+    const currentTime = new Date();
+    
+    if (selectedTime > currentTime) {
+      alert("Cannot add drinks from the future. Please select a time in the past or present.");
+      return;
+    }
+
     if (!currentTabQuery.data) {
       await startTab.mutateAsync();
       // Wait for currentTabQuery.data to be available
@@ -135,15 +141,23 @@ export default function Home() {
     }
     await addDrink.mutateAsync({ standards: newStandards, finishedAt: newTime });
     setNewStandards(1);
-    const now = new Date();
-    const australianTime = new Date(now.getTime() + (10 * 60 * 60 * 1000));
-    setNewTime(australianTime.toISOString().slice(0, 16));
+    setNewTime(getCurrentTimeString());
     void drinksQuery.refetch();
     setDrawerOpen(false);
   }
 
   async function handleEditDrink() {
     if (!editingDrink) return;
+    
+    // Validate that the drink time is not in the future
+    const selectedTime = new Date(editTime);
+    const currentTime = new Date();
+    
+    if (selectedTime > currentTime) {
+      alert("Cannot edit drinks to a future time. Please select a time in the past or present.");
+      return;
+    }
+    
     await updateDrink.mutateAsync({ 
       drinkId: editingDrink.id, 
       standards: editStandards, 
@@ -165,7 +179,7 @@ export default function Home() {
   function openEditDrink(drink: Drink) {
     setEditingDrink(drink);
     setEditStandards(drink.standards);
-    setEditTime(new Date(drink.finishedAt).toISOString().slice(0, 16));
+    setEditTime(getCurrentTimeString());
   }
 
   if (!session) {
@@ -231,10 +245,14 @@ export default function Home() {
               <span className="text-8xl font-bold text-[#e5e5e5]">
                 {safeBAC.currentBAC.toFixed(3)}
               </span>
-              {safeBAC.isRising ? (
-                <span className="text-red-500 text-lg font-semibold mt-2">Rising</span>
+              {safeBAC.currentBAC > 0.001 ? (
+                safeBAC.isRising ? (
+                  <span className="text-red-500 text-lg font-semibold mt-2">Rising</span>
+                ) : (
+                  <span className="text-green-500 text-lg font-semibold mt-2">Dropping</span>
+                )
               ) : (
-                <span className="text-green-500 text-lg font-semibold mt-2">Dropping</span>
+                <span className="text-gray-400 text-lg font-semibold mt-2">Sober</span>
               )}
               <Button
                 className="mt-4"
@@ -248,34 +266,34 @@ export default function Home() {
             <Dialog open={graphOpen} onOpenChange={setGraphOpen}>
               <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#232323] p-0 shadow-lg border border-[#444] data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
                 <>
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold mb-1 text-[#e5e5e5] pl-5 pt-4">BAC Graph</DialogTitle>
+                  <DialogHeader className="px-6 pt-6 pb-4">
+                    <DialogTitle className="text-2xl font-bold mb-2 text-[#e5e5e5]">BAC Graph</DialogTitle>
                   </DialogHeader>
-                  <div className="flex flex-col gap-4 p-6">
+                  <div className="flex flex-col gap-4 px-6 pb-6">
                     {/* Card Header */}
                     <div>
                       <div className="mb-2 text-[#e5e5e5]/80">BAC% vs Hours Since Drinking</div>
                     </div>
                     {/* Card Content (Chart) */}
-                    <div className="bg-[#272727] rounded-lg border border-[#444] h-90 p-1">
+                    <div className="bg-[#272727] rounded-lg border border-[#444] h-96 p-1">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={advancedTimeline ? advancedTimeline.data : []} margin={{ left: 10, right: 10, top: 10, bottom: 20 }}>
+                        <AreaChart data={advancedTimeline ? advancedTimeline.data : []} margin={{ left: 20, right: 20, top: 10, bottom: 30 }}>
                           <defs>
                             <linearGradient id="bacGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#F87171" stopOpacity={0.8}/>
-                              <stop offset="95%" stopColor="#F87171" stopOpacity={0}/>
+                              <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0}/>
                             </linearGradient>
                           </defs>
                           <XAxis 
                             dataKey="hour" 
-                            ticks={[0,1,2,3,4,5,6,7,8,9,10]}
+                            ticks={advancedTimeline?.data.filter((_, index) => index % 12 === 0).map(point => point.hour) ?? [0,1,2,3,4,5,6,7,8,9,10]}
                             domain={[0, 'dataMax + 1']}
-                            tickFormatter={h => {
-                              const hours = Math.floor(h as number);
-                              const minutes = Math.round(((h as number) - hours) * 60);
-                              return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                            tickFormatter={(h) => {
+                              // Find the data point with this hour value to get the clock time
+                              const dataPoint = advancedTimeline?.data.find(point => Math.abs(point.hour - (h as number)) < 0.01);
+                              return dataPoint?.clockTime ?? `${Math.floor(h as number).toString().padStart(2, '0')}:${Math.round(((h as number) - Math.floor(h as number)) * 60).toString().padStart(2, '0')}`;
                             }}
-                            tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                            tick={{ fill: '#9CA3AF', fontSize: 10 }}
                             axisLine={{ stroke: '#374151', strokeWidth: 1 }}
                             tickLine={{ stroke: '#374151', strokeWidth: 1 }}
                           />
@@ -293,7 +311,7 @@ export default function Home() {
                           <Area 
                             type="monotone" 
                             dataKey="bac" 
-                            stroke="#F87171" 
+                            stroke="#a6a6a6" 
                             strokeWidth={2}
                             fillOpacity={0.8} 
                             fill="url(#bacGradient)" 
@@ -304,9 +322,11 @@ export default function Home() {
                           {(() => {
                             const currentHour: number | undefined = advancedTimeline?.currentTimeHour;
                             if (currentHour !== undefined) {
-                              const hours = Math.floor(currentHour);
-                              const minutes = Math.round((currentHour - hours) * 60);
-                              const timeLabel = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                              // Find the current time data point to get the actual clock time
+                              const currentDataPoint = advancedTimeline?.data.find(point => 
+                                Math.abs(point.hour - currentHour) < 0.1
+                              );
+                              const timeLabel = currentDataPoint?.clockTime ?? `${Math.floor(currentHour).toString().padStart(2, '0')}:${Math.round((currentHour - Math.floor(currentHour)) * 60).toString().padStart(2, '0')}`;
                               
                               return (
                                 <ReferenceLine 
@@ -336,12 +356,12 @@ export default function Home() {
             
             {/* Edit Drink Dialog */}
             <Dialog open={!!editingDrink} onOpenChange={(open) => !open && setEditingDrink(null)}>
-              <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#232323] p-0 shadow-lg border border-[#444] data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold mb-1 text-[#e5e5e5]">Edit Drink</DialogTitle>
+              <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#232323] shadow-lg border border-[#444] data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
+                <DialogHeader className="px-6 pt-6 pb-4">
+                  <DialogTitle className="text-2xl font-bold mb-2 text-[#e5e5e5]">Edit Drink</DialogTitle>
                   <DialogDescription className="text-[#e5e5e5]/80">Update drink details below.</DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-col gap-4 p-6">
+                <div className="flex flex-col gap-4 px-6 pb-6">
                   <div className="flex flex-col gap-4 bg-[#444] rounded-xl p-4">
                     <div className="flex items-center gap-4">
                       <label className="w-40 text-[#e5e5e5]">Standards</label>
@@ -361,6 +381,7 @@ export default function Home() {
                         type="datetime-local"
                         value={editTime}
                         onChange={e => setEditTime(e.target.value)}
+                        max={getCurrentTimeString()}
                         className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
                       />
                     </div>
@@ -445,9 +466,11 @@ export default function Home() {
                   {drinksQuery.data?.length === 0 && <div className="text-[#e5e5e5]/60">No drinks logged yet.</div>}
                   {(drinksQuery.data as Drink[] | undefined)?.map((drink, i: number) => {
                     let drinkStatus: null | boolean = null;
+                    let drinkBAC = 0;
                     if (userWeight && userSex) {
                       const contrib = calculateDrinkContribution(drink, userWeight, userSex, now);
                       drinkStatus = contrib.isAbsorbing;
+                      drinkBAC = contrib.bac;
                     }
                     return (
                       <div 
@@ -459,8 +482,10 @@ export default function Home() {
                           {drinkStatus !== null && (
                             drinkStatus ? (
                               <span className="text-red-500 text-xs font-semibold ml-2">Absorbing</span>
-                            ) : (
+                            ) : drinkBAC > 0.001 ? (
                               <span className="text-green-500 text-xs font-semibold ml-2">Eliminating</span>
+                            ) : (
+                              <span className="text-gray-400 text-xs font-semibold ml-2">Eliminated</span>
                             )
                           )}
                           <span className="text-xs text-[#e5e5e5]/70">{
@@ -497,6 +522,7 @@ export default function Home() {
                     type="datetime-local"
                     value={newTime}
                     onChange={e => setNewTime(e.target.value)}
+                    max={getCurrentTimeString()}
                     className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
                   />
                 </div>
@@ -518,7 +544,7 @@ export default function Home() {
                   </DialogTrigger>
                   <DialogContent className="bg-[#232323] border-[#444]">
                     <DialogHeader>
-                      <DialogTitle className="text-[#e5e5e5]">Are you sure you want to stop drinking?</DialogTitle>
+                      <DialogTitle className="text-[#e5e5e5]">Stop Drinking?</DialogTitle>
                       <DialogDescription className="text-[#e5e5e5]/50">
                         This will end your current tab and cannot be undone.
                       </DialogDescription>

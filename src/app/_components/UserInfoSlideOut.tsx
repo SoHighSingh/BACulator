@@ -25,7 +25,13 @@ export default function UserInfoSlideOut({
   const [sex, setSex] = useState<"male" | "female" | "">(initialSex as "male" | "female" | "");
   const [submitted, setSubmitted] = useState(false);
 
-  const updateUserInfo = api.post.updateUserInfo.useMutation();
+  const utils = api.useUtils();
+  const updateUserInfo = api.post.updateUserInfo.useMutation({
+    onSuccess: () => {
+      // Invalidate all userInfo queries to refresh the data everywhere
+      void utils.post.userInfo.invalidate();
+    },
+  });
   const userInfoQuery = api.post.userInfo.useQuery(undefined, { enabled: isOpen });
 
   React.useEffect(() => {
