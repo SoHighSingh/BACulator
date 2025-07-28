@@ -225,37 +225,42 @@ export default function Home() {
                 stroke="#444"
                 strokeWidth="20"
                 fill="none"
+                strokeDasharray={2 * Math.PI * 100}
+                strokeDashoffset={2 * Math.PI * 95 * 0.3}
+                strokeLinecap="round"
+                transform="rotate(135 110 110)"
               />
               {/* BAC arc (placeholder 60%) */}
               <circle
                 cx="110"
                 cy="110"
                 r="95"
-                stroke="#e5e5e5"
+                stroke={safeBAC.currentBAC >= 0.05 ? "#ff6b61" : "#e5e5e5"}
                 strokeWidth="20"
                 fill="none"
-                strokeDasharray={2 * Math.PI * 95}
-                strokeDashoffset={2 * Math.PI * 95 * 0.4}
+                strokeDasharray={2 * Math.PI * 100}
+                strokeDashoffset={2 * Math.PI * 95 * (1 - (safeBAC.currentBAC / 0.15))}
                 strokeLinecap="round"
-                transform="rotate(180 110 110)"
+                transform="rotate(135 110 110)"
+                className="transition-all duration-300"
               />
             </svg>
             {/* BAC number and View Graph button */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-8xl font-bold text-[#e5e5e5]">
+            <div className="absolute flex flex-col items-center justify-center pt-20">
+              <span className={`text-8xl font-bold ${safeBAC.currentBAC >= 0.05 ? "text-[#ff6b61]" : "text-[#e5e5e5]"}`}>
                 {safeBAC.currentBAC.toFixed(3)}
               </span>
               {safeBAC.currentBAC > 0.001 ? (
                 safeBAC.isRising ? (
-                  <span className="text-red-500 text-lg font-semibold mt-2">Rising</span>
+                  <span className="text-red-500 text-lg font-semibold">Rising</span>
                 ) : (
-                  <span className="text-green-500 text-lg font-semibold mt-2">Dropping</span>
+                  <span className="text-green-500 text-lg font-semibold">Dropping</span>
                 )
               ) : (
-                <span className="text-gray-400 text-lg font-semibold mt-2">Sober</span>
+                <span className="text-gray-400 text-lg font-semibold">Sober</span>
               )}
               <Button
-                className="mt-4"
+                className="mt-12"
                 onClick={() => setGraphOpen(true)}
                 disabled={drinksArr.length === 0}
               >
