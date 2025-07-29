@@ -15,6 +15,7 @@ interface AddDrinkDrawerProps {
   setNewTime: (time: string) => void;
   confirmStopOpen: boolean;
   setConfirmStopOpen: (open: boolean) => void;
+  setEditDrawerOpen: (open: boolean) => void;
   drinksQuery: ReturnType<typeof api.post.getDrinks.useQuery>;
   currentTabQuery: ReturnType<typeof api.post.getCurrentTab.useQuery>;
   addDrink: ReturnType<typeof api.post.addDrink.useMutation>;
@@ -35,6 +36,7 @@ export function AddDrinkDrawer({
   setNewTime,
   confirmStopOpen,
   setConfirmStopOpen,
+  setEditDrawerOpen,
   drinksQuery,
   currentTabQuery,
   addDrink,
@@ -59,7 +61,10 @@ export function AddDrinkDrawer({
               </DrawerTrigger>
               <Button 
                 className="flex-[1] h-20"
-                onClick={() => setDrawerOpen(false)}
+                onClick={() => {
+                  setDrawerOpen(false);
+                  setEditDrawerOpen(true);
+                }}
               >
                 Edit
               </Button>

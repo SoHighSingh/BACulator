@@ -74,7 +74,6 @@ export function MainContent({
     await addDrink.mutateAsync({ standards: newStandards, finishedAt: newTime });
     setNewStandards(1);
     setNewTime(getCurrentTimeString());
-    void drinksQuery.refetch();
     setDrawerOpen(false);
   }
 
@@ -98,14 +97,28 @@ export function MainContent({
     setEditingDrink(null);
     setEditStandards(1);
     setEditTime("");
-    void drinksQuery.refetch();
   }
 
   async function handleDeleteDrink() {
     if (!selectedDrink) return;
-    await deleteDrink.mutateAsync({ drinkId: selectedDrink.id });
-    setSelectedDrink(null);
-    void drinksQuery.refetch();
+    try {
+      console.log('Attempting to delete drink:', selectedDrink.id);
+      console.log('Selected drink data:', selectedDrink);
+      
+      const result = await deleteDrink.mutateAsync({ drinkId: selectedDrink.id });
+      console.log('Delete mutation result:', result);
+      
+      setSelectedDrink(null);
+      console.log('Drink deleted successfully');
+    } catch (error) {
+      console.error('Detailed delete error:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        selectedDrink: selectedDrink
+      });
+      alert(`Failed to delete drink: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   function openEditDrink(drink: Drink) {
@@ -145,6 +158,7 @@ export function MainContent({
         setNewTime={setNewTime}
         confirmStopOpen={confirmStopOpen}
         setConfirmStopOpen={setConfirmStopOpen}
+        setEditDrawerOpen={setEditDrawerOpen}
         drinksQuery={drinksQuery}
         currentTabQuery={currentTabQuery}
         addDrink={addDrink}

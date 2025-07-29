@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import React from "react";
+import React, { useMemo } from "react";
 import { api } from "~/trpc/react";
 import { calculateBAC } from "~/lib/bac-calculator";
 import { MainContent } from "../components/MainContent";
@@ -17,18 +17,47 @@ export default function Home() {
   // Helper function to get current time in datetime-local format
   const getCurrentTimeString = () => {
     const now = new Date();
-    // Convert to Australian Eastern Time (UTC+10)
-    const australianTime = new Date(now.getTime() + (10 * 60 * 60 * 1000));
-    return australianTime.toISOString().slice(0, 16);
+    // Format as YYYY-MM-DDTHH:mm in local time
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const year = now.getFullYear();
+    const month = pad(now.getMonth() + 1);
+    const day = pad(now.getDate());
+    const hours = pad(now.getHours());
+    const minutes = pad(now.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   // tRPC hooks
   const currentTabQuery = api.post.getCurrentTab.useQuery(undefined, { refetchOnWindowFocus: false });
   const drinksQuery = api.post.getDrinks.useQuery(undefined, { enabled: !!currentTabQuery.data });
   const userInfoQuery = api.post.userInfo.useQuery();
-  const addDrink = api.post.addDrink.useMutation();
-  const updateDrink = api.post.updateDrink.useMutation();
-  const deleteDrink = api.post.deleteDrink.useMutation();
+  const addDrink = api.post.addDrink.useMutation({
+    onSuccess: () => {
+      void drinksQuery.refetch();
+    },
+    onError: (error) => {
+      console.error('Add drink error:', error);
+      alert('Failed to add drink. Please try again.');
+    },
+  });
+  const updateDrink = api.post.updateDrink.useMutation({
+    onSuccess: () => {
+      void drinksQuery.refetch();
+    },
+    onError: (error) => {
+      console.error('Update drink error:', error);
+      alert('Failed to update drink. Please try again.');
+    },
+  });
+  const deleteDrink = api.post.deleteDrink.useMutation({
+    onSuccess: () => {
+      void drinksQuery.refetch();
+    },
+    onError: (error) => {
+      console.error('Delete drink error:', error);
+      alert('Failed to delete drink. Please try again.');
+    },
+  });
   const startTab = api.post.startTab.useMutation({
     onSuccess: () => { void currentTabQuery.refetch(); },
   });
@@ -39,31 +68,29 @@ export default function Home() {
     },
   });
 
-  // Get current BAC data
-  function getCurrentBACData() {
+  // Get BAC data for display - reactive to drinks and user info changes
+  const safeBAC = useMemo(() => {
     const drinks = drinksQuery.data ?? [];
     const userWeight = userInfoQuery.data?.weight ?? null;
     const userSex = userInfoQuery.data?.sex ?? null;
     
-    return calculateBAC({
+    const bacData = calculateBAC({
       drinks,
       userWeight,
       userSex,
       currentTime: new Date()
     });
-  }
-
-  // Get BAC data for display
-  const bacData = getCurrentBACData();
-  const safeBAC = bacData ?? {
-    currentBAC: 0,
-    timeToSober: 0,
-    timeToLegal: 0,
-    bacOverTime: [],
-    isRising: false,
-    peakBAC: 0,
-    timeToPeak: 0
-  };
+    
+    return bacData ?? {
+      currentBAC: 0,
+      timeToSober: 0,
+      timeToLegal: 0,
+      bacOverTime: [],
+      isRising: false,
+      peakBAC: 0,
+      timeToPeak: 0
+    };
+  }, [drinksQuery.data, userInfoQuery.data]);
 
   // For per-drink status
   const userWeight = userInfoQuery.data?.weight ?? null;

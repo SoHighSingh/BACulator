@@ -54,7 +54,7 @@ export function BACCircleIndicator({
             strokeDashoffset={2 * Math.PI * 95 * (1 - (safeBAC.currentBAC / 0.15))}
             strokeLinecap="round"
             transform="rotate(135 110 110)"
-            className="transition-all duration-300 shadow-xl"
+            className="transition-all duration-300 shadow-lg"
           />
         </svg>
         {/* BAC number and View Graph button */}
