@@ -73,9 +73,14 @@ export function AddDrinkDrawer({
             <Button
               className="w-full h-20"
               onClick={async () => {
-                await startTab.mutateAsync();
-                await currentTabQuery.refetch();
-                setDrawerOpen(true);
+                try {
+                  await startTab.mutateAsync();
+                  await currentTabQuery.refetch();
+                  setDrawerOpen(true);
+                } catch (error) {
+                  console.error('Error starting tab:', error);
+                  alert('Failed to start drinking session. Please try again.');
+                }
               }}
             >
               Start Drinking
@@ -182,9 +187,15 @@ export function AddDrinkDrawer({
                     <DialogFooter>
                       <Button
                         variant="destructive"
-                        onClick={() => {
-                          stopTab.mutate();
-                          setConfirmStopOpen(false);
+                        onClick={async () => {
+                          try {
+                            await stopTab.mutateAsync();
+                            setConfirmStopOpen(false);
+                            setDrawerOpen(false);
+                          } catch (error) {
+                            console.error('Error stopping tab:', error);
+                            alert('Failed to stop drinking session. Please try again.');
+                          }
                         }}
                         disabled={!currentTabQuery.data || stopTab.status === 'pending'}
                       >

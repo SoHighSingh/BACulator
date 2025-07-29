@@ -60,11 +60,19 @@ export default function Home() {
   });
   const startTab = api.post.startTab.useMutation({
     onSuccess: () => { void currentTabQuery.refetch(); },
+    onError: (error) => {
+      console.error('Start tab error:', error);
+      alert('Failed to start drinking session. Please try again.');
+    },
   });
   const stopTab = api.post.stopTab.useMutation({
     onSuccess: () => {
       void currentTabQuery.refetch();
       void drinksQuery.refetch();
+    },
+    onError: (error) => {
+      console.error('Stop tab error:', error);
+      alert('Failed to stop drinking session. Please try again.');
     },
   });
 
