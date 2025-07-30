@@ -71,7 +71,14 @@ export function MainContent({
         tries++;
       }
     }
-    await addDrink.mutateAsync({ standards: newStandards, finishedAt: newTime });
+
+    const localDate = new Date(newTime);
+    const utcISOString = localDate.toISOString();
+    
+    await addDrink.mutateAsync({ 
+      standards: newStandards, 
+      finishedAt: utcISOString  // Send as proper UTC ISO string instead of raw newTime
+    });
     setNewStandards(1);
     setNewTime(getCurrentTimeString());
     setDrawerOpen(false);
@@ -89,10 +96,13 @@ export function MainContent({
       return;
     }
     
+    const localDate = new Date(editTime);
+    const utcISOString = localDate.toISOString();
+    
     await updateDrink.mutateAsync({ 
       drinkId: editingDrink.id, 
       standards: editStandards, 
-      finishedAt: editTime 
+      finishedAt: utcISOString  // Send as proper UTC ISO string instead of raw editTime
     });
     setEditingDrink(null);
     setEditStandards(1);
