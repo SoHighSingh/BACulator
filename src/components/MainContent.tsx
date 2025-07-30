@@ -5,6 +5,7 @@ import { AddDrinkDrawer } from "./AddDrinkDrawer";
 import type { Drink } from "~/types/bac";
 import { api } from "~/trpc/react";
 import { SoberInfo } from "./SoberInfo";
+import { BACGraphModal } from "./BACGraphModal";
 
 interface MainContentProps {
   safeBAC: {
@@ -156,7 +157,14 @@ export function MainContent({
         </div>
       </div>
 
-
+      {/* BAC Graph Modal - rendered at top level to avoid aria-hidden issues */}
+      <BACGraphModal
+        open={graphOpen}
+        onOpenChange={setGraphOpen}
+        drinks={drinksArr}
+        userWeight={userWeight}
+        userSex={userSex}
+      />
 
       {/* Add Drink Drawer */}
       <AddDrinkDrawer

@@ -72,6 +72,7 @@ export function AddDrinkDrawer({
           ) : (
             <Button
               className="w-full h-20"
+              disabled={!userWeight || !userSex}
               onClick={async () => {
                 try {
                   await startTab.mutateAsync();
@@ -83,7 +84,7 @@ export function AddDrinkDrawer({
                 }
               }}
             >
-              Start Drinking
+              {!userWeight || !userSex ? 'Enter User Details' : 'Start Drinking'}
             </Button>
           )}
         </div>

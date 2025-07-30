@@ -1,6 +1,6 @@
 import React from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import type { Drink } from "~/types/bac";
 import { generateAdvancedBACTimeline } from "~/lib/bac-graph";
@@ -53,6 +53,9 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
       <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#232323] p-0 shadow-lg border border-[#444] data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-2xl font-bold mb-2 text-[#e5e5e5]">BAC Graph</DialogTitle>
+          <DialogDescription className="text-[#e5e5e5]/80">
+            View your blood alcohol content over time since you started drinking
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 px-6 pb-6">
           {/* Card Header */}
@@ -106,20 +109,12 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
                 {/* Current time marker */}
                 {(() => {
                   const currentHour: number | undefined = advancedTimeline?.currentTimeHour;
-                  if (currentHour !== undefined) {
-                    // Find the current time data point to get the actual clock time
-                    const currentDataPoint = advancedTimeline?.data.find(point => 
-                      Math.abs(point.hour - currentHour) < 0.1
-                    );
-                    const timeLabel = currentDataPoint?.clockTime ?? `${Math.floor(currentHour).toString().padStart(2, '0')}:${Math.round((currentHour - Math.floor(currentHour)) * 60).toString().padStart(2, '0')}`;
-                    
+                  if (currentHour != undefined) {                    
                     return (
                       <ReferenceLine 
                         x={currentHour}
                         stroke="#FF8800"
-                        strokeWidth={8}
-                        strokeDasharray="10 5"
-                        label={timeLabel}
+                        strokeWidth={1}
                       />
                     );
                   }

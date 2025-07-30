@@ -1,6 +1,5 @@
 import React from "react";
 import { Button } from "./ui/button";
-import { BACGraphModal } from "./BACGraphModal";
 import type { Drink } from "~/types/bac";
 
 interface BACCircleIndicatorProps {
@@ -79,14 +78,6 @@ export function BACCircleIndicator({
             View Graph
           </Button>
         </div>
-        {/* BAC Graph Modal */}
-        <BACGraphModal
-          open={graphOpen}
-          onOpenChange={setGraphOpen}
-          drinks={drinksArr}
-          userWeight={userWeight}
-          userSex={userSex}
-        />
       </div>
     </div>
   );
