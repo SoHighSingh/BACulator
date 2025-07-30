@@ -93,6 +93,7 @@ export default function UserInfoSlideOut({
                   className="rounded-lg px-4 py-3 text-[#232323] bg-[#e5e5e5] border-2 border-transparent focus:border-[#888] focus:outline-none transition-colors"
                   required
                 >
+                  <option value="" disabled >Select</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
