@@ -127,10 +127,9 @@ export function EditDrinkModals({
                     >
                       <span>Drink {i + 1}: {drink.standards} standard{drink.standards > 1 ? 's' : ''}</span>
                       <span className="text-xs text-[#e5e5e5]/70">{
-                        new Date(drink.finishedAt).toLocaleTimeString('en-AU', { 
+                        new Date(drink.finishedAt).toLocaleTimeString([], { 
                           hour: '2-digit', 
                           minute: '2-digit',
-                          timeZone: 'Australia/Sydney'
                         })
                       }</span>
                     </div>

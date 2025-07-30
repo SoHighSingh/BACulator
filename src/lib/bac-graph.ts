@@ -98,11 +98,10 @@ export function generateAdvancedBACTimeline(
       bac: Math.round(bac * 1000) / 1000, // Round to 3 decimal places
       time: formatTimeFromStart(hoursFromStart),
       absoluteTime: checkTime,
-      clockTime: checkTime.toLocaleTimeString('en-AU', { 
+      clockTime: checkTime.toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: false,
-        timeZone: 'Australia/Sydney'
       }),
       isCurrentTime,
       isPast,
@@ -159,11 +158,10 @@ export function generateHourlyTimeLabels(timelineStartTime: Date, totalHours: nu
   
   for (let hour = 0; hour <= Math.ceil(totalHours); hour++) {
     const time = new Date(roundedStartTime.getTime() + hour * 60 * 60 * 1000);
-    const timeString = time.toLocaleTimeString('en-AU', { 
+    const timeString = time.toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: false,
-      timeZone: 'Australia/Sydney'
     });
     labels.push(timeString);
   }
