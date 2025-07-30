@@ -52,15 +52,15 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#232323] p-0 shadow-lg border border-[#444] data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
         <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-2xl font-bold mb-2 text-[#e5e5e5]">BAC Graph</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-[#e5e5e5]">BAC Graph</DialogTitle>
           <DialogDescription className="text-[#e5e5e5]/80">
-            View your blood alcohol content over time since you started drinking
+            View your blood alcohol content over time since you started drinking.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 px-6 pb-6">
           {/* Card Header */}
           <div>
-            <div className="mb-2 text-[#e5e5e5]/80">BAC% vs Hours Since Drinking</div>
+            <div className="mb-2 text-[#e5e5e5]/80">BAC vs Time</div>
           </div>
           {/* Card Content (Chart) */}
           <div className="bg-[#272727] rounded-lg border border-[#444] h-96 p-1">

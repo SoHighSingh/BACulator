@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogTrigger } from "./ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "./ui/drawer";
+import { EditDrinksTable } from "./EditDrinksTable";
 import type { Drink } from "~/types/bac";
 import { api } from "~/trpc/react";
 
@@ -108,58 +109,38 @@ export function EditDrinkModals({
               <DrawerDescription className="text-[#e5e5e5]/80">Select a drink to edit or delete.</DrawerDescription>
             </DrawerHeader>
             <div className="p-4 pb-0 flex flex-col flex-grow min-h-0">
-              <div className="mb-4 flex flex-col min-h-0 flex-grow">
-                <div className="font-semibold text-[#e5e5e5] mb-2">Current Drinks</div>
-                <div className="flex flex-col gap-2 overflow-y-auto flex-grow min-h-0" style={{maxHeight: '30vh'}}>
-                  {drinksQuery.isLoading && <div className="text-[#e5e5e5]/60">Loading...</div>}
-                  {Array.isArray(drinksQuery.data) && drinksQuery.data.length === 0 && <div className="text-[#e5e5e5]/60">No drinks logged yet.</div>}
-                  {(drinksQuery.data as Drink[] | undefined)?.map((drink, i: number) => (
-                    <div 
-                      key={drink.id} 
-                      className={`rounded-lg px-4 py-2 flex items-center justify-between cursor-pointer transition ${
-                        selectedDrink?.id === drink.id 
-                          ? 'bg-[#666] border-2 border-[#e5e5e5]' 
-                          : 'bg-[#444]'
-                      }`}
-                      onClick={() => {
-                        setSelectedDrink(selectedDrink?.id === drink.id ? null : drink);
-                      }}
-                    >
-                      <span>Drink {i + 1}: {drink.standards} standard{drink.standards > 1 ? 's' : ''}</span>
-                      <span className="text-xs text-[#e5e5e5]/70">{
-                        new Date(drink.finishedAt).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                        })
-                      }</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <EditDrinksTable 
+                drinksQuery={drinksQuery}
+                selectedDrink={selectedDrink}
+                setSelectedDrink={setSelectedDrink}
+              />
               
               {/* Edit/Delete Actions */}
-              {selectedDrink && (
-                <div className="mt-4 flex gap-3">
-                  <Button 
-                    onClick={() => openEditDrink(selectedDrink)}
-                    className="flex-1"
-                  >
-                    Edit Drink
-                  </Button>
-                  <Button 
-                    onClick={handleDeleteDrink}
-                    disabled={deleteDrink.status === 'pending'}
-                    variant="destructive"
-                    className="flex-1"
-                  >
-                    {deleteDrink.status === 'pending' ? 'Deleting...' : 'Delete'}
-                  </Button>
-                </div>
-              )}
+              <div className={`mt-4 flex gap-3 transition-all duration-300 ease-in-out overflow-hidden ${
+                selectedDrink 
+                  ? 'opacity-100 max-h-20 translate-y-0' 
+                  : 'opacity-0 max-h-0 translate-y-2 pointer-events-none'
+              }`}>
+                <Button 
+                  onClick={() => selectedDrink && openEditDrink(selectedDrink)}
+                  className="flex-1"
+                  disabled={!selectedDrink}
+                >
+                  Edit Drink
+                </Button>
+                <Button 
+                  onClick={handleDeleteDrink}
+                  disabled={deleteDrink.status === 'pending' || !selectedDrink}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  {deleteDrink.status === 'pending' ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
             </div>
             <DrawerFooter className="sticky bottom-0 bg-[#232323] z-10 flex flex-col gap-2 border-[#444]">
               <DrawerClose asChild>
-                <Button variant="outline" className="w-full">Close</Button>
+                <Button variant="outline" className="w-full">Cancel</Button>
               </DrawerClose>
             </DrawerFooter>
           </div>

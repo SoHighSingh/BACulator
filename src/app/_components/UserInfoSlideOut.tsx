@@ -122,7 +122,7 @@ export default function UserInfoSlideOut({
               Sign out
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Close</Button>
+              <Button variant="outline">Cancel</Button>
             </DrawerClose>
           </DrawerFooter>
         </div>
