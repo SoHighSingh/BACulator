@@ -74,13 +74,14 @@ export default function UserInfoSlideOut({
                 </label>
                 <input
                   type="number"
-                  min={1}
-                  max={300}
+                  min="0.1"
+                  max="300"
+                  step="0.1"
                   value={weight}
                   onChange={e => setWeight(e.target.value)}
                   className="rounded-lg px-4 py-3 text-[#232323] bg-[#e5e5e5] border-2 border-transparent focus:border-[#888] focus:outline-none transition-colors placeholder:text-gray-400 placeholder:opacity-70"
                   required
-                  placeholder="Enter"
+                  placeholder="Enter weight in kg"
                 />
               </div>
               <div className="flex flex-col gap-2">

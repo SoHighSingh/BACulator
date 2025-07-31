@@ -16,7 +16,7 @@ export const postRouter = createTRPCRouter({
     }),
   updateUserInfo: protectedProcedure
     .input(z.object({
-      weight: z.number().int().min(1).max(1000),
+      weight: z.number().positive().max(1000),
       sex: z.enum(["male", "female"]),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -60,7 +60,7 @@ export const postRouter = createTRPCRouter({
   }),
   addDrink: protectedProcedure
     .input(z.object({
-      standards: z.number().int().min(1).max(20),
+      standards: z.number().positive().max(20),
       finishedAt: z.string(), // ISO string
     }))
     .mutation(async ({ ctx, input }) => {
@@ -78,7 +78,7 @@ export const postRouter = createTRPCRouter({
   updateDrink: protectedProcedure
     .input(z.object({
       drinkId: z.string(),
-      standards: z.number().int().min(1).max(20),
+      standards: z.number().positive().max(20),
       finishedAt: z.string(), // ISO string
     }))
     .mutation(async ({ ctx, input }) => {

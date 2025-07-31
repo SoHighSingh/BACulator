@@ -109,15 +109,22 @@ export function AddDrinkDrawer({
                <div className="flex flex-col gap-4 bg-[#444] rounded-xl p-4">
                  <div className="flex items-center gap-4 text-[#e5e5e5]">
                    <label className="w-40">Standards</label>
-                   <select
-                     value={newStandards}
-                     onChange={e => setNewStandards(Number(e.target.value))}
-                     className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
-                   >
-                     {[1, 2, 3, 4, 5].map(n => (
-                       <option key={n} value={n}>{n}</option>
-                     ))}
-                   </select>
+                   <input
+                     type="number"
+                     min="0.1"
+                     max="20"
+                     step="0.1"
+                     value={newStandards || ""}
+                     onChange={e => {
+                       const value = e.target.value;
+                       const numValue = value === "" ? 0 : Number(value);
+                       if (!isNaN(numValue) && numValue >= 0.1) {
+                         setNewStandards(numValue);
+                       }
+                     }}
+                     className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5] w-20"
+                     placeholder="1.0"
+                   />
                  </div>
                  <div className="flex items-center gap-4 text-[#e5e5e5]">
                    <label className="w-40">Time Finished Drinking</label>

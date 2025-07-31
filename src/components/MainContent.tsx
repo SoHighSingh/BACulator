@@ -56,6 +56,12 @@ export function MainContent({
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
 
   async function handleAddDrink() {
+    // Validate standards value
+    if (!newStandards || newStandards < 0.1) {
+      alert("Please enter a valid number of standard drinks (minimum 0.1).");
+      return;
+    }
+
     // Validate that the drink time is not in the future
     const selectedTime = new Date(newTime);
     const currentTime = new Date();
@@ -90,6 +96,12 @@ export function MainContent({
 
   async function handleEditDrink() {
     if (!editingDrink) return;
+    
+    // Validate standards value
+    if (!editStandards || editStandards < 0.1) {
+      alert("Please enter a valid number of standard drinks (minimum 0.1).");
+      return;
+    }
     
     // Validate that the drink time is not in the future
     const selectedTime = new Date(editTime);
@@ -137,7 +149,9 @@ export function MainContent({
 
   function openEditDrink(drink: Drink) {
     setEditingDrink(drink);
-    setEditStandards(drink.standards);
+    // Ensure standards is a valid number, default to 1 if it's too small or invalid
+    const validStandards = drink.standards && drink.standards >= 0.1 ? drink.standards : 1;
+    setEditStandards(validStandards);
     setEditTime(getCurrentTimeString());
   }
 
