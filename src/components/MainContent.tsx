@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { BACCircleIndicator } from "./BACCircleIndicator";
+import { BACIndicator } from "./BACIndicator";
 import { EditDrinkModals } from "./EditDrinkModals";
 import { AddDrinkDrawer } from "./AddDrinkDrawer";
 import type { Drink } from "~/types/bac";
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { api } from "~/trpc/react";
 import { SoberInfo } from "./SoberInfo";
 import { BACGraphModal } from "./BACGraphModal";
@@ -145,7 +146,7 @@ export function MainContent({
       {/* Main Content: Responsive layout */}
       <div className="flex-1 flex flex-col items-center justify-center w-full md:flex-row md:items-stretch md:justify-center md:gap-12">
         {/* BAC Indicator (left on desktop) */}
-        <BACCircleIndicator
+        <BACIndicator
           safeBAC={safeBAC}
           drinksArr={drinksArr}
           _userWeight={userWeight}

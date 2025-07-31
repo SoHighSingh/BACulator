@@ -77,7 +77,7 @@ export default function Home() {
   });
 
   // Auto-refresh every minute when there's an active drinking session
-  const { triggerRefresh, pauseAutoRefresh, resumeAutoRefresh } = useAutoReload({
+  useAutoReload({
     intervalMinutes: 1,
     enabled: !!currentTabQuery.data, // Only refresh when there's an active session
     showNotification: true,
