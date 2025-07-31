@@ -3,7 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import type { Drink } from "~/types/bac";
-import { generateAdvancedBACTimeline } from "~/lib/bac-graph";
+import { generateAdvancedBACTimeline, type GraphDataPoint } from "~/lib/bac-graph";
 
 interface BacTooltipProps {
   active?: boolean;
@@ -13,7 +13,6 @@ interface BacTooltipProps {
 
 function CustomTooltip({ active, payload, label }: BacTooltipProps) {
   if (active && payload?.length) {
-    // Use the clockTime from the data point if available, otherwise fall back to label
     const timeLabel = payload[0]?.payload?.clockTime ?? String(label ?? "");
     
     return (
@@ -24,6 +23,82 @@ function CustomTooltip({ active, payload, label }: BacTooltipProps) {
     );
   }
   return null;
+}
+
+// Helper function to calculate adaptive axis settings
+function calculateAxisSettings(data: GraphDataPoint[]): {
+  yDomain: [number, number];
+  yTicks: number[];
+  xDomain: [number, number];
+  xTickInterval: number;
+} {
+  if (!data || data.length === 0) {
+    return {
+      yDomain: [0, 0.10],
+      yTicks: [0, 0.02, 0.04, 0.06, 0.08, 0.10],
+      xDomain: [0, 8],
+      xTickInterval: 1
+    };
+  }
+
+  // Calculate Y-axis (BAC) settings
+  const maxBAC = Math.max(...data.map(d => d.bac ?? 0));
+  
+  // Round up to next nice increment (0.02, 0.04, 0.06, etc.)
+  const yIncrement = 0.02;
+  const yMax = Math.ceil(maxBAC / yIncrement) * yIncrement;
+  const adjustedYMax = Math.max(yMax, 0.04); // Minimum of 0.04 for readability
+  
+  // Generate even ticks
+  const yTicks = [];
+  for (let i = 0; i <= adjustedYMax; i += yIncrement) {
+    yTicks.push(Math.round(i * 100) / 100); // Round to avoid floating point issues
+  }
+
+  // Calculate X-axis (time) settings
+  const minHour = Math.min(...data.map(d => d.hour ?? 0));
+  const maxHour = Math.max(...data.map(d => d.hour ?? 0));
+  const timeRange = maxHour - minHour;
+  
+  // Choose appropriate interval based on time range
+  let xTickInterval: number;
+  if (timeRange <= 2) {
+    xTickInterval = 0.25; // 15-minute intervals
+  } else if (timeRange <= 4) {
+    xTickInterval = 0.5; // 30-minute intervals  
+  } else if (timeRange <= 8) {
+    xTickInterval = 1; // 1-hour intervals
+  } else if (timeRange <= 16) {
+    xTickInterval = 2; // 2-hour intervals
+  } else {
+    xTickInterval = 4; // 4-hour intervals
+  }
+  
+  // Add some padding to the time range
+  const padding = timeRange * 0.05; // 5% padding
+  const xMin = Math.max(0, minHour - padding);
+  const xMax = maxHour + padding;
+
+  return {
+    yDomain: [0, adjustedYMax],
+    yTicks,
+    xDomain: [xMin, xMax],
+    xTickInterval
+  };
+}
+
+// Helper function to generate x-axis ticks
+function generateXTicks(xMin: number, xMax: number, interval: number, _data: GraphDataPoint[]) {
+  const ticks = [];
+  const start = Math.floor(xMin / interval) * interval;
+  
+  for (let tick = start; tick <= xMax; tick += interval) {
+    if (tick >= xMin) {
+      ticks.push(tick);
+    }
+  }
+  
+  return ticks;
 }
 
 interface BACGraphModalProps {
@@ -48,6 +123,15 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
     );
   }
 
+  // Calculate adaptive axis settings
+  const axisSettings = calculateAxisSettings(advancedTimeline?.data ?? []);
+  const xTicks = generateXTicks(
+    axisSettings.xDomain[0] ?? 0, 
+    axisSettings.xDomain[1] ?? 8, 
+    axisSettings.xTickInterval,
+    advancedTimeline?.data ?? []
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#232323] p-0 shadow-lg border border-[#444] data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
@@ -65,7 +149,10 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
           {/* Card Content (Chart) */}
           <div className="bg-[#272727] rounded-lg border border-[#444] h-96 p-1">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={advancedTimeline ? advancedTimeline.data : []} margin={{ left: -20, right: 20, top: 10, bottom: 0 }}>
+                              <AreaChart 
+                  data={advancedTimeline?.data ?? []} 
+                  margin={{ left: -20, right: 20, top: 10, bottom: 0 }}
+                >
                 <defs>
                   <linearGradient id="bacGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.8}/>
@@ -73,23 +160,33 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
                   </linearGradient>
                 </defs>
                 <XAxis 
-                  dataKey="hour" 
-                  ticks={advancedTimeline?.data.filter((_, index) => index % 12 === 0).map(point => point.hour) ?? [0,1,2,3,4,5,6,7,8,9,10]}
-                  domain={[0, 'dataMax + 1']}
+                  dataKey="hour"
+                  type="number"
+                  scale="linear"
+                  domain={axisSettings.xDomain}
+                  ticks={xTicks}
                   tickFormatter={(h) => {
-                    // Find the data point with this hour value to get the clock time
-                    const dataPoint = advancedTimeline?.data.find(point => Math.abs(point.hour - (h as number)) < 0.01);
-                    return dataPoint?.clockTime ?? `${Math.floor(h as number).toString().padStart(2, '0')}:${Math.round(((h as number) - Math.floor(h as number)) * 60).toString().padStart(2, '0')}`;
+                    // Find the data point closest to this hour value to get the clock time
+                    if (advancedTimeline?.data) {
+                      const closest = advancedTimeline.data.reduce((prev, curr) => 
+                        Math.abs(curr.hour - (h as number)) < Math.abs(prev.hour - (h as number)) ? curr : prev
+                      );
+                      return closest.clockTime;
+                    }
+                    // Fallback formatting
+                    const hours = Math.floor(h as number);
+                    const minutes = Math.round(((h as number) - hours) * 60);
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
                   }}
                   tick={{ fill: '#9CA3AF', fontSize: 10 }}
                   axisLine={{ stroke: '#374151', strokeWidth: 1 }}
                   tickLine={{ stroke: '#374151', strokeWidth: 1 }}
                 />
                 <YAxis 
-                  domain={[0, 0.10]} 
+                  domain={axisSettings.yDomain}
+                  ticks={axisSettings.yTicks}
                   tickFormatter={v => (v * 1).toFixed(2)} 
                   tick={{ fill: '#9CA3AF', fontSize: 11 }}
-                  ticks={[0, 0.02, 0.04, 0.06, 0.08, 0.10]}
                   label={{position: 'insideLeft', style: { fill: '#e5e5e5' } }}
                   axisLine={{ stroke: '#374151', strokeWidth: 1 }}
                   tickLine={{ stroke: '#374151', strokeWidth: 1 }}
@@ -113,7 +210,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
                     return (
                       <ReferenceLine 
                         x={currentHour}
-                        stroke="#FF8800"
+                        stroke="#a6a6a6"
                         strokeWidth={1}
                       />
                     );
@@ -133,4 +230,4 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
       </DialogContent>
     </Dialog>
   );
-} 
+}

@@ -1,13 +1,11 @@
 import React from "react";
 import { calculateDrinkContribution } from "~/lib/bac-calculator";
 import type { Drink } from "~/types/bac";
-import { api } from "~/trpc/react";
+import type { api } from "~/trpc/react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,

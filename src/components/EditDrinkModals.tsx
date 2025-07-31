@@ -1,10 +1,10 @@
 import React from "react";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogTrigger } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "./ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "./ui/drawer";
 import { EditDrinksTable } from "./EditDrinksTable";
 import type { Drink } from "~/types/bac";
-import { api } from "~/trpc/react";
+import type { api } from "~/trpc/react";
 
 interface EditDrinkModalsProps {
   editDrawerOpen: boolean;

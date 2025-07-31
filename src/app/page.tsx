@@ -6,6 +6,7 @@ import React, { useMemo } from "react";
 import { api } from "~/trpc/react";
 import { calculateBAC } from "~/lib/bac-calculator";
 import { MainContent } from "../components/MainContent";
+import { useAutoReload } from "../hooks/useAutoReload";
 
 
 
@@ -14,6 +15,7 @@ import { MainContent } from "../components/MainContent";
 export default function Home() {
   const { data: session } = useSession();
   const userName = session?.user?.name ?? "";
+  
   // Helper function to get current time in datetime-local format
   const getCurrentTimeString = () => {
     const now = new Date();
@@ -74,6 +76,21 @@ export default function Home() {
       console.error('Stop tab error:', error);
       alert('Failed to stop drinking session. Please try again.');
     },
+  });
+
+  // Auto-refresh every minute when there's an active drinking session
+  const { triggerRefresh, pauseAutoRefresh, resumeAutoRefresh } = useAutoReload({
+    intervalMinutes: 1,
+    enabled: !!currentTabQuery.data, // Only refresh when there's an active session
+    showNotification: true,
+    onRefresh: async () => {
+      // Refresh all the queries to get updated data
+      await Promise.all([
+        currentTabQuery.refetch(),
+        drinksQuery.refetch(),
+        userInfoQuery.refetch()
+      ]);
+    }
   });
 
   // Get BAC data for display - reactive to drinks and user info changes

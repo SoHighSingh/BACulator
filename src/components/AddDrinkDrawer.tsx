@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "./ui/dialog";
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "./ui/drawer";
 import { DrinksList } from "./DrinksList";
-import { api } from "~/trpc/react";
+import type { api } from "~/trpc/react";
 
 interface AddDrinkDrawerProps {
   drawerOpen: boolean;
@@ -85,7 +85,7 @@ export function AddDrinkDrawer({
             </Button>
           )}
         </div>
-                 <DrawerContent className="bg-[#232323] flex flex-col items-center">
+          <DrawerContent className="bg-[#232323] flex flex-col items-center h-full">
            <div className="mx-auto w-full max-w-md flex flex-col min-h-0">
              <DrawerHeader className="flex-shrink-0">
                <DrawerTitle className="text-[#e5e5e5]">Add Drink</DrawerTitle>

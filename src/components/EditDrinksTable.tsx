@@ -1,12 +1,10 @@
 import React from "react";
 import type { Drink } from "~/types/bac";
-import { api } from "~/trpc/react";
+import type { api } from "~/trpc/react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,

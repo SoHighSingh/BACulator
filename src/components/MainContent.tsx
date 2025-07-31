@@ -146,9 +146,9 @@ export function MainContent({
         <BACCircleIndicator
           safeBAC={safeBAC}
           drinksArr={drinksArr}
-          userWeight={userWeight}
-          userSex={userSex}
-          graphOpen={graphOpen}
+          _userWeight={userWeight}
+          _userSex={userSex}
+          _graphOpen={graphOpen}
           setGraphOpen={setGraphOpen}
         />
         {/* Info and controls (right on desktop) */}
