@@ -283,7 +283,7 @@ export function calculateBAC(inputs: BACCalculationInputs): BACResult | null {
   }
   
   // Validate that all drinks have valid standards (supporting decimals)
-  if (drinks && drinks.some(drink => !drink.standards || drink.standards <= 0.0)) {
+  if (drinks?.some(drink => !drink.standards || drink.standards <= 0.0)) {
     return null;
   }
   
