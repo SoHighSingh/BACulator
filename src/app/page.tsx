@@ -7,14 +7,12 @@ import { api } from "~/trpc/react";
 import { calculateBAC } from "~/lib/bac-calculator";
 import { MainContent } from "../components/MainContent";
 import { useAutoReload } from "../hooks/useAutoReload";
-
-
-
-
+import { useUserInfo } from "./_components/UserInfoSlideOutProvider";
 
 export default function Home() {
   const { data: session } = useSession();
   const userName = session?.user?.name ?? "";
+  const { openUserInfo } = useUserInfo();
   
   // Helper function to get current time in datetime-local format
   const getCurrentTimeString = () => {
@@ -124,8 +122,6 @@ export default function Home() {
   // Get drinks array for the graph modal
   const drinksArr = drinksQuery.data ?? [];
 
-
-
   if (!session) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-[#232323] text-white">
@@ -167,6 +163,7 @@ export default function Home() {
           startTab={startTab}
           stopTab={stopTab}
           getCurrentTimeString={getCurrentTimeString}
+          onOpenUserInfo={openUserInfo}
         />
     </main>
   );

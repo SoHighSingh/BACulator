@@ -25,6 +25,7 @@ interface MainContentProps {
   startTab: ReturnType<typeof api.post.startTab.useMutation>;
   stopTab: ReturnType<typeof api.post.stopTab.useMutation>;
   getCurrentTimeString: () => string;
+  onOpenUserInfo?: () => void;
 }
 
 export function MainContent({
@@ -39,7 +40,8 @@ export function MainContent({
   deleteDrink,
   startTab,
   stopTab,
-  getCurrentTimeString
+  getCurrentTimeString,
+  onOpenUserInfo
 }: MainContentProps) {
   const [graphOpen, setGraphOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -186,6 +188,7 @@ export function MainContent({
         userSex={userSex}
         getCurrentTimeString={getCurrentTimeString}
         handleAddDrink={handleAddDrink}
+        onOpenUserInfo={onOpenUserInfo}
       />
 
       {/* Edit Drink Modals */}

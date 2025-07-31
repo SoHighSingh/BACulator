@@ -24,6 +24,7 @@ interface AddDrinkDrawerProps {
   userSex: string | null;
   getCurrentTimeString: () => string;
   handleAddDrink: () => Promise<void>;
+  onOpenUserInfo?: () => void;
 }
 
 export function AddDrinkDrawer({
@@ -44,7 +45,8 @@ export function AddDrinkDrawer({
   userWeight,
   userSex,
   getCurrentTimeString,
-  handleAddDrink
+  handleAddDrink,
+  onOpenUserInfo
 }: AddDrinkDrawerProps) {
   return (
     <>
@@ -69,8 +71,13 @@ export function AddDrinkDrawer({
           ) : (
             <Button
               className="w-full h-20"
-              disabled={!userWeight || !userSex}
               onClick={async () => {
+                if (!userWeight || !userSex) {
+                  // Open user info slide out if user details are missing
+                  onOpenUserInfo?.();
+                  return;
+                }
+                
                 try {
                   await startTab.mutateAsync();
                   await currentTabQuery.refetch();
@@ -99,31 +106,28 @@ export function AddDrinkDrawer({
                    userSex={userSex}
                  />
                </div>
-               <div className="flex-shrink-3">
-                 <div className="font-semibold text-[#e5e5e5] mb-2">Add Drink</div>
-                 <div className="flex flex-col gap-4 bg-[#444] rounded-xl p-4">
-                   <div className="flex items-center gap-4 text-[#e5e5e5]">
-                     <label className="w-40">Standards</label>
-                     <select
-                       value={newStandards}
-                       onChange={e => setNewStandards(Number(e.target.value))}
-                       className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
-                     >
-                       {[1, 2, 3, 4, 5].map(n => (
-                         <option key={n} value={n}>{n}</option>
-                       ))}
-                     </select>
-                   </div>
-                   <div className="flex items-center gap-4 text-[#e5e5e5]">
-                     <label className="w-40">Time Finished Drinking</label>
-                     <input
-                       type="datetime-local"
-                       value={newTime}
-                       onChange={e => setNewTime(e.target.value)}
-                       max={getCurrentTimeString()}
-                       className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
-                     />
-                   </div>
+               <div className="flex flex-col gap-4 bg-[#444] rounded-xl p-4">
+                 <div className="flex items-center gap-4 text-[#e5e5e5]">
+                   <label className="w-40">Standards</label>
+                   <select
+                     value={newStandards}
+                     onChange={e => setNewStandards(Number(e.target.value))}
+                     className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
+                   >
+                     {[1, 2, 3, 4, 5].map(n => (
+                       <option key={n} value={n}>{n}</option>
+                     ))}
+                   </select>
+                 </div>
+                 <div className="flex items-center gap-4 text-[#e5e5e5]">
+                   <label className="w-40">Time Finished Drinking</label>
+                   <input
+                     type="datetime-local"
+                     value={newTime}
+                     onChange={e => setNewTime(e.target.value)}
+                     max={getCurrentTimeString()}
+                     className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
+                   />
                  </div>
                </div>
              </div>
