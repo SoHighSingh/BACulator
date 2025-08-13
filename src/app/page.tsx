@@ -110,7 +110,7 @@ export default function Home() {
           hueShift={10}
           noiseIntensity={0.01}
           scanlineIntensity={0.05}
-          speed={2}
+          speed={1}
           warpAmount={1}
         />
       </div>

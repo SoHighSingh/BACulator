@@ -224,7 +224,7 @@ export function BACIndicator({
       <TiltedCard intensity={20}>
         <div className="relative flex items-center justify-center">
                      {/* Water Level Rectangle */}
-           <div className="w-95 h-64 bg-gradient-to-b from-black to-gray-900 bg-opacity relative overflow-hidden rounded-2xl shadow-2xl border border-black">
+           <div className="w-95 h-64 bg-white/10 backdrop-blur-sm border border-white/20 relative overflow-hidden rounded-2xl shadow-2xl border border-black">
             {/* BAC Text - Inverted colors using mix-blend-mode */}
             <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
                              <AnimatedCounter 
@@ -304,11 +304,11 @@ export function BACIndicator({
         <Button
           onClick={() => setGraphOpen(true)}
           disabled={drinksArr.length === 0}
+          className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-4 py-2 text-sm font-medium min-w-[120px] text-center"
         >
           View Graph
         </Button>
       </div>
-      
 
       <style>{`
         .perspective-1000 {

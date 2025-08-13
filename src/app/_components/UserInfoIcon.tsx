@@ -21,7 +21,7 @@ export function UserInfoIcon({ onClick }: UserInfoIconProps) {
         type="button"
         onClick={onClick}
         title="User Info"
-        className="focus:outline-none hover:opacity-80 transition-opacity rounded-md bg-[#444] px-4 py-2"
+        className="hover:opacity-80 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-4 py-2 text-sm font-medium text-center"
       >
         <Image
           src="/UserIcon.png"
