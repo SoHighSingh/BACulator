@@ -60,16 +60,16 @@ export default function UserInfoSlideOut({
 
   return (
     <Drawer open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DrawerContent className="bg-[#232323]">
+      <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10">
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>
-            <DrawerTitle className="text-[#e5e5e5]">{userName ? `Hi ${userName}!` : "User Details"}</DrawerTitle>
-            <DrawerDescription className="text-[#e5e5e5]/80">Your details:</DrawerDescription>
+            <DrawerTitle className="text-white">{userName ? `Hi ${userName}!` : "User Details"}</DrawerTitle>
+            <DrawerDescription className="text-white/80">Your details:</DrawerDescription>
           </DrawerHeader>
           <div className="p-4 pb-0">
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-[#e5e5e5]">
+                <label className="text-sm font-medium text-white">
                   Weight (kg):
                 </label>
                 <input
@@ -79,19 +79,19 @@ export default function UserInfoSlideOut({
                   step="0.1"
                   value={weight}
                   onChange={e => setWeight(e.target.value)}
-                  className="rounded-lg px-4 py-3 text-[#232323] bg-[#e5e5e5] border-2 border-transparent focus:border-[#888] focus:outline-none transition-colors placeholder:text-gray-400 placeholder:opacity-70"
+                  className="rounded-md px-4 py-3 text-white bg-black/40 backdrop-blur-sm border border-white/10 focus:border-white/30 focus:outline-none transition-colors placeholder:text-white/50"
                   required
                   placeholder="Enter weight in kg"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-[#e5e5e5]">
+                <label className="text-sm font-medium text-white">
                   Sex at birth:
                 </label>
                 <select
                   value={sex}
                   onChange={e => setSex(e.target.value as "male" | "female" | "")}
-                  className="rounded-lg px-4 py-3 text-[#232323] bg-[#e5e5e5] border-2 border-transparent focus:border-[#888] focus:outline-none transition-colors"
+                  className="rounded-md px-4 py-3 text-white bg-black/40 backdrop-blur-sm border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
                   required
                 >
                   <option value="" disabled >Select</option>
@@ -102,7 +102,7 @@ export default function UserInfoSlideOut({
               <Button
                 type="submit"
                 disabled={submitted}
-                className="rounded-2px bg-[#444] px-8 py-3 font-semibold transition hover:bg-[#555] text-[#e5e5e5] mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-8 py-3 font-semibold transition hover:bg-black/50 text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitted ? "Saved!" : "Save Details"}
               </Button>
@@ -118,7 +118,7 @@ export default function UserInfoSlideOut({
           <DrawerFooter>
             <Button
               onClick={() => signOut()}
-              className="rounded-2px bg-red-600/80 px-8 py-3 font-semibold transition hover:bg-red-700 text-white w-full"
+              className="rounded-md bg-red-600/40 backdrop-blur-sm border border-red-400/20 px-8 py-3 font-semibold transition hover:bg-red-600/50 text-white w-full"
             >
               Sign out
             </Button>

@@ -40,9 +40,14 @@ export const postRouter = createTRPCRouter({
   }),
   startTab: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    // Check for open tab
+    // Auto-close any existing open tabs before creating new one
     const openTab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
-    if (openTab) return openTab;
+    if (openTab) {
+      await ctx.db.tab.update({ 
+        where: { id: openTab.id }, 
+        data: { finishedAt: new Date() } 
+      });
+    }
     // Create new tab
     return ctx.db.tab.create({
       data: { userId, name: `Session ${new Date().toLocaleString()}` },

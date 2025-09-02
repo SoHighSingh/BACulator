@@ -52,14 +52,14 @@ export function AddDrinkDrawer({
     <>
       {/* Fixed Bottom Bar */}
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <div className="fixed bottom-0 left-0 w-full bg-[#232323] p-4 z-50 border-t border-[#333] flex gap-4">
+        <div className="fixed bottom-0 left-0 w-full bg-black/40 backdrop-blur-sm border-t border-white/10 p-4 z-50 flex gap-4">
           {currentTabQuery.data ? (
             <>
               <DrawerTrigger asChild>
-                <Button className="flex-[3] h-20"> Add Drink </Button>
+                <Button className="flex-[3] h-20 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"> Add Drink </Button>
               </DrawerTrigger>
               <Button 
-                className="flex-[1] h-20"
+                className="flex-[1] h-20 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"
                 onClick={() => {
                   setDrawerOpen(false);
                   setEditDrawerOpen(true);
@@ -70,7 +70,7 @@ export function AddDrinkDrawer({
             </>
           ) : (
             <Button
-              className="w-full h-20"
+              className="w-full h-20 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"
               onClick={async () => {
                 if (!userWeight || !userSex) {
                   // Open user info slide out if user details are missing
@@ -80,7 +80,6 @@ export function AddDrinkDrawer({
                 
                 try {
                   await startTab.mutateAsync();
-                  await currentTabQuery.refetch();
                   setDrawerOpen(true);
                 } catch (error) {
                   console.error('Error starting tab:', error);
@@ -92,7 +91,7 @@ export function AddDrinkDrawer({
             </Button>
           )}
         </div>
-          <DrawerContent className="bg-[#232323] flex flex-col items-center h-full">
+          <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center h-full">
            <div className="mx-auto w-full max-w-md flex flex-col min-h-0">
              <DrawerHeader className="flex-shrink-0">
                <DrawerTitle className="text-[#e5e5e5]">Add Drink</DrawerTitle>
@@ -106,7 +105,7 @@ export function AddDrinkDrawer({
                    userSex={userSex}
                  />
                </div>
-               <div className="flex flex-col gap-4 bg-[#444] rounded-xl p-4">
+               <div className="flex flex-col gap-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-md p-4">
                  <div className="flex items-center gap-4 text-[#e5e5e5]">
                    <label className="w-40">Standards</label>
                    <input
@@ -117,12 +116,16 @@ export function AddDrinkDrawer({
                      value={newStandards || ""}
                      onChange={e => {
                        const value = e.target.value;
-                       const numValue = value === "" ? 0 : Number(value);
-                       if (!isNaN(numValue) && numValue >= 0.1) {
+                       if (value === "") {
+                         setNewStandards(0);
+                         return;
+                       }
+                       const numValue = Number(value);
+                       if (!isNaN(numValue) && numValue >= 0) {
                          setNewStandards(numValue);
                        }
                      }}
-                     className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5] w-20"
+                     className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 w-20"
                      placeholder="1.0"
                    />
                  </div>
@@ -133,13 +136,13 @@ export function AddDrinkDrawer({
                      value={newTime}
                      onChange={e => setNewTime(e.target.value)}
                      max={getCurrentTimeString()}
-                     className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
+                     className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30"
                    />
                  </div>
                </div>
              </div>
-             <DrawerFooter className="flex-shrink-0 bg-[#232323] flex flex-col gap-2 border-[#444] p-4">
-               <Button onClick={handleAddDrink} disabled={addDrink.status === 'pending' || !currentTabQuery.data} className="w-full"> {addDrink.status === 'pending' ? 'Adding...' : 'Add Drink'} </Button>
+             <DrawerFooter className="flex-shrink-0 bg-transparent flex flex-col gap-2 border-t border-white/10 p-4">
+               <Button onClick={handleAddDrink} disabled={addDrink.status === 'pending' || !currentTabQuery.data} className="w-full h-18 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"> {addDrink.status === 'pending' ? 'Adding...' : 'Add Drink'} </Button>
                <div className="flex gap-2 w-full">
                  {/* Stop Drinking Confirmation Dialog */}
                  <Dialog open={confirmStopOpen} onOpenChange={setConfirmStopOpen}>
@@ -152,7 +155,7 @@ export function AddDrinkDrawer({
                        Stop Drinking
                      </Button>
                    </DialogTrigger>
-                   <DialogContent className="bg-[#232323] border-[#444]">
+                   <DialogContent className="bg-black/40 backdrop-blur-sm border border-white/10">
                      <DialogHeader>
                        <DialogTitle className="text-[#e5e5e5]">Stop Drinking?</DialogTitle>
                        <DialogDescription className="text-[#e5e5e5]/50">

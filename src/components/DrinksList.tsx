@@ -22,27 +22,27 @@ export function DrinksList({ drinksQuery, userWeight, userSex }: DrinksListProps
 
   return (
     <div className="mb-4 flex flex-col min-h-0 flex-grow">
-             <div className="overflow-auto max-h-60 rounded-md border border-[#444] bg-[#232323] custom-scrollbar">
+             <div className="overflow-auto max-h-60 rounded-md border border-white/20 bg-white/10 backdrop-blur-sm custom-scrollbar">
         <Table>
                      <TableHeader>
-             <TableRow className="border-[#444] hover:bg-[#444]/50">
-               <TableHead className="text-[#e5e5e5] font-medium text-center border-r border-[#444]">#</TableHead>
-               <TableHead className="text-[#e5e5e5] font-medium text-center">Standards</TableHead>
-               <TableHead className="text-[#e5e5e5] font-medium text-center">Time</TableHead>
-               <TableHead className="text-[#e5e5e5] font-medium text-center">Status</TableHead>
+             <TableRow className="border-white/20 hover:bg-white/15">
+               <TableHead className="text-white font-medium text-center border-r border-white/20">#</TableHead>
+               <TableHead className="text-white font-medium text-center">Standards</TableHead>
+               <TableHead className="text-white font-medium text-center">Time</TableHead>
+               <TableHead className="text-white font-medium text-center">Status</TableHead>
              </TableRow>
            </TableHeader>
           <TableBody>
                          {drinksQuery.isLoading && (
                <TableRow>
-                 <TableCell colSpan={4} className="text-center text-[#e5e5e5]/60">
+                 <TableCell colSpan={4} className="text-center text-white/60">
                    Loading...
                  </TableCell>
                </TableRow>
              )}
              {Array.isArray(drinksQuery.data) && drinksQuery.data.length === 0 && (
                <TableRow>
-                 <TableCell colSpan={4} className="text-center text-[#e5e5e5]/60">
+                 <TableCell colSpan={4} className="text-center text-white/60">
                    No drinks logged yet.
                  </TableCell>
                </TableRow>
@@ -57,14 +57,14 @@ export function DrinksList({ drinksQuery, userWeight, userSex }: DrinksListProps
                }
                
                 return (
-                 <TableRow key={drink.id} className="border-[#444] hover:bg-[#444]/50">
-                   <TableCell className="text-[#e5e5e5] font-medium text-center border-r border-[#444] w-[50px]">
+                 <TableRow key={drink.id} className="border-white/20 hover:bg-white/15">
+                   <TableCell className="text-white font-medium text-center border-r border-white/20 w-[50px]">
                      {index + 1}
                    </TableCell>
-                   <TableCell className="text-[#e5e5e5] font-medium text-center">
+                   <TableCell className="text-white font-medium text-center">
                      {drink.standards}
                    </TableCell>
-                   <TableCell className="text-[#e5e5e5]/70 text-center">
+                   <TableCell className="text-white/70 text-center">
                      {new Date(drink.finishedAt).toLocaleTimeString([], { 
                        hour: '2-digit', 
                        minute: '2-digit',
@@ -80,7 +80,7 @@ export function DrinksList({ drinksQuery, userWeight, userSex }: DrinksListProps
                          <span className="text-gray-400 text-xs font-semibold">Eliminated</span>
                        )
                      ) : (
-                       <span className="text-[#e5e5e5]/50 text-xs">-</span>
+                       <span className="text-white/50 text-xs">-</span>
                      )}
                    </TableCell>
                  </TableRow>

@@ -49,15 +49,15 @@ export function EditDrinkModals({
     <>
       {/* Edit Drink Dialog */}
       <Dialog open={!!editingDrink} onOpenChange={(open) => !open && setEditingDrink(null)}>
-        <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#232323] shadow-lg border border-[#444] data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
+        <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-md bg-black/40 backdrop-blur-sm shadow-lg border border-white/10 data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
           <DialogHeader className="px-6 pt-6 pb-4">
-            <DialogTitle className="text-2xl font-bold mb-2 text-[#e5e5e5]">Edit Drink</DialogTitle>
-            <DialogDescription className="text-[#e5e5e5]/80">Update drink details below.</DialogDescription>
+            <DialogTitle className="text-2xl font-bold mb-2 text-white">Edit Drink</DialogTitle>
+            <DialogDescription className="text-white/80">Update drink details below.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 px-6 pb-6">
-            <div className="flex flex-col gap-4 bg-[#444] rounded-xl p-4">
+            <div className="flex flex-col gap-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-md p-4">
               <div className="flex items-center gap-4">
-                <label className="w-40 text-[#e5e5e5]">Standards</label>
+                <label className="w-40 text-white">Standards</label>
                                  <input
                    type="number"
                    min="0.1"
@@ -66,23 +66,27 @@ export function EditDrinkModals({
                    value={editStandards || ""}
                    onChange={e => {
                      const value = e.target.value;
-                     const numValue = value === "" ? 0 : Number(value);
-                     if (!isNaN(numValue) && numValue >= 0.1) {
+                     if (value === "") {
+                       setEditStandards(0);
+                       return;
+                     }
+                     const numValue = Number(value);
+                     if (!isNaN(numValue) && numValue >= 0) {
                        setEditStandards(numValue);
                      }
                    }}
-                   className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5] w-20"
+                   className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 w-20"
                    placeholder="1.0"
                  />
               </div>
               <div className="flex items-center gap-4">
-                <label className="w-40 text-[#e5e5e5]">Time Finished Drinking</label>
+                <label className="w-40 text-white">Time Finished Drinking</label>
                 <input
                   type="datetime-local"
                   value={editTime}
                   onChange={e => setEditTime(e.target.value)}
                   max={getCurrentTimeString()}
-                  className="rounded px-3 py-2 text-[#232323] bg-[#e5e5e5]"
+                  className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30"
                 />
               </div>
             </div>
@@ -90,7 +94,7 @@ export function EditDrinkModals({
               <Button 
                 onClick={handleEditDrink} 
                 disabled={updateDrink.status === 'pending'} 
-                className="flex-1"
+                className="flex-1 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"
               >
                 {updateDrink.status === 'pending' ? 'Updating...' : 'Update Drink'}
               </Button>
@@ -109,11 +113,11 @@ export function EditDrinkModals({
           setSelectedDrink(null);
         }
       }}>
-        <DrawerContent className="bg-[#232323] flex flex-col items-center">
+        <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center">
           <div className="mx-auto w-full max-w-md flex flex-col h-[70vh]">
             <DrawerHeader>
-              <DrawerTitle className="text-[#e5e5e5]">Edit Drinks</DrawerTitle>
-              <DrawerDescription className="text-[#e5e5e5]/80">Select a drink to edit or delete.</DrawerDescription>
+              <DrawerTitle className="text-white">Edit Drinks</DrawerTitle>
+              <DrawerDescription className="text-white/80">Select a drink to edit or delete.</DrawerDescription>
             </DrawerHeader>
             <div className="p-4 pb-0 flex flex-col flex-grow min-h-0">
               <EditDrinksTable 
@@ -130,7 +134,7 @@ export function EditDrinkModals({
               }`}>
                 <Button 
                   onClick={() => selectedDrink && openEditDrink(selectedDrink)}
-                  className="flex-1"
+                  className="flex-1 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"
                   disabled={!selectedDrink}
                 >
                   Edit Drink
@@ -138,14 +142,13 @@ export function EditDrinkModals({
                 <Button 
                   onClick={handleDeleteDrink}
                   disabled={deleteDrink.status === 'pending' || !selectedDrink}
-                  variant="destructive"
-                  className="flex-1"
+                  className="flex-1 rounded-md bg-red-600/40 backdrop-blur-sm border border-red-400/20 text-white hover:bg-red-600/50"
                 >
                   {deleteDrink.status === 'pending' ? 'Deleting...' : 'Delete'}
                 </Button>
               </div>
             </div>
-            <DrawerFooter className="sticky bottom-0 bg-[#232323] z-10 flex flex-col gap-2 border-[#444]">
+            <DrawerFooter className="sticky bottom-0 bg-black/40 backdrop-blur-sm z-10 flex flex-col gap-2 border-t border-white/10">
               <DrawerClose asChild>
                 <Button variant="outline" className="w-full">Cancel</Button>
               </DrawerClose>

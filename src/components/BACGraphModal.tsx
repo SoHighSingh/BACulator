@@ -16,7 +16,7 @@ function CustomTooltip({ active, payload, label }: BacTooltipProps) {
     const timeLabel = payload[0]?.payload?.clockTime ?? String(label ?? "");
     
     return (
-      <div className="rounded-lg bg-[#232323] px-4 py-2 border border-[#444] text-[#e5e5e5] shadow">
+      <div className="rounded-md bg-black/40 backdrop-blur-sm px-4 py-2 border border-white/10 text-white shadow">
         <div className="font-semibold">Time: {timeLabel}</div>
         <div>BAC: {((payload[0]?.value ?? 0)).toFixed(3)}</div>
       </div>
@@ -134,20 +134,20 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[#232323] p-0 shadow-lg border border-[#444] data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
+      <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-md bg-black/40 backdrop-blur-sm p-0 shadow-lg border border-white/10 data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
         <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-2xl font-bold text-[#e5e5e5]">BAC Graph</DialogTitle>
-          <DialogDescription className="text-[#e5e5e5]/80">
+          <DialogTitle className="text-2xl font-bold text-white">BAC Graph</DialogTitle>
+          <DialogDescription className="text-white/80">
             View your blood alcohol content over time since you started drinking.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 px-6 pb-6">
           {/* Card Header */}
           <div>
-            <div className="mb-2 text-[#e5e5e5]/80">BAC vs Time</div>
+            <div className="mb-2 text-white/80">BAC vs Time</div>
           </div>
           {/* Card Content (Chart) */}
-          <div className="bg-[#272727] rounded-lg border border-[#444] h-96 p-1">
+          <div className="bg-black/40 backdrop-blur-sm rounded-md border border-white/10 h-96 p-1">
             <ResponsiveContainer width="100%" height="100%">
                               <AreaChart 
                   data={advancedTimeline?.data ?? []} 
@@ -221,7 +221,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
             </ResponsiveContainer>
           </div>
           <Button
-            className="w-full mt-2 bg-white text-black"
+            className="w-full mt-2 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 text-white hover:bg-black/50"
             onClick={() => onOpenChange(false)}
           >
             Close

@@ -132,8 +132,10 @@ export function BACIndicator({
   const wave1Ref = useRef<SVGPathElement>(null);
   const wave2Ref = useRef<SVGPathElement>(null);
   
-  // Calculate target water level based on BAC (0-0.15 BAC maps to 0-100% water level)
-  const targetWaterLevel = Math.min((safeBAC.currentBAC / 0.15) * 100, 100);
+  // Calculate target water level based on BAC (0-0.1 BAC maps to 0-100% water level)
+  // Add minimum 15% water level so waves are visible at 0.000 BAC
+  const baseWaterLevel = Math.min((safeBAC.currentBAC / 0.1) * 100, 100);
+  const targetWaterLevel = Math.max(baseWaterLevel, 15);
   
   // Animated water level that starts at 0 and animates to target
   const [animatedWaterLevel, setAnimatedWaterLevel] = useState(0);
@@ -191,7 +193,7 @@ export function BACIndicator({
         return path;
       };
       
-      // Calculate wave positions based on animated water level (0-100%)
+      // Calculate wave positions based on animated water level (15-100%)
       const baseWaveY = 300 - (animatedWaterLevelRef.current / 100) * 220; // Map 0-100% to 300-80px
       
       if (wave1Ref.current) {
@@ -300,7 +302,7 @@ export function BACIndicator({
       </TiltedCard>
 
       {/* View Graph Button */}
-      <div className="mt-4">
+      <div>
         <Button
           onClick={() => setGraphOpen(true)}
           disabled={drinksArr.length === 0}

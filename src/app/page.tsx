@@ -103,7 +103,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col justify-between relative text-white pb-24 overflow-hidden">
+    <main className="min-h-screen flex flex-col justify-between relative text-white overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <DarkVeil 
@@ -116,7 +116,7 @@ export default function Home() {
       </div>
       
       {/* Content Layer */}
-      <div className="relative z-10 flex flex-col justify-between min-h-screen pb-24">
+      <div className="relative z-10 flex flex-col justify-between min-h-screen">
         {/* Top Bar */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <div className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-4 py-2 text-sm font-medium min-w-[120px] text-center">
