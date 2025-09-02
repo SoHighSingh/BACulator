@@ -78,10 +78,10 @@ export function SoberInfo({ safeBAC }: SoberInfoProps) {
           {safeBAC.timeToSober > 0 ? (
             <AnimatedTime 
               targetTime={soberTime}
-              className="text-5xl font-bold text-white"
+              className="text-6xl font-bold text-white"
             />
           ) : (
-            <span className="text-5xl font-bold">Sober</span>
+            <span className="text-6xl font-bold">- - : - -</span>
           )}
         </div>
       </div>
@@ -93,10 +93,10 @@ export function SoberInfo({ safeBAC }: SoberInfoProps) {
           {safeBAC.timeToLegal > 0 ? (
             <AnimatedTime 
               targetTime={legalTime}
-              className="text-5xl font-bold text-white"
+              className="text-6xl font-bold text-white"
             />
           ) : safeBAC.currentBAC <= 0.05 ? (
-            <span className="text-5xl font-bold">Under 0.05%</span>
+            <span className="text-6xl font-bold">- - : - -</span>
           ) : (
             <span className="text-7xl font-bold">Over 0.05%</span>
           )}
