@@ -234,7 +234,8 @@ export function BACIndicator({
                  decimals={3}
                  className="text-8xl font-bold text-white select-none"
                  style={{ 
-                   mixBlendMode: 'difference'
+                   mixBlendMode: 'difference',
+                   textShadow: '0 4px 8px rgba(0, 0, 0, 0.2)'
                  }}
                />
               {safeBAC.currentBAC > 0.000 ? (

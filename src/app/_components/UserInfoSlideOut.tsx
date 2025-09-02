@@ -102,7 +102,7 @@ export default function UserInfoSlideOut({
               <Button
                 type="submit"
                 disabled={submitted}
-                className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-8 py-3 font-semibold transition hover:bg-black/50 text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-md bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-8 font-semibold transition hover:bg-white/15 text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitted ? "Saved!" : "Save Details"}
               </Button>
@@ -118,7 +118,8 @@ export default function UserInfoSlideOut({
           <DrawerFooter>
             <Button
               onClick={() => signOut()}
-              className="rounded-md bg-red-600/40 backdrop-blur-sm border border-red-400/20 px-8 py-3 font-semibold transition hover:bg-red-600/50 text-white w-full"
+              variant="destructive"
+              className="w-full"
             >
               Sign out
             </Button>

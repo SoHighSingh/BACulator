@@ -142,13 +142,14 @@ export function EditDrinkModals({
                 <Button 
                   onClick={handleDeleteDrink}
                   disabled={deleteDrink.status === 'pending' || !selectedDrink}
-                  className="flex-1 rounded-md bg-red-600/40 backdrop-blur-sm border border-red-400/20 text-white hover:bg-red-600/50"
+                  variant="destructive"
+                  className="flex-1"
                 >
                   {deleteDrink.status === 'pending' ? 'Deleting...' : 'Delete'}
                 </Button>
               </div>
             </div>
-            <DrawerFooter className="sticky bottom-0 bg-black/40 backdrop-blur-sm z-10 flex flex-col gap-2 border-t border-white/10">
+            <DrawerFooter className="sticky bottom-0 bg-transparent z-10 flex flex-col gap-2 border-t border-white/10">
               <DrawerClose asChild>
                 <Button variant="outline" className="w-full">Cancel</Button>
               </DrawerClose>
