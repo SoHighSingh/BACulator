@@ -84,7 +84,7 @@ export default function UserInfoSlideOut({
                   placeholder="Enter weight in kg"
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 mb-40">
                 <label className="text-sm font-medium text-white">
                   Sex at birth:
                 </label>
@@ -124,7 +124,8 @@ export default function UserInfoSlideOut({
               Sign out
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button 
+                variant="outline">Cancel</Button>
             </DrawerClose>
           </DrawerFooter>
         </div>

@@ -221,7 +221,7 @@ export function BACIndicator({
   }, []); // Empty dependency array - runs only once on mount
   
   return (
-    <div className="flex flex-col items-center justify-center flex-1 gap-8">
+    <div className="flex flex-col items-center justify-center flex-1 gap-4 md:gap-8">
       {/* Main BAC Card */}
       <TiltedCard intensity={20}>
         <div className="relative flex items-center justify-center">
@@ -235,7 +235,7 @@ export function BACIndicator({
                  className="text-8xl font-bold text-white select-none"
                  style={{ 
                    mixBlendMode: 'difference',
-                   textShadow: '0 4px 8px rgba(0, 0, 0, 0.2)'
+                   textShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
                  }}
                />
               {safeBAC.currentBAC > 0.000 ? (
