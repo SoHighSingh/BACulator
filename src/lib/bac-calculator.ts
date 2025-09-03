@@ -170,6 +170,17 @@ export function findPeakBAC(
   const currentBAC: number = calculateBACAtTime(drinks, userWeight, userSex, currentTime);
   peakBAC = currentBAC;
   
+  // Check past BAC levels (look back 2 hours to find historical peak)
+  for (let minutes = -120; minutes <= 0; minutes += 5) {
+    const checkTime = new Date(currentTime.getTime() + minutes * 60 * 1000);
+    const bac: number = calculateBACAtTime(drinks, userWeight, userSex, checkTime);
+    
+    if (bac > peakBAC) {
+      peakBAC = bac;
+      peakTime = minutes / 60.0; // This will be negative for past times
+    }
+  }
+  
   // Check future BAC levels for next 2 hours (covers all absorption)
   for (let minutes = 5; minutes <= 120; minutes += 5) {
     const checkTime = new Date(currentTime.getTime() + minutes * 60 * 1000);

@@ -18,22 +18,13 @@ export function PeakBACInfo({ safeBAC }: PeakBACInfoProps) {
   const formatPeakTime = (timeToPeak: number) => {
     const now = new Date();
     
-    if (timeToPeak > 0) {
-      // Peak is in the future, calculate the actual time when it will occur
-      const peakTime = new Date(now.getTime() + timeToPeak * 60 * 60 * 1000);
-      return peakTime.toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true
-      });
-    } else {
-      // Peak is happening now or has passed, show current time
-      return now.toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true
-      });
-    }
+    // Calculate the actual peak time (past, present, or future)
+    const peakTime = new Date(now.getTime() + timeToPeak * 60 * 60 * 1000);
+    return peakTime.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   const getMessage = () => {
@@ -45,11 +36,11 @@ export function PeakBACInfo({ safeBAC }: PeakBACInfoProps) {
       // Peak is in the future
       return (
         <>
-          BAC expected to peak to <span className={bacClass}>{peakBACText}</span> at {formatPeakTime(safeBAC.timeToPeak)}
+          BAC expected to peak at <span className={bacClass}>{peakBACText}</span> at {formatPeakTime(safeBAC.timeToPeak)}
         </>
       );
     } else {
-      // Peak is happening now (or has already passed and current is peak)
+      // Peak has already occurred or is happening now
       return (
         <>
           Your BAC peaked at <span className={bacClass}>{peakBACText}</span> at {formatPeakTime(safeBAC.timeToPeak)}

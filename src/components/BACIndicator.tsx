@@ -223,7 +223,7 @@ export function BACIndicator({
   }, []); // Empty dependency array - runs only once on mount
   
   return (
-    <div className="flex flex-col items-center justify-center flex-1 gap-4 md:gap-8">
+    <div className="flex flex-col items-center justify-center flex-1 gap-4 md:gap-8 pt-4">
       {/* Main BAC Card */}
       <TiltedCard intensity={20}>
         <div className="relative flex items-center justify-center">
