@@ -16,7 +16,7 @@ export function UserInfoIcon({ onClick }: UserInfoIconProps) {
 
   if (!signedIn) return null;
   return (
-    <div className="absolute top-4 right-6 z-50">
+    <div className="absolute top-4 right-4 z-50">
       <button
         type="button"
         onClick={onClick}

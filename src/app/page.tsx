@@ -1,7 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import Link from "next/link";
+import { useSession, signIn } from "next-auth/react";
 import React, { useMemo } from "react";
 import { calculateBAC } from "~/lib/bac-calculator";
 import { MainContent } from "../components/MainContent";
@@ -91,12 +90,12 @@ export default function Home() {
           <p className="text-xl text-center max-w-2xl mb-8 text-shadow">
             Blood Alcohol Content Calculator - Calculate your BAC and make informed decisions about driving.
           </p>
-          <Link
-            href="/api/auth/signin"
-            className="rounded-full bg-white/20 backdrop-blur-sm px-10 py-3 font-semibold no-underline transition hover:bg-white/30 text-white text-2xl shadow-lg"
+          <button
+            onClick={() => signIn('google')}
+            className="rounded-full bg-white/20 backdrop-blur-sm px-10 py-3 font-semibold no-underline transition hover:bg-white/30 text-white text-2xl shadow-lg cursor-pointer"
           >
             Sign in with Google
-          </Link>
+          </button>
         </div>
       </main>
     );
@@ -118,7 +117,7 @@ export default function Home() {
       {/* Content Layer */}
       <div className="relative z-10 flex flex-col justify-between min-h-screen">
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between px-4 pt-4 pb-6">
           <div className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-4 py-2 text-sm font-medium min-w-[120px] text-center">
             {`Welcome back, ${userName}`}
           </div>

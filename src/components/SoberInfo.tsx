@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { PeakBACInfo } from "./PeakBACInfo";
 
 interface SoberInfoProps {
   safeBAC: {
@@ -6,6 +7,8 @@ interface SoberInfoProps {
     timeToSober: number;
     timeToLegal: number;
     isRising: boolean;
+    peakBAC: number;
+    timeToPeak: number;
   };
 }
 
@@ -70,38 +73,44 @@ export function SoberInfo({ safeBAC }: SoberInfoProps) {
   const legalTime = new Date(currentTime.getTime() + safeBAC.timeToLegal * 60 * 60 * 1000);
 
   return (
-    <>
-      {/* Time Till Sober Card */}
-      <div className="mt-2 w-[90%] max-w-md rounded-md bg-black/40 backdrop-blur-sm border border-white/10 p-4 text-white shadow md:mt-0">
-        <div className="text-sm font-medium text-white/80 mb-6 text-left pl-1">Time till Sober</div>
-        <div className="text-center">
-          {safeBAC.timeToSober > 0 ? (
-            <AnimatedTime 
-              targetTime={soberTime}
-              className="text-6xl font-bold text-white"
-            />
-          ) : (
-            <span className="text-6xl font-bold">- - : - -</span>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col items-center w-full">
+      {/* Peak BAC Info Card */}
+      <PeakBACInfo safeBAC={safeBAC}/>
       
-      {/* Time Till 0.05% Card */}
-      <div className="mt-4 w-[90%] max-w-md rounded-md bg-black/40 backdrop-blur-sm border border-white/10 p-4 text-white shadow">
-        <div className="text-sm font-medium text-white/80 mb-6 text-left pl-1">Time till 0.05%</div>
-        <div className="text-center">
-          {safeBAC.timeToLegal > 0 ? (
-            <AnimatedTime 
-              targetTime={legalTime}
-              className="text-6xl font-bold text-white"
-            />
-          ) : safeBAC.currentBAC <= 0.05 ? (
-            <span className="text-6xl font-bold">- - : - -</span>
-          ) : (
-            <span className="text-7xl font-bold">Over 0.05%</span>
-          )}
+      {/* Container for sober cards with smooth transitions */}
+      <div className="flex flex-col items-center w-full transition-all duration-500 ease-out">
+        {/* Time Till Sober Card */}
+        <div className="mt-4 w-[90%] max-w-md rounded-md bg-black/40 backdrop-blur-sm border border-white/10 p-4 text-white shadow transition-all duration-500 ease-out">
+          <div className="text-sm font-medium text-white/80 mb-6 text-left pl-1">Time till Sober</div>
+          <div className="text-center">
+            {safeBAC.timeToSober > 0 ? (
+              <AnimatedTime 
+                targetTime={soberTime}
+                className="text-6xl font-bold text-white"
+              />
+            ) : (
+              <span className="text-6xl font-bold">- - : - -</span>
+            )}
+          </div>
+        </div>
+        
+        {/* Time Till 0.05% Card */}
+        <div className="mt-4 w-[90%] max-w-md rounded-md bg-black/40 backdrop-blur-sm border border-white/10 p-4 text-white shadow transition-all duration-500 ease-out">
+          <div className="text-sm font-medium text-white/80 mb-6 text-left pl-1">Time till 0.05%</div>
+          <div className="text-center">
+            {safeBAC.timeToLegal > 0 ? (
+              <AnimatedTime 
+                targetTime={legalTime}
+                className="text-6xl font-bold text-white"
+              />
+            ) : safeBAC.currentBAC <= 0.05 ? (
+              <span className="text-6xl font-bold">- - : - -</span>
+            ) : (
+              <span className="text-7xl font-bold">Over 0.05%</span>
+            )}
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 } 

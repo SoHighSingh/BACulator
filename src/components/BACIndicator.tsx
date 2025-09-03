@@ -10,6 +10,8 @@ interface BACIndicatorProps {
     timeToSober: number;
     timeToLegal: number;
     isRising: boolean;
+    peakBAC: number;
+    timeToPeak: number;
   };
   drinksArr: Drink[];
   _userWeight: number | null;

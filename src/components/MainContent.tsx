@@ -14,6 +14,8 @@ interface MainContentProps {
     timeToSober: number;
     timeToLegal: number;
     isRising: boolean;
+    peakBAC: number;
+    timeToPeak: number;
   };
   drinksArr: Drink[];
   userWeight: number | null;
