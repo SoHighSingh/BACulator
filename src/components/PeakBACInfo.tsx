@@ -16,13 +16,18 @@ export function PeakBACInfo({ safeBAC }: PeakBACInfoProps) {
   }
 
   const formatPeakTime = (timeToPeak: number) => {
+    const now = new Date();
+    
     if (timeToPeak > 0) {
-      // Peak is in the future, show minutes until peak
-      const minutes = Math.round(timeToPeak * 60);
-      return `${minutes} min${minutes !== 1 ? 's' : ''}`;
+      // Peak is in the future, calculate the actual time when it will occur
+      const peakTime = new Date(now.getTime() + timeToPeak * 60 * 60 * 1000);
+      return peakTime.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true
+      });
     } else {
-      // Peak is happening now, show current time
-      const now = new Date();
+      // Peak is happening now or has passed, show current time
       return now.toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit',
@@ -32,12 +37,24 @@ export function PeakBACInfo({ safeBAC }: PeakBACInfoProps) {
   };
 
   const getMessage = () => {
+    const peakBACText = safeBAC.peakBAC.toFixed(3);
+    const isAboveLimit = safeBAC.peakBAC > 0.05;
+    const bacClass = isAboveLimit ? 'text-red-400' : 'text-white/90';
+    
     if (safeBAC.timeToPeak > 0) {
       // Peak is in the future
-      return `BAC expected to peak at ${safeBAC.peakBAC.toFixed(3)} in ${formatPeakTime(safeBAC.timeToPeak)}`;
+      return (
+        <>
+          BAC expected to peak to <span className={bacClass}>{peakBACText}</span> at {formatPeakTime(safeBAC.timeToPeak)}
+        </>
+      );
     } else {
       // Peak is happening now (or has already passed and current is peak)
-      return `Your BAC peaked at ${safeBAC.peakBAC.toFixed(3)} at ${formatPeakTime(safeBAC.timeToPeak)}`;
+      return (
+        <>
+          Your BAC peaked at <span className={bacClass}>{peakBACText}</span> at {formatPeakTime(safeBAC.timeToPeak)}
+        </>
+      );
     }
   };
 

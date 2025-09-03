@@ -21,6 +21,9 @@ export default function Home() {
   const { drinksQuery, addDrink, updateDrink, deleteDrink, drinks } = useDrinks(hasActiveTab);
   const { userInfoQuery, userWeight, userSex } = useUserInfoData();
   
+  // State to trigger BAC recalculation on time refresh
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+  
   // Helper function to get current time in datetime-local format
   const getCurrentTimeString = () => {
     const now = new Date();
@@ -34,20 +37,8 @@ export default function Home() {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // Auto-refresh every minute when there's an active drinking session
-  useAutoReload({
-    intervalMinutes: 1,
-    enabled: hasActiveTab, // Only refresh when there's an active session
-    showNotification: true,
-    onRefresh: async () => {
-      // Refresh all the queries to get updated data
-      await Promise.all([
-        currentTabQuery.refetch(),
-        drinksQuery.refetch(),
-        userInfoQuery.refetch()
-      ]);
-    }
-  });
+  // Check if we should continue refreshing based on alcohol presence
+  const hasAlcoholInSystem = drinks?.length > 0;
 
   // Get BAC data for display - reactive to drinks and user info changes
   const safeBAC = useMemo(() => {
@@ -67,7 +58,24 @@ export default function Home() {
       peakBAC: 0,
       timeToPeak: 0
     };
-  }, [drinks, userWeight, userSex]);
+  }, [drinks, userWeight, userSex, refreshTrigger]); // refreshTrigger intentionally included to force time-based updates
+
+  // Auto-refresh every minute when there's an active drinking session or alcohol in system
+  useAutoReload({
+    intervalMinutes: 1,
+    enabled: hasActiveTab || hasAlcoholInSystem, // Refresh when active tab or drinks present
+    showNotification: true,
+    onRefresh: async () => {
+      // Refresh all the queries to get updated data
+      await Promise.all([
+        currentTabQuery.refetch(),
+        drinksQuery.refetch(),
+        userInfoQuery.refetch()
+      ]);
+      // Trigger BAC recalculation with updated time
+      setRefreshTrigger(prev => prev + 1);
+    }
+  });
 
   if (!session) {
     return (

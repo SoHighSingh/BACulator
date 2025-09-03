@@ -171,7 +171,7 @@ export function MainContent({
           setGraphOpen={setGraphOpen}
         />
         {/* Info and controls (right on desktop) */}
-        <div className="flex flex-col items-center justify-center flex-1 w-full">
+        <div className="flex flex-col items-center justify-center flex-1 w-full mt-8 md:mt-0">
           <SoberInfo safeBAC={safeBAC} />
         </div>
       </div>
