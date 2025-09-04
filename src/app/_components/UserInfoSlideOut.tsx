@@ -60,13 +60,13 @@ export default function UserInfoSlideOut({
 
   return (
     <Drawer open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10">
-        <div className="mx-auto w-full max-w-md">
-          <DrawerHeader>
+      <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center h-full">
+        <div className="mx-auto w-full max-w-md flex flex-col h-[70vh]">
+          <DrawerHeader className="flex-shrink-0">
             <DrawerTitle className="text-white">{userName ? `Hi ${userName}!` : "User Details"}</DrawerTitle>
             <DrawerDescription className="text-white/80">Your details:</DrawerDescription>
           </DrawerHeader>
-          <div className="p-4 pb-0">
+          <div className="flex-1 p-4 pb-0">
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-white">
@@ -84,7 +84,7 @@ export default function UserInfoSlideOut({
                   placeholder="Enter weight in kg"
                 />
               </div>
-              <div className="flex flex-col gap-2 mb-40">
+              <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-white">
                   Sex at birth:
                 </label>
@@ -99,13 +99,7 @@ export default function UserInfoSlideOut({
                   <option value="female">Female</option>
                 </select>
               </div>
-              <Button
-                type="submit"
-                disabled={submitted}
-                className="rounded-md bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-8 font-semibold transition hover:bg-white/15 text-white mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitted ? "Saved!" : "Save Details"}
-              </Button>
+              
             </form>
             {submitted && (
               <div className="mt-4 p-4 bg-green-600/20 border border-green-400/30 rounded-lg">
@@ -115,7 +109,14 @@ export default function UserInfoSlideOut({
               </div>
             )}
           </div>
-          <DrawerFooter>
+          <DrawerFooter className="fixed bottom-0 w-full max-w-md bg-transparent flex flex-col border-t border-white/10 p-4 gap-2">
+            <Button
+                type="submit"
+                disabled={submitted}
+                className="rounded-md bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-8 font-semibold transition hover:bg-white/15 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitted ? "Saved!" : "Save Details"}
+              </Button>
             <Button
               onClick={() => signOut()}
               variant="destructive"
