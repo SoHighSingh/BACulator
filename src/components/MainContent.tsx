@@ -51,11 +51,129 @@ export function MainContent({
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [newStandards, setNewStandards] = useState(1);
   const [newTime, setNewTime] = useState(getCurrentTimeString);
+  const [selectedTime, setSelectedTime] = useState('');
+  const [resolvedDateTime, setResolvedDateTime] = useState<Date | null>(null);
   const [confirmStopOpen, setConfirmStopOpen] = useState(false);
   const [editingDrink, setEditingDrink] = useState<Drink | null>(null);
   const [editStandards, setEditStandards] = useState(1);
   const [editTime, setEditTime] = useState("");
+  const [editSelectedTime, setEditSelectedTime] = useState('');
+  const [editResolvedDateTime, setEditResolvedDateTime] = useState<Date | null>(null);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
+
+  // Helper functions for time handling
+  const resolveTimeToDateTime = (timeString: string): Date | null => {
+    if (!timeString) return null;
+    
+    const now = new Date();
+    const parts = timeString.split(' ');
+    if (parts.length !== 2) return null;
+    
+    const [time, period] = parts;
+    if (!time || !period) return null;
+    
+    const timeParts = time.split(':');
+    if (timeParts.length !== 2) return null;
+    
+    const hours = parseInt(timeParts[0] ?? '0');
+    const minutes = parseInt(timeParts[1] ?? '0');
+    if (isNaN(hours) || isNaN(minutes)) return null;
+    
+    // Convert to 24-hour format
+    let hour24 = hours;
+    if (period === 'PM' && hours !== 12) {
+      hour24 += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hour24 = 0;
+    }
+    
+    // Create target time for today
+    const targetTime = new Date();
+    targetTime.setHours(hour24, minutes, 0, 0);
+    
+    // If target time is in the future, move it to yesterday
+    if (targetTime > now) {
+      targetTime.setDate(targetTime.getDate() - 1);
+    }
+    
+    return targetTime;
+  };
+
+  const formatDateTime = (date: Date | null): string => {
+    if (!date) return '';
+    const dateObj = date;
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      month: 'short', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    return dateObj.toLocaleDateString('en-US', options);
+  };
+
+  const getCurrentTimeString12Hour = (): string => {
+    const now = new Date();
+    return now.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
+  const convertTo24Hour = (time12h: string): string => {
+    if (!time12h) return '';
+    const parts = time12h.split(' ');
+    if (parts.length !== 2) return '';
+    
+    const [time, period] = parts;
+    if (!time || !period) return '';
+    
+    const timeParts = time.split(':');
+    if (timeParts.length !== 2) return '';
+    
+    const hours = parseInt(timeParts[0] ?? '0');
+    const minutes = parseInt(timeParts[1] ?? '0');
+    if (isNaN(hours) || isNaN(minutes)) return '';
+    
+    let hour24 = hours;
+    if (period === 'PM' && hours !== 12) {
+      hour24 += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hour24 = 0;
+    }
+    
+    return `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+
+  const handleTimeChange = (timeString: string) => {
+    setSelectedTime(timeString);
+    const resolvedDate = resolveTimeToDateTime(timeString);
+    setResolvedDateTime(resolvedDate);
+  };
+
+  const handleEditTimeChange = (timeString: string) => {
+    setEditSelectedTime(timeString);
+    const resolvedDate = resolveTimeToDateTime(timeString);
+    setEditResolvedDateTime(resolvedDate);
+  };
+
+  const roundToOneDecimal = (num: number): number => {
+    return Math.round(num * 10) / 10;
+  };
+
+  // Initialize time on component mount
+  React.useEffect(() => {
+    const currentTime = getCurrentTimeString12Hour();
+    setSelectedTime(currentTime);
+    const resolvedDate = resolveTimeToDateTime(currentTime);
+    setResolvedDateTime(resolvedDate);
+    
+    // Initialize edit time as well
+    setEditSelectedTime(currentTime);
+    setEditResolvedDateTime(resolvedDate);
+  }, []);
 
   async function handleAddDrink() {
     // Validate standards value
@@ -64,12 +182,9 @@ export function MainContent({
       return;
     }
 
-    // Validate that the drink time is not in the future
-    const selectedTime = new Date(newTime);
-    const currentTime = new Date();
-    
-    if (selectedTime > currentTime) {
-      alert("Cannot add drinks from the future. Please select a time in the past or present.");
+    // Use resolved date time for validation and submission
+    if (!resolvedDateTime) {
+      alert("Please select a valid time.");
       return;
     }
 
@@ -84,15 +199,17 @@ export function MainContent({
       }
     }
 
-    const localDate = new Date(newTime);
-    const utcISOString = localDate.toISOString();
+    const utcISOString = resolvedDateTime.toISOString();
     
     await addDrink.mutateAsync({ 
       standards: newStandards, 
       finishedAt: utcISOString  // Send as proper UTC ISO string instead of raw newTime
     });
     setNewStandards(1);
-    setNewTime(getCurrentTimeString());
+    const currentTime = getCurrentTimeString12Hour();
+    setSelectedTime(currentTime);
+    const resolvedDate = resolveTimeToDateTime(currentTime);
+    setResolvedDateTime(resolvedDate);
     setDrawerOpen(false);
   }
 
@@ -105,26 +222,25 @@ export function MainContent({
       return;
     }
     
-    // Validate that the drink time is not in the future
-    const selectedTime = new Date(editTime);
-    const currentTime = new Date();
-    
-    if (selectedTime > currentTime) {
-      alert("Cannot edit drinks to a future time. Please select a time in the past or present.");
+    // Use resolved date time for validation and submission
+    if (!editResolvedDateTime) {
+      alert("Please select a valid time.");
       return;
     }
     
-    const localDate = new Date(editTime);
-    const utcISOString = localDate.toISOString();
+    const utcISOString = editResolvedDateTime.toISOString();
     
     await updateDrink.mutateAsync({ 
       drinkId: editingDrink.id, 
       standards: editStandards, 
-      finishedAt: utcISOString  // Send as proper UTC ISO string instead of raw editTime
+      finishedAt: utcISOString
     });
     setEditingDrink(null);
     setEditStandards(1);
-    setEditTime("");
+    const currentTime = getCurrentTimeString12Hour();
+    setEditSelectedTime(currentTime);
+    const resolvedDate = resolveTimeToDateTime(currentTime);
+    setEditResolvedDateTime(resolvedDate);
   }
 
   async function handleDeleteDrink() {
@@ -154,7 +270,16 @@ export function MainContent({
     // Ensure standards is a valid number, default to 1 if it's too small or invalid
     const validStandards = drink.standards && drink.standards >= 0.1 ? drink.standards : 1;
     setEditStandards(validStandards);
-    setEditTime(getCurrentTimeString());
+    
+    // Convert drink's finishedAt time to 12-hour format for editing
+    const drinkTime = new Date(drink.finishedAt);
+    const timeString = drinkTime.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+    setEditSelectedTime(timeString);
+    setEditResolvedDateTime(drinkTime);
   }
 
   return (
@@ -193,6 +318,10 @@ export function MainContent({
         setNewStandards={setNewStandards}
         newTime={newTime}
         setNewTime={setNewTime}
+        selectedTime={selectedTime}
+        setSelectedTime={setSelectedTime}
+        resolvedDateTime={resolvedDateTime}
+        setResolvedDateTime={setResolvedDateTime}
         confirmStopOpen={confirmStopOpen}
         setConfirmStopOpen={setConfirmStopOpen}
         setEditDrawerOpen={setEditDrawerOpen}
@@ -206,6 +335,10 @@ export function MainContent({
         getCurrentTimeString={getCurrentTimeString}
         handleAddDrink={handleAddDrink}
         onOpenUserInfo={onOpenUserInfo}
+        handleTimeChange={handleTimeChange}
+        formatDateTime={formatDateTime}
+        convertTo24Hour={convertTo24Hour}
+        roundToOneDecimal={roundToOneDecimal}
       />
 
       {/* Edit Drink Modals */}
@@ -218,6 +351,10 @@ export function MainContent({
         setEditStandards={setEditStandards}
         editTime={editTime}
         setEditTime={setEditTime}
+        editSelectedTime={editSelectedTime}
+        setEditSelectedTime={setEditSelectedTime}
+        editResolvedDateTime={editResolvedDateTime}
+        setEditResolvedDateTime={setEditResolvedDateTime}
         selectedDrink={selectedDrink}
         setSelectedDrink={setSelectedDrink}
         drinksQuery={drinksQuery}
@@ -227,6 +364,9 @@ export function MainContent({
         handleEditDrink={handleEditDrink}
         handleDeleteDrink={handleDeleteDrink}
         openEditDrink={openEditDrink}
+        handleEditTimeChange={handleEditTimeChange}
+        convertTo24Hour={convertTo24Hour}
+        roundToOneDecimal={roundToOneDecimal}
       />
     </>
   );

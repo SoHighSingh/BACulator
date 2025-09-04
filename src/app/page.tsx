@@ -58,7 +58,7 @@ export default function Home() {
       peakBAC: 0,
       timeToPeak: 0
     };
-  }, [drinks, userWeight, userSex, refreshTrigger]); // refreshTrigger intentionally included to force time-based updates
+  }, [drinks, userWeight, userSex, refreshTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-refresh every minute when there's an active drinking session or alcohol in system
   useAutoReload({
@@ -91,16 +91,16 @@ export default function Home() {
           />
         </div>
         {/* Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center">
-          <h1 className="text-5xl font-extrabold tracking-tight mb-8 text-shadow-lg">
+        <div className="relative z-10 flex flex-col items-center justify-center text-center px-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-6 sm:mb-8 text-shadow-lg leading-tight">
             Welcome to the BACulator App
           </h1>
-          <p className="text-xl text-center max-w-2xl mb-8 text-shadow">
+          <p className="text-lg sm:text-xl text-center max-w-2xl mb-6 sm:mb-8 text-shadow px-2">
             Blood Alcohol Content Calculator - Calculate your BAC and make informed decisions about driving.
           </p>
           <button
             onClick={() => signIn('google')}
-            className="rounded-full bg-white/20 backdrop-blur-sm px-10 py-3 font-semibold no-underline transition hover:bg-white/30 text-white text-2xl shadow-lg cursor-pointer"
+            className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-6 py-3 text-lg sm:text-xl font-medium min-w-[160px] text-center hover:bg-black/50 transition-colors"
           >
             Sign in with Google
           </button>

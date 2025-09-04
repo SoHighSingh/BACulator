@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "./ui/dialog";
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "./ui/drawer";
 import { DrinksList } from "./DrinksList";
+import { AddDrinkForm } from "./AddDrinkForm";
 import type { api } from "~/trpc/react";
 
 interface AddDrinkDrawerProps {
@@ -12,6 +13,10 @@ interface AddDrinkDrawerProps {
   setNewStandards: (standards: number) => void;
   newTime: string;
   setNewTime: (time: string) => void;
+  selectedTime: string;
+  setSelectedTime: (time: string) => void;
+  resolvedDateTime: Date | null;
+  setResolvedDateTime: (date: Date | null) => void;
   confirmStopOpen: boolean;
   setConfirmStopOpen: (open: boolean) => void;
   setEditDrawerOpen: (open: boolean) => void;
@@ -25,6 +30,10 @@ interface AddDrinkDrawerProps {
   getCurrentTimeString: () => string;
   handleAddDrink: () => Promise<void>;
   onOpenUserInfo?: () => void;
+  handleTimeChange: (timeString: string) => void;
+  formatDateTime: (date: Date | null) => string;
+  convertTo24Hour: (time12h: string) => string;
+  roundToOneDecimal: (num: number) => number;
 }
 
 export function AddDrinkDrawer({
@@ -32,8 +41,12 @@ export function AddDrinkDrawer({
   setDrawerOpen,
   newStandards,
   setNewStandards,
-  newTime,
-  setNewTime,
+  newTime: _newTime,
+  setNewTime: _setNewTime,
+  selectedTime,
+  setSelectedTime: _setSelectedTime,
+  resolvedDateTime: _resolvedDateTime,
+  setResolvedDateTime: _setResolvedDateTime,
   confirmStopOpen,
   setConfirmStopOpen,
   setEditDrawerOpen,
@@ -44,9 +57,13 @@ export function AddDrinkDrawer({
   startTab,
   userWeight,
   userSex,
-  getCurrentTimeString,
+  getCurrentTimeString: _getCurrentTimeString,
   handleAddDrink,
-  onOpenUserInfo
+  onOpenUserInfo,
+  handleTimeChange,
+  formatDateTime: _formatDateTime,
+  convertTo24Hour,
+  roundToOneDecimal
 }: AddDrinkDrawerProps) {
   return (
     <>
@@ -97,51 +114,24 @@ export function AddDrinkDrawer({
                <DrawerTitle className="text-[#e5e5e5]">Add Drink</DrawerTitle>
                <DrawerDescription className="text-[#e5e5e5]/80">Log your drinks below.</DrawerDescription>
              </DrawerHeader>
-             <div className="flex flex-col min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar">
-                             <div className="flex-shrink-0 mb-4">
+             <div className="flex-1 p-4 pb-0">
+               <div className="mb-4">
                  <DrinksList 
                    drinksQuery={drinksQuery}
                    userWeight={userWeight}
                    userSex={userSex}
                  />
                </div>
-               <div className="flex flex-col gap-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-md p-4">
-                 <div className="flex items-center gap-4 text-[#e5e5e5]">
-                   <label className="w-40">Standards</label>
-                   <input
-                     type="number"
-                     min="0.1"
-                     max="20"
-                     step="0.1"
-                     value={newStandards || ""}
-                     onChange={e => {
-                       const value = e.target.value;
-                       if (value === "") {
-                         setNewStandards(0);
-                         return;
-                       }
-                       const numValue = Number(value);
-                       if (!isNaN(numValue) && numValue >= 0) {
-                         setNewStandards(numValue);
-                       }
-                     }}
-                     className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 w-20"
-                     placeholder="1.0"
-                   />
-                 </div>
-                 <div className="flex items-center gap-4 text-[#e5e5e5]">
-                   <label className="w-40">Time Finished Drinking</label>
-                   <input
-                     type="datetime-local"
-                     value={newTime}
-                     onChange={e => setNewTime(e.target.value)}
-                     max={getCurrentTimeString()}
-                     className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30"
-                   />
-                 </div>
-               </div>
              </div>
              <DrawerFooter className="fixed max-w-md w-full flex-shrink-0 bg-transparent flex flex-col gap-2 border-t border-white/10 p-4 bottom-0">
+               <AddDrinkForm
+                 standards={newStandards}
+                 setStandards={setNewStandards}
+                 selectedTime={selectedTime}
+                 convertTo24Hour={convertTo24Hour}
+                 handleTimeChange={handleTimeChange}
+                 roundToOneDecimal={roundToOneDecimal}
+               />
                <Button onClick={handleAddDrink} disabled={addDrink.status === 'pending' || !currentTabQuery.data} className="w-full h-18 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"> {addDrink.status === 'pending' ? 'Adding...' : 'Add Drink'} </Button>
                <div className="flex gap-2 w-full">
                  {/* Stop Drinking Confirmation Dialog */}
