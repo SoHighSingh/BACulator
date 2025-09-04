@@ -125,9 +125,10 @@ export function EditDrinkModals({
                 selectedDrink={selectedDrink}
                 setSelectedDrink={setSelectedDrink}
               />
-              
+            </div>
+            <DrawerFooter className="sticky bottom-0 bg-transparent z-10 flex flex-col gap-2 border-t border-white/10">
               {/* Edit/Delete Actions */}
-              <div className={`mt-4 flex gap-3 transition-all duration-300 ease-in-out overflow-hidden ${
+              <div className={`flex gap-2 transition-all duration-300 ease-in-out overflow-hidden ${
                 selectedDrink 
                   ? 'opacity-100 max-h-20 translate-y-0' 
                   : 'opacity-0 max-h-0 translate-y-2 pointer-events-none'
@@ -148,8 +149,6 @@ export function EditDrinkModals({
                   {deleteDrink.status === 'pending' ? 'Deleting...' : 'Delete'}
                 </Button>
               </div>
-            </div>
-            <DrawerFooter className="sticky bottom-0 bg-transparent z-10 flex flex-col gap-2 border-t border-white/10">
               <DrawerClose asChild>
                 <Button variant="outline" className="w-full">Cancel</Button>
               </DrawerClose>

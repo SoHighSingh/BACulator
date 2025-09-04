@@ -141,7 +141,7 @@ export function AddDrinkDrawer({
                  </div>
                </div>
              </div>
-             <DrawerFooter className="flex-shrink-0 bg-transparent flex flex-col gap-2 border-t border-white/10 p-4">
+             <DrawerFooter className="fixed max-w-md w-full flex-shrink-0 bg-transparent flex flex-col gap-2 border-t border-white/10 p-4 bottom-0">
                <Button onClick={handleAddDrink} disabled={addDrink.status === 'pending' || !currentTabQuery.data} className="w-full h-18 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"> {addDrink.status === 'pending' ? 'Adding...' : 'Add Drink'} </Button>
                <div className="flex gap-2 w-full">
                  {/* Stop Drinking Confirmation Dialog */}
