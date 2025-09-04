@@ -67,7 +67,7 @@ export default function UserInfoSlideOut({
             <DrawerDescription className="text-white/80">Your details:</DrawerDescription>
           </DrawerHeader>
           <div className="flex-1 p-4 pb-0">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6" id="userInfoForm">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-white">
                   Weight (kg):
@@ -112,6 +112,7 @@ export default function UserInfoSlideOut({
           <DrawerFooter className="fixed bottom-0 w-full max-w-md bg-transparent flex flex-col border-t border-white/10 p-4 gap-2">
             <Button
                 type="submit"
+                form="userInfoForm"
                 disabled={submitted}
                 className="rounded-md bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-8 font-semibold transition hover:bg-white/15 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
