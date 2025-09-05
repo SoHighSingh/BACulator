@@ -20,7 +20,7 @@ export function AddDrinkForm({
   return (
     <div className="flex flex-col gap-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-md p-4 mb-4">
       <div className="flex items-center gap-4 text-[#e5e5e5]">
-        <label className="w-48 text-sm">Standards</label>
+        <label className="w-56 text-sm">Standards</label>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setStandards(Math.max(0, standards - 0.5))}
@@ -64,7 +64,7 @@ export function AddDrinkForm({
         </div>
       </div>
       <div className="flex items-center gap-4 text-[#e5e5e5]">
-        <label className="w-48 text-sm">Time Finished Drinking</label>
+        <label className="w-56 text-sm">Time Finished Drinking</label>
         <input
           type="time"
           value={convertTo24Hour(selectedTime)}
@@ -78,7 +78,7 @@ export function AddDrinkForm({
               handleTimeChange(timeString);
             }
           }}
-          className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30"
+          className="rounded-md w-40 px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30"
         />
       </div>
     </div>

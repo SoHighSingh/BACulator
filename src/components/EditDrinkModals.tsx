@@ -64,12 +64,12 @@ export function EditDrinkModals({
     <>
       {/* Edit Drink Dialog */}
       <Dialog open={!!editingDrink} onOpenChange={(open) => !open && setEditingDrink(null)}>
-        <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-md bg-black/40 backdrop-blur-sm shadow-lg border border-white/10 data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
+        <DialogContent className="flex flex-col w-[90vw] max-w-md rounded-md bg-black/40 backdrop-blur-sm shadow-lg border border-white/10 data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in sm:w-full">
           <DialogHeader className="px-6 pt-6 pb-4">
             <DialogTitle className="text-2xl font-bold mb-2 text-white">Edit Drink</DialogTitle>
             <DialogDescription className="text-white/80">Update drink details below.</DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4 px-6 pb-6">
+          <div className="flex flex-col pb-6">
             <AddDrinkForm
               standards={editStandards}
               setStandards={setEditStandards}

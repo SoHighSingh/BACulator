@@ -101,15 +101,16 @@ export default function UserInfoSlideOut({
               </div>
               
             </form>
+            
+          </div>
+          <DrawerFooter className="fixed bottom-0 w-full max-w-md bg-transparent flex flex-col border-t border-white/10 p-4 gap-2">
             {submitted && (
-              <div className="mt-4 p-4 bg-green-600/20 border border-green-400/30 rounded-lg">
+              <div className="mb-2 p-4 bg-green-600/20 border border-green-400/30 rounded-lg">
                 <p className="text-green-300 text-center">
                   ✓ Details saved successfully!
                 </p>
               </div>
             )}
-          </div>
-          <DrawerFooter className="fixed bottom-0 w-full max-w-md bg-transparent flex flex-col border-t border-white/10 p-4 gap-2">
             <Button
                 type="submit"
                 form="userInfoForm"
