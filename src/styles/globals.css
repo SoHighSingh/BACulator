@@ -133,28 +133,28 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: #232323;
+    background: #000000;
     border-radius: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #444;
+    background: #333333;
     border-radius: 4px;
     transition: background 0.2s ease;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #666;
+    background: #555555;
   }
 
   .custom-scrollbar::-webkit-scrollbar-corner {
-    background: #232323;
+    background: #000000;
   }
 
   /* Firefox */
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #444 #232323;
+    scrollbar-color: #333333 #000000;
   }
 
   /* Hide scrollbar but keep functionality */

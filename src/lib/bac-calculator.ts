@@ -77,8 +77,6 @@ function calculateBACWithProperElimination(
   }
   
   // Build BAC timeline with adaptive time steps
-  const timeline: Array<{time: number, bac: number}> = [];
-  let currentBAC: number = 0.0;
   
   // Create critical time points (when drinks are consumed or fully absorbed)
   const criticalTimes = new Set<number>();

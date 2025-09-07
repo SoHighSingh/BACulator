@@ -1,10 +1,11 @@
 "use client";
 
 import { useSession, signIn } from "next-auth/react";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { calculateBAC } from "~/lib/bac-calculator";
 import { MainContent } from "../components/MainContent";
 import DarkVeil from "../components/DarkVeil";
+import { TermsAndDisclaimerDialog } from "../components/TermsAndDisclaimerDialog";
 import { useAutoReload } from "../hooks/useAutoReload";
 import { useDrinks } from "../hooks/useDrinks";
 import { useTab } from "../hooks/useTab";
@@ -15,6 +16,9 @@ export default function Home() {
   const { data: session } = useSession();
   const userName = session?.user?.name ?? "";
   const { openUserInfo } = useUserInfo();
+  
+  // State for terms and disclaimer dialog
+  const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
   
   // Custom hooks for data management
   const { currentTabQuery, startTab, stopTab, hasActiveTab } = useTab();
@@ -99,11 +103,20 @@ export default function Home() {
             Blood Alcohol Content Calculator - Calculate your BAC and make informed decisions about driving.
           </p>
           <button
-            onClick={() => signIn('google')}
+            onClick={() => setIsTermsDialogOpen(true)}
             className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-6 py-3 text-lg sm:text-xl font-medium min-w-[160px] text-center hover:bg-black/50 transition-colors"
           >
             Sign in with Google
           </button>
+          
+          <TermsAndDisclaimerDialog
+            isOpen={isTermsDialogOpen}
+            onClose={() => setIsTermsDialogOpen(false)}
+            onContinue={() => {
+              setIsTermsDialogOpen(false);
+              void signIn('google');
+            }}
+          />
         </div>
       </main>
     );
