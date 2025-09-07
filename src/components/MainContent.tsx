@@ -285,7 +285,7 @@ export function MainContent({
   return (
     <>
       {/* Main Content: Responsive layout */}
-      <div className="flex-1 flex flex-col items-center justify-start w-full md:flex-row md:items-stretch md:justify-center md:gap-12 overflow-y-auto pb-32">
+      <div className="flex-1 flex flex-col items-center justify-between w-full md:flex-row md:items-stretch md:justify-center md:gap-12 overflow-y-auto pb-32">
         {/* BAC Indicator (left on desktop) */}
         <BACIndicator
           safeBAC={safeBAC}
