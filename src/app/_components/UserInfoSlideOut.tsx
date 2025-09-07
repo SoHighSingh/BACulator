@@ -61,12 +61,12 @@ export default function UserInfoSlideOut({
   return (
     <Drawer open={isOpen} onOpenChange={open => !open && onClose()}>
       <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center h-full">
-        <div className="mx-auto w-full max-w-md flex flex-col h-[70vh]">
+        <div className="mx-auto w-full max-w-md flex flex-col h-full">
           <DrawerHeader className="flex-shrink-0">
             <DrawerTitle className="text-white">{userName ? `Hi ${userName}!` : "User Details"}</DrawerTitle>
             <DrawerDescription className="text-white/80">Your details:</DrawerDescription>
           </DrawerHeader>
-          <div className="flex-1 p-4 pb-0">
+          <div className="flex-1 p-4 pb-0 overflow-y-auto">
             <form onSubmit={handleSubmit} className="flex flex-col gap-6" id="userInfoForm">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-white">
@@ -79,7 +79,7 @@ export default function UserInfoSlideOut({
                   step="0.1"
                   value={weight}
                   onChange={e => setWeight(e.target.value)}
-                  className="rounded-md px-4 py-3 text-white bg-black/40 backdrop-blur-sm border border-white/10 focus:border-white/30 focus:outline-none transition-colors placeholder:text-white/50"
+                  className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 focus:border-white/40 focus:outline-none transition-colors placeholder:text-white/50"
                   required
                   placeholder="Enter weight in kg"
                 />
@@ -91,7 +91,7 @@ export default function UserInfoSlideOut({
                 <select
                   value={sex}
                   onChange={e => setSex(e.target.value as "male" | "female" | "")}
-                  className="rounded-md px-4 py-3 text-white bg-black/40 backdrop-blur-sm border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 focus:border-white/40 focus:outline-none transition-colors [&>option]:bg-black [&>option]:text-white"
                   required
                 >
                   <option value="" disabled >Select</option>
@@ -103,7 +103,7 @@ export default function UserInfoSlideOut({
             </form>
             
           </div>
-          <DrawerFooter className="fixed bottom-0 w-full max-w-md bg-transparent flex flex-col border-t border-white/10 p-4 gap-2">
+          <DrawerFooter className="flex-shrink-0 w-full bg-transparent flex flex-col border-t border-white/10 p-4 gap-2">
             {submitted && (
               <div className="mb-2 p-4 bg-green-600/20 border border-green-400/30 rounded-lg">
                 <p className="text-green-300 text-center">
