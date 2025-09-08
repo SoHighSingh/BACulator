@@ -66,7 +66,7 @@ export default function UserInfoSlideOut({
             <DrawerTitle className="text-white">{userName ? `Hi ${userName}!` : "User Details"}</DrawerTitle>
             <DrawerDescription className="text-white/80">Your details:</DrawerDescription>
           </DrawerHeader>
-          <div className="flex-1 p-4 overflow-y-auto min-h-0">
+          <div className="flex-1 p-4 min-h-0">
             <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-8" id="userInfoForm">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-white">
