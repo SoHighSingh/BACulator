@@ -147,7 +147,13 @@ export function calculateBACAtTime(
   userSex: string,
   targetTime: Date
 ): number {
-  return calculateBACWithProperElimination(drinks, userWeight, userSex, targetTime);
+  const bac = calculateBACWithProperElimination(drinks, userWeight, userSex, targetTime);
+
+  if (bac < 0.0011) {
+    return 0.0;
+  }
+
+  return bac;
 }
 
 /**

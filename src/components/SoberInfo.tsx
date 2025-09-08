@@ -103,10 +103,8 @@ export function SoberInfo({ safeBAC }: SoberInfoProps) {
                 targetTime={legalTime}
                 className="text-6xl font-bold text-white"
               />
-            ) : safeBAC.currentBAC <= 0.05 ? (
-              <span className="text-6xl font-bold">- - : - -</span>
             ) : (
-              <span className="text-7xl font-bold">Over 0.05%</span>
+              <span className="text-6xl font-bold">- - : - -</span>
             )}
           </div>
         </div>

@@ -23,7 +23,7 @@ export function TermsAndDisclaimerDialog({ isOpen, onClose, onContinue }: TermsA
           <div>
             <h3 className="font-semibold text-white mb-2">1. For Informational Use Only</h3>
             <p>
-              This Blood Alcohol Concentration (BAC) calculator provides an approximate estimate only, based on limited input parameters. It does not account for numerous individual factors—including your metabolism, food intake, medication, body composition, health conditions, gender, and more—that can significantly influence your actual BAC. Therefore, it cannot determine your true level of intoxication with any certainty.
+              This Blood Alcohol Concentration (BAC) calculator provides an approximate estimate only, based on limited input parameters. It does not account for numerous individual factors including your metabolism, food intake, medication, body composition, health conditions, gender, and more that can significantly influence your actual BAC. Therefore, it cannot determine your true level of intoxication with any certainty.
             </p>
           </div>
           
@@ -37,17 +37,17 @@ export function TermsAndDisclaimerDialog({ isOpen, onClose, onContinue }: TermsA
           <div>
             <h3 className="font-semibold text-white mb-2">3. Legal BAC Limits in Australia</h3>
             <p>
-              In Australia, the general legal BAC limit for fully licensed drivers is 0.05%. However, several categories of drivers—including those holding learner, provisional, probationary, or commercial licences (such as taxi, bus, or heavy vehicle drivers)—are subject to a strict zero-BAC requirement (0.00%).
+              In Australia, the general legal BAC limit for fully licensed drivers is 0.05%. However, several categories of drivers including those holding learner, provisional, probationary, or commercial licences (such as taxi, bus, or heavy vehicle drivers) are subject to a strict zero-BAC requirement (0.00%).
             </p>
           </div>
           
           <div>
-            <h3 className="font-semibold text-white mb-2">4. No Assurances—Use Caution</h3>
+            <h3 className="font-semibold text-white mb-2">4. No Assurances Use Caution</h3>
             <p className="mb-2">By proceeding, you acknowledge that:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>The information provided may contain inaccuracies or errors.</li>
               <li>You assume all responsibility for any actions or decisions made based on the information.</li>
-              <li>Neither the app developer nor any affiliate assumes any liability—to the fullest extent permitted by law—for any consequences arising from your use of this tool.</li>
+              <li>Neither the app developer nor any affiliate assumes any liability to the fullest extent permitted by law for any consequences arising from your use of this tool.</li>
             </ul>
           </div>
           
@@ -55,7 +55,7 @@ export function TermsAndDisclaimerDialog({ isOpen, onClose, onContinue }: TermsA
             <h3 className="font-semibold text-white mb-2">5. If in Doubt, Don&apos;t Drive</h3>
             <p className="mb-2">If you have consumed any alcohol:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Do not drive—even if the estimate appears to show a BAC under the legal limit.</li>
+              <li>Do not drive even if the estimate appears to show a BAC under the legal limit.</li>
               <li>Consider safe alternatives such as booking a ride-share, calling a taxi or Uber, using public transportation, or designating a sober driver.</li>
               <li>If you feel impaired or uncertain, err on the side of caution and avoid any activities that require alertness or coordination.</li>
             </ul>
@@ -64,13 +64,13 @@ export function TermsAndDisclaimerDialog({ isOpen, onClose, onContinue }: TermsA
           <div>
             <h3 className="font-semibold text-white mb-2">6. Emergency Situations</h3>
             <p>
-              If you experience any symptoms of severe intoxication—such as confusion, difficulty walking, vomiting, loss of consciousness, slow or irregular breathing, or decreased responsiveness—seek medical attention immediately by calling 000 or going to the nearest hospital emergency department.
+              If you experience any symptoms of severe intoxication such as confusion, difficulty walking, vomiting, loss of consciousness, slow or irregular breathing, or decreased responsiveness seek medical attention immediately by calling 000 or going to the nearest hospital emergency department.
             </p>
           </div>
           
           <div className="pt-2 border-t border-white/10">
             <p className="text-center font-medium">
-              Thank you for using this tool responsibly. Your safety—and the safety of others—is paramount.
+              Thank you for using this tool responsibly. Your safety and the safety of others is paramount.
             </p>
           </div>
         </div>

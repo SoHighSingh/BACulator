@@ -60,14 +60,14 @@ export default function UserInfoSlideOut({
 
   return (
     <Drawer open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center">
-        <div className="mx-auto w-full max-w-md flex flex-col min-h-0 max-h-[100vh]">
+      <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center h-full">
+        <div className="mx-auto w-full max-w-md flex flex-col h-full">
           <DrawerHeader className="flex-shrink-0">
             <DrawerTitle className="text-white">{userName ? `Hi ${userName}!` : "User Details"}</DrawerTitle>
             <DrawerDescription className="text-white/80">Your details:</DrawerDescription>
           </DrawerHeader>
-          <div className="flex-1 p-4 overflow-y-auto min-h-0">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-8" id="userInfoForm">
+          <div className="flex-1 p-4 pb-0 overflow-y-auto">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-40" id="userInfoForm">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-white">
                   Weight (kg):
@@ -99,36 +99,35 @@ export default function UserInfoSlideOut({
                   <option value="female">Female</option>
                 </select>
               </div>
-              
-              {/* Form buttons within the form for better keyboard handling */}
-              <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
-                {submitted && (
-                  <div className="mb-2 p-4 bg-green-600/20 border border-green-400/30 rounded-lg">
-                    <p className="text-green-300 text-center">
-                      ✓ Details saved successfully!
-                    </p>
-                  </div>
-                )}
-                <Button
-                    type="submit"
-                    disabled={submitted}
-                    className="rounded-md bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-8 font-semibold transition hover:bg-white/15 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {submitted ? "Saved!" : "Save Details"}
-                  </Button>
-                <Button
-                  onClick={() => signOut()}
-                  variant="destructive"
-                  className="w-full"
-                >
-                  Sign out
-                </Button>
-                <DrawerClose asChild>
-                  <Button 
-                    variant="outline">Cancel</Button>
-                </DrawerClose>
-              </div>
             </form>
+          </div>
+          <div className="flex-shrink-0 w-full bg-transparent flex flex-col border-t border-white/10 p-4 gap-2">
+            {submitted && (
+              <div className="mb-2 p-4 bg-green-600/20 border border-green-400/30 rounded-lg">
+                <p className="text-green-300 text-center">
+                  ✓ Details saved successfully!
+                </p>
+              </div>
+            )}
+            <Button
+                type="submit"
+                form="userInfoForm"
+                disabled={submitted}
+                className="rounded-md bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-8 font-semibold transition hover:bg-white/15 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitted ? "Saved!" : "Save Details"}
+              </Button>
+            <Button
+              onClick={() => signOut()}
+              variant="destructive"
+              className="w-full"
+            >
+              Sign out
+            </Button>
+            <DrawerClose asChild>
+              <Button 
+                variant="outline">Cancel</Button>
+            </DrawerClose>
           </div>
         </div>
       </DrawerContent>
