@@ -166,4 +166,20 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
   }
+
+  /* Mobile keyboard handling */
+  @supports (height: 100dvh) {
+    .mobile-viewport-height {
+      height: 100dvh;
+      max-height: 100dvh;
+    }
+  }
+  
+  /* Fallback for browsers that don't support dvh */
+  @supports not (height: 100dvh) {
+    .mobile-viewport-height {
+      height: 100vh;
+      max-height: 100vh;
+    }
+  }
 }

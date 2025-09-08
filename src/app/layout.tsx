@@ -11,6 +11,12 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/BACULATROR.png" }],
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist-sans",

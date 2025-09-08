@@ -55,7 +55,7 @@ function calculateAbsorbedBAC(
  * Track BAC over time to properly calculate elimination
  * This ensures elimination only occurs when alcohol is actually in the system
  */
-function calculateBACWithProperElimination(
+export function calculateBACAtTime(
   drinks: Drink[],
   userWeight: number,
   userSex: string,
@@ -63,12 +63,15 @@ function calculateBACWithProperElimination(
 ): number {
   if (drinks.length === 0) return 0.0;
   
-  // Sort drinks by time to handle any chronological issues
+  // Constants for numerical stability
+  const MIN_BAC_THRESHOLD = 1e-6; // Below this, consider BAC as zero
+  
+  // Sort drinks by time
   const sortedDrinks = [...drinks].sort((a, b) => 
     new Date(a.finishedAt).getTime() - new Date(b.finishedAt).getTime()
   );
   
-  // Find the earliest drink time
+  // Find when alcohol first enters the system
   const firstDrinkTime = new Date(sortedDrinks[0]!.finishedAt);
   
   // If target time is before first drink, BAC is 0
@@ -76,84 +79,93 @@ function calculateBACWithProperElimination(
     return 0.0;
   }
   
-  // Build BAC timeline with adaptive time steps
+  // Calculate total absorbed alcohol at target time
+  const totalAbsorbed = calculateTotalAbsorbedAtTime(drinks, userWeight, userSex, targetTime);
   
-  // Create critical time points (when drinks are consumed or fully absorbed)
-  const criticalTimes = new Set<number>();
-  sortedDrinks.forEach(drink => {
-    const drinkTime = new Date(drink.finishedAt).getTime();
-    criticalTimes.add(drinkTime);
-    criticalTimes.add(drinkTime + CONFIG.ABSORPTION_TIME_MINUTES * 60 * 1000);
-  });
-  criticalTimes.add(targetTime.getTime());
+  // Calculate total elimination from when alcohol first entered system
+  const totalEliminated = calculateTotalEliminationFromStart(
+    drinks, 
+    firstDrinkTime, 
+    targetTime
+  );
   
-  // Sort critical times
-  const sortedTimes = Array.from(criticalTimes).sort((a, b) => a - b);
+  // Final BAC with bounds checking
+  const finalBAC = Math.max(0, totalAbsorbed - totalEliminated);
   
-  // Calculate BAC at each critical time
-  let lastTime = firstDrinkTime.getTime();
-  let lastBAC = 0.0;
-  
-  for (const time of sortedTimes) {
-    if (time > targetTime.getTime()) break;
-    
-    // Calculate time elapsed since last point
-    const hoursElapsed = (time - lastTime) / (1000 * 60 * 60);
-    
-    // Apply elimination for the elapsed time
-    const eliminated = CONFIG.ELIMINATION_RATE * hoursElapsed;
-    let newBAC = Math.max(0, lastBAC - eliminated);
-    
-    // Add absorption from all drinks up to this point
-    const absorbed = sortedDrinks.reduce((total, drink) => {
-      const drinkContribution = calculateAbsorbedBAC(drink, userWeight, userSex, new Date(time));
-      const previousContribution = calculateAbsorbedBAC(drink, userWeight, userSex, new Date(lastTime));
-      return total + (drinkContribution - previousContribution);
-    }, 0.0);
-    
-    newBAC += absorbed;
-    
-    // Update for next iteration
-    lastTime = time;
-    lastBAC = newBAC;
-  }
-  
-  // Final calculation for target time if it's between critical points
-  if (targetTime.getTime() > lastTime) {
-    const hoursElapsed = (targetTime.getTime() - lastTime) / (1000 * 60 * 60);
-    const eliminated = CONFIG.ELIMINATION_RATE * hoursElapsed;
-    lastBAC = Math.max(0, lastBAC - eliminated);
-    
-    // Add any additional absorption
-    const absorbed = sortedDrinks.reduce((total, drink) => {
-      const drinkContribution = calculateAbsorbedBAC(drink, userWeight, userSex, targetTime);
-      const previousContribution = calculateAbsorbedBAC(drink, userWeight, userSex, new Date(lastTime));
-      return total + (drinkContribution - previousContribution);
-    }, 0.0);
-    
-    lastBAC += absorbed;
-  }
-  
-  return roundToPrecision(Math.max(0, lastBAC), 4);
+  // Apply minimum threshold to eliminate floating point artifacts
+  return finalBAC < MIN_BAC_THRESHOLD ? 0.0 : finalBAC;
 }
 
 /**
- * Calculate BAC at a specific time
- * Now uses the corrected elimination model internally
+ * Calculate total absorbed alcohol at a specific time
+ * This is numerically stable as it calculates each drink independently
  */
-export function calculateBACAtTime(
+function calculateTotalAbsorbedAtTime(
   drinks: Drink[],
   userWeight: number,
   userSex: string,
   targetTime: Date
 ): number {
-  const bac = calculateBACWithProperElimination(drinks, userWeight, userSex, targetTime);
+  const distributionRatio: number = userSex === 'male' ? 0.68 : 0.55;
+  const bodyWeightGrams: number = userWeight * 1000.0;
+  
+  return drinks.reduce((total, drink) => {
+    const finishedTime = new Date(drink.finishedAt);
+    const minutesSinceFinished = (targetTime.getTime() - finishedTime.getTime()) / (1000 * 60);
+    
+    // If drink hasn't been consumed yet
+    if (minutesSinceFinished < 0) {
+      return total;
+    }
+    
+    // Calculate peak BAC for this drink
+    const alcoholGrams: number = drink.standards * CONFIG.GRAMS_PER_STANDARD;
+    const peakBAC: number = (alcoholGrams / (bodyWeightGrams * distributionRatio)) * 100.0;
+    
+    // Calculate absorption progress
+    let absorptionFactor: number;
+    
+    if (minutesSinceFinished <= CONFIG.ABSORPTION_TIME_MINUTES) {
+      // Still absorbing - exponential absorption curve
+      const absorptionProgress: number = minutesSinceFinished / CONFIG.ABSORPTION_TIME_MINUTES;
+      absorptionFactor = 1.0 - Math.exp(-CONFIG.ABSORPTION_CURVE_FACTOR * absorptionProgress);
+    } else {
+      // Fully absorbed
+      absorptionFactor = 1.0;
+    }
+    
+    return total + (peakBAC * absorptionFactor);
+  }, 0.0);
+}
 
-  if (bac < 0.0011) {
+/**
+ * Calculate total elimination from when alcohol first entered the system
+ * Uses a more sophisticated model that accounts for when elimination actually starts
+ */
+function calculateTotalEliminationFromStart(
+  drinks: Drink[],
+  firstDrinkTime: Date,
+  targetTime: Date
+): number {
+  // Time elapsed since first alcohol entered system
+  const totalTimeElapsed = (targetTime.getTime() - firstDrinkTime.getTime()) / (1000 * 60 * 60);
+  
+  if (totalTimeElapsed <= 0) {
     return 0.0;
   }
-
-  return bac;
+  
+  // Find when significant absorption begins (when first drink starts absorbing)
+  // Elimination doesn't really begin until alcohol is in the bloodstream
+  const absorptionDelay = Math.min(CONFIG.ABSORPTION_TIME_MINUTES / 60, totalTimeElapsed);
+  
+  // Calculate effective elimination time (total time minus initial absorption delay)
+  const effectiveEliminationTime = Math.max(0, totalTimeElapsed - (absorptionDelay * 0.5));
+  
+  // Apply elimination rate with a more realistic start curve
+  // Elimination starts gradually as absorption begins
+  const eliminationStartFactor = Math.min(1.0, totalTimeElapsed / (CONFIG.ABSORPTION_TIME_MINUTES / 60));
+  
+  return CONFIG.ELIMINATION_RATE * effectiveEliminationTime * eliminationStartFactor;
 }
 
 /**

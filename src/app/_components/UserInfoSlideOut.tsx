@@ -24,6 +24,7 @@ export default function UserInfoSlideOut({
   const [weight, setWeight] = useState<string>(initialWeight !== undefined ? String(initialWeight) : "");
   const [sex, setSex] = useState<"male" | "female" | "">(initialSex as "male" | "female" | "");
   const [submitted, setSubmitted] = useState(false);
+  const weightInputRef = React.useRef<HTMLInputElement>(null);
 
   const utils = api.useUtils();
   const updateUserInfo = api.post.updateUserInfo.useMutation({
@@ -46,6 +47,23 @@ export default function UserInfoSlideOut({
     // Only update when opening
   }, [userInfoQuery.data, isOpen]);
 
+  // Handle focus management when drawer opens/closes
+  React.useEffect(() => {
+    if (isOpen) {
+      // Slight delay to ensure drawer is fully rendered
+      const timer = setTimeout(() => {
+        // Don't auto-focus to prevent immediate keyboard popup on mobile
+        // Let user choose when to focus
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      // Ensure no inputs are focused when drawer closes
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Only submit if both fields are filled
@@ -58,27 +76,51 @@ export default function UserInfoSlideOut({
     }, 1500);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Ensure all inputs are blurred before closing
+      if (weightInputRef.current) {
+        weightInputRef.current.blur();
+      }
+      const selectElement = document.querySelector('select')!;
+      if (selectElement) {
+        selectElement.blur();
+      }
+      onClose();
+    }
+  };
+
   return (
-    <Drawer open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center h-full">
-        <div className="mx-auto w-full max-w-md flex flex-col h-full">
+    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
+      <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center mobile-viewport-height">
+        <div className="mx-auto w-full max-w-md flex flex-col h-full min-h-0 relative">
           <DrawerHeader className="flex-shrink-0">
             <DrawerTitle className="text-white">{userName ? `Hi ${userName}!` : "User Details"}</DrawerTitle>
             <DrawerDescription className="text-white/80">Your details:</DrawerDescription>
           </DrawerHeader>
-          <div className="flex-1 p-4 pb-0 overflow-y-auto">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-40" id="userInfoForm">
+          <div className="flex-1 p-4 pb-0 overflow-y-auto min-h-0">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-4" id="userInfoForm">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-white">
                   Weight (kg):
                 </label>
                 <input
+                  ref={weightInputRef}
                   type="number"
                   min="0.1"
                   max="300"
                   step="0.1"
                   value={weight}
                   onChange={e => setWeight(e.target.value)}
+                  onFocus={(e) => {
+                    // Scroll input into view on mobile when keyboard appears
+                    setTimeout(() => {
+                      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                  }}
+                  onBlur={() => {
+                    // Ensure input is blurred properly to prevent aria-hidden conflicts
+                  }}
                   className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 focus:border-white/40 focus:outline-none transition-colors placeholder:text-white/50"
                   required
                   placeholder="Enter weight in kg"

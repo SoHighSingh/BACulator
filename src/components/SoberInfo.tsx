@@ -72,6 +72,29 @@ export function SoberInfo({ safeBAC }: SoberInfoProps) {
   const soberTime = new Date(currentTime.getTime() + safeBAC.timeToSober * 60 * 60 * 1000);
   const legalTime = new Date(currentTime.getTime() + safeBAC.timeToLegal * 60 * 60 * 1000);
 
+  const getDateLabel = (targetDate: Date) => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    
+    // Check if target date is tomorrow
+    if (targetDate.toDateString() === tomorrow.toDateString()) {
+      return "Tomorrow";
+    }
+    
+    // Check if target date is today
+    if (targetDate.toDateString() === today.toDateString()) {
+      return null; // Don't show anything for today
+    }
+    
+    // For dates beyond tomorrow, show the actual date
+    return targetDate.toLocaleDateString([], { 
+      weekday: 'short',
+      month: 'short', 
+      day: 'numeric'
+    });
+  };
+
   return (
     <div className="flex flex-col items-center w-full">
       {/* Peak BAC Info Card */}
@@ -84,10 +107,17 @@ export function SoberInfo({ safeBAC }: SoberInfoProps) {
           <div className="text-sm font-medium text-white/80 mb-6 text-left pl-1">Time till Sober</div>
           <div className="text-center">
             {safeBAC.timeToSober > 0 ? (
-              <AnimatedTime 
-                targetTime={soberTime}
-                className="text-6xl font-bold text-white"
-              />
+              <>
+                <AnimatedTime 
+                  targetTime={soberTime}
+                  className="text-6xl font-bold text-white"
+                />
+                {getDateLabel(soberTime) && (
+                  <div className="text-sm text-white/70 mt-2">
+                    {getDateLabel(soberTime)}
+                  </div>
+                )}
+              </>
             ) : (
               <span className="text-6xl font-bold">- - : - -</span>
             )}
@@ -99,10 +129,17 @@ export function SoberInfo({ safeBAC }: SoberInfoProps) {
           <div className="text-sm font-medium text-white/80 mb-6 text-left pl-1">Time till 0.05%</div>
           <div className="text-center">
             {safeBAC.timeToLegal > 0 ? (
-              <AnimatedTime 
-                targetTime={legalTime}
-                className="text-6xl font-bold text-white"
-              />
+              <>
+                <AnimatedTime 
+                  targetTime={legalTime}
+                  className="text-6xl font-bold text-white"
+                />
+                {getDateLabel(legalTime) && (
+                  <div className="text-sm text-white/70 mt-2">
+                    {getDateLabel(legalTime)}
+                  </div>
+                )}
+              </>
             ) : (
               <span className="text-6xl font-bold">- - : - -</span>
             )}
