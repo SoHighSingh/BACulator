@@ -17,43 +17,8 @@ function roundToPrecision(value: number, decimals: number): number {
 }
 
 /**
- * Calculate how much of a single drink has been absorbed by a specific time
- * Returns the absorbed BAC contribution (before elimination)
- */
-function calculateAbsorbedBAC(
-  drink: Drink,
-  userWeight: number,
-  userSex: string,
-  targetTime: Date
-): number {
-  const finishedTime = new Date(drink.finishedAt);
-  const minutesSinceFinished = (targetTime.getTime() - finishedTime.getTime()) / (1000 * 60);
-  
-  // Body water distribution ratio
-  const distributionRatio: number = userSex === 'male' ? 0.68 : 0.55;
-  
-  // Calculate peak BAC for this drink using Widmark formula
-  const alcoholGrams: number = drink.standards * CONFIG.GRAMS_PER_STANDARD;
-  const bodyWeightGrams: number = userWeight * 1000.0;
-  const peakBAC: number = (alcoholGrams / (bodyWeightGrams * distributionRatio)) * 100.0;
-  
-  if (minutesSinceFinished < 0) {
-    // Drink hasn't been consumed yet
-    return 0.0;
-  } else if (minutesSinceFinished <= CONFIG.ABSORPTION_TIME_MINUTES) {
-    // Still absorbing - exponential absorption curve
-    const absorptionProgress: number = minutesSinceFinished / CONFIG.ABSORPTION_TIME_MINUTES;
-    const absorptionFactor: number = 1.0 - Math.exp(-CONFIG.ABSORPTION_CURVE_FACTOR * absorptionProgress);
-    return peakBAC * absorptionFactor;
-  } else {
-    // Fully absorbed
-    return peakBAC;
-  }
-}
-
-/**
- * Track BAC over time to properly calculate elimination
- * This ensures elimination only occurs when alcohol is actually in the system
+ * Calculate BAC at a specific time using per-drink independent calculation
+ * This handles spaced drinks correctly while maintaining accurate BAC values
  */
 export function calculateBACAtTime(
   drinks: Drink[],
@@ -63,109 +28,60 @@ export function calculateBACAtTime(
 ): number {
   if (drinks.length === 0) return 0.0;
   
-  // Constants for numerical stability
-  const MIN_BAC_THRESHOLD = 1e-6; // Below this, consider BAC as zero
-  
-  // Sort drinks by time
-  const sortedDrinks = [...drinks].sort((a, b) => 
-    new Date(a.finishedAt).getTime() - new Date(b.finishedAt).getTime()
-  );
-  
-  // Find when alcohol first enters the system
-  const firstDrinkTime = new Date(sortedDrinks[0]!.finishedAt);
-  
-  // If target time is before first drink, BAC is 0
-  if (targetTime.getTime() < firstDrinkTime.getTime()) {
-    return 0.0;
-  }
-  
-  // Calculate total absorbed alcohol at target time
-  const totalAbsorbed = calculateTotalAbsorbedAtTime(drinks, userWeight, userSex, targetTime);
-  
-  // Calculate total elimination from when alcohol first entered system
-  const totalEliminated = calculateTotalEliminationFromStart(
-    drinks, 
-    firstDrinkTime, 
-    targetTime
-  );
-  
-  // Final BAC with bounds checking
-  const finalBAC = Math.max(0, totalAbsorbed - totalEliminated);
-  
-  // Apply minimum threshold to eliminate floating point artifacts
-  return finalBAC < MIN_BAC_THRESHOLD ? 0.0 : finalBAC;
-}
-
-/**
- * Calculate total absorbed alcohol at a specific time
- * This is numerically stable as it calculates each drink independently
- */
-function calculateTotalAbsorbedAtTime(
-  drinks: Drink[],
-  userWeight: number,
-  userSex: string,
-  targetTime: Date
-): number {
+  const MIN_BAC_THRESHOLD = 1e-6;
   const distributionRatio: number = userSex === 'male' ? 0.68 : 0.55;
   const bodyWeightGrams: number = userWeight * 1000.0;
   
-  return drinks.reduce((total, drink) => {
+  let totalBAC = 0.0;
+  
+  // Calculate each drink's contribution independently
+  for (const drink of drinks) {
     const finishedTime = new Date(drink.finishedAt);
     const minutesSinceFinished = (targetTime.getTime() - finishedTime.getTime()) / (1000 * 60);
     
-    // If drink hasn't been consumed yet
+    // Skip drinks that haven't been consumed yet
     if (minutesSinceFinished < 0) {
-      return total;
+      continue;
     }
     
-    // Calculate peak BAC for this drink
-    const alcoholGrams: number = drink.standards * CONFIG.GRAMS_PER_STANDARD;
-    const peakBAC: number = (alcoholGrams / (bodyWeightGrams * distributionRatio)) * 100.0;
+    // Calculate the theoretical peak BAC for this drink using Widmark formula
+    const alcoholGrams = drink.standards * CONFIG.GRAMS_PER_STANDARD;
+    const theoreticalPeakBAC = (alcoholGrams / (bodyWeightGrams * distributionRatio)) * 100.0;
     
-    // Calculate absorption progress
-    let absorptionFactor: number;
+    let drinkBAC = 0.0;
     
     if (minutesSinceFinished <= CONFIG.ABSORPTION_TIME_MINUTES) {
-      // Still absorbing - exponential absorption curve
-      const absorptionProgress: number = minutesSinceFinished / CONFIG.ABSORPTION_TIME_MINUTES;
-      absorptionFactor = 1.0 - Math.exp(-CONFIG.ABSORPTION_CURVE_FACTOR * absorptionProgress);
+      // Still absorbing - use exponential absorption curve
+      const absorptionProgress = minutesSinceFinished / CONFIG.ABSORPTION_TIME_MINUTES;
+      const absorptionFactor = 1.0 - Math.exp(-CONFIG.ABSORPTION_CURVE_FACTOR * absorptionProgress);
+      drinkBAC = theoreticalPeakBAC * absorptionFactor;
+      
+      // During absorption, elimination is reduced as the liver is still ramping up
+      // Apply only 30% of elimination rate during absorption
+      const hoursElapsed = minutesSinceFinished / 60.0;
+      const eliminationDuringAbsorption = CONFIG.ELIMINATION_RATE * hoursElapsed * 0.3;
+      drinkBAC = Math.max(0, drinkBAC - eliminationDuringAbsorption);
+      
     } else {
-      // Fully absorbed
-      absorptionFactor = 1.0;
+      // Fully absorbed - the peak is reached at end of absorption
+      // At 30 minutes, absorption factor = 1 - e^(-3) ≈ 0.95
+      const peakAbsorptionFactor = 1.0 - Math.exp(-CONFIG.ABSORPTION_CURVE_FACTOR);
+      
+      // Account for the reduced elimination that occurred during absorption
+      const eliminationDuringAbsorption = CONFIG.ELIMINATION_RATE * (CONFIG.ABSORPTION_TIME_MINUTES / 60.0) * 0.3;
+      const actualPeakBAC = theoreticalPeakBAC * peakAbsorptionFactor - eliminationDuringAbsorption;
+      
+      // Now apply full elimination for time since absorption completed
+      const hoursSinceAbsorptionComplete = (minutesSinceFinished - CONFIG.ABSORPTION_TIME_MINUTES) / 60.0;
+      const eliminationSinceAbsorption = CONFIG.ELIMINATION_RATE * hoursSinceAbsorptionComplete;
+      drinkBAC = Math.max(0, actualPeakBAC - eliminationSinceAbsorption);
     }
     
-    return total + (peakBAC * absorptionFactor);
-  }, 0.0);
-}
-
-/**
- * Calculate total elimination from when alcohol first entered the system
- * Uses a more sophisticated model that accounts for when elimination actually starts
- */
-function calculateTotalEliminationFromStart(
-  drinks: Drink[],
-  firstDrinkTime: Date,
-  targetTime: Date
-): number {
-  // Time elapsed since first alcohol entered system
-  const totalTimeElapsed = (targetTime.getTime() - firstDrinkTime.getTime()) / (1000 * 60 * 60);
-  
-  if (totalTimeElapsed <= 0) {
-    return 0.0;
+    totalBAC += drinkBAC;
   }
   
-  // Find when significant absorption begins (when first drink starts absorbing)
-  // Elimination doesn't really begin until alcohol is in the bloodstream
-  const absorptionDelay = Math.min(CONFIG.ABSORPTION_TIME_MINUTES / 60, totalTimeElapsed);
-  
-  // Calculate effective elimination time (total time minus initial absorption delay)
-  const effectiveEliminationTime = Math.max(0, totalTimeElapsed - (absorptionDelay * 0.5));
-  
-  // Apply elimination rate with a more realistic start curve
-  // Elimination starts gradually as absorption begins
-  const eliminationStartFactor = Math.min(1.0, totalTimeElapsed / (CONFIG.ABSORPTION_TIME_MINUTES / 60));
-  
-  return CONFIG.ELIMINATION_RATE * effectiveEliminationTime * eliminationStartFactor;
+  // Apply minimum threshold
+  return totalBAC < MIN_BAC_THRESHOLD ? 0.0 : totalBAC;
 }
 
 /**
@@ -343,8 +259,17 @@ export function findPeakBAC(
   // Remove duplicates and sort
   const uniqueSamples = [...new Set(samples)].sort((a, b) => a - b);
   
-  // Find peak
-  uniqueSamples.forEach(minutes => {
+  // Find peak - make sure we check exactly at absorption completion times
+  sortedDrinks.forEach(drink => {
+    const drinkTime = new Date(drink.finishedAt);
+    const peakMinutes = (drinkTime.getTime() - currentTime.getTime()) / (1000 * 60) + CONFIG.ABSORPTION_TIME_MINUTES;
+    uniqueSamples.push(peakMinutes);
+  });
+  
+  // Remove duplicates again and find peak
+  const finalSamples = [...new Set(uniqueSamples)].sort((a, b) => a - b);
+  
+  finalSamples.forEach(minutes => {
     const checkTime = new Date(currentTime.getTime() + minutes * 60 * 1000);
     const bac = calculateBACAtTime(drinks, userWeight, userSex, checkTime);
     
@@ -396,18 +321,26 @@ export function calculateDrinkContribution(
   currentTime: Date
 ): { bac: number; isAbsorbing: boolean; peakBAC: number; timeToPeak: number } {
   const status = getDrinkStatus(drink, currentTime);
-  const absorbedBAC = calculateAbsorbedBAC(drink, userWeight, userSex, currentTime);
   
-  // Calculate peak BAC for this drink
+  // Calculate this drink's contribution by calculating its BAC alone
+  const allDrinks = [drink];
+  const bacWithDrink = calculateBACAtTime(allDrinks, userWeight, userSex, currentTime);
+  
+  // Calculate theoretical peak BAC for this drink
   const distributionRatio: number = userSex === 'male' ? 0.68 : 0.55;
   const alcoholGrams: number = drink.standards * CONFIG.GRAMS_PER_STANDARD;
   const bodyWeightGrams: number = userWeight * 1000.0;
-  const peakBAC: number = (alcoholGrams / (bodyWeightGrams * distributionRatio)) * 100.0;
+  const theoreticalPeakBAC: number = (alcoholGrams / (bodyWeightGrams * distributionRatio)) * 100.0;
+  
+  // The actual peak will be slightly less due to absorption curve and elimination
+  const peakAbsorptionFactor = 1.0 - Math.exp(-CONFIG.ABSORPTION_CURVE_FACTOR);
+  const eliminationDuringAbsorption = CONFIG.ELIMINATION_RATE * (CONFIG.ABSORPTION_TIME_MINUTES / 60.0) * 0.3;
+  const actualPeakBAC = theoreticalPeakBAC * peakAbsorptionFactor - eliminationDuringAbsorption;
   
   return {
-    bac: roundToPrecision(absorbedBAC, 4),
+    bac: roundToPrecision(bacWithDrink, 4),
     isAbsorbing: status.status === 'absorbing',
-    peakBAC: roundToPrecision(peakBAC, 4),
+    peakBAC: roundToPrecision(actualPeakBAC, 4),
     timeToPeak: status.minutesToPeak
   };
 }
