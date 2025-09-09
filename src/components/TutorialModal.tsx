@@ -70,8 +70,8 @@ export default function TutorialCard({ isOpen, onClose }: TutorialCardProps) {
                   <p className="text-white/90">
                     First, make sure to set your weight and sex in your user profile. These are crucial for accurate BAC calculations.
                   </p>
-                  <div className="bg-blue-600/20 rounded-md p-4 border border-blue-500/30">
-                    <p className="text-sm text-blue-200">
+                  <div className="bg-purple-600/20 rounded-md p-4 border border-purple-500/30">
+                    <p className="text-sm text-purple-200">
                       💡 Tip: Click the user icon at the top of the screen to access/edit your profile settings.
                     </p>
                   </div>
@@ -84,8 +84,8 @@ export default function TutorialCard({ isOpen, onClose }: TutorialCardProps) {
                   <p className="text-white/90">
                     When you&apos;re ready to start drinking, tap &quot;Start Drinking Session&quot; to begin tracking your BAC.
                   </p>
-                  <div className="bg-green-600/20 rounded-md p-4 border border-green-500/30">
-                    <p className="text-sm text-green-200">
+                  <div className="bg-blue-600/20 rounded-md p-4 border border-blue-500/30">
+                    <p className="text-sm text-blue-200">
                       📱 The app will automatically refresh every minute to keep your BAC calculations current.
                     </p>
                   </div>

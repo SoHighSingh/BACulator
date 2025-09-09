@@ -226,7 +226,7 @@ export function BACIndicator({
     <div className="flex flex-col items-center justify-center flex-1 gap-4 md:gap-8 pt-4">
       {/* Main BAC Card */}
       <TiltedCard intensity={20}>
-        <div className="relative flex items-center justify-center">
+        <div className="relative flex items-center justify-center max-w-[95vw]">
                      {/* Water Level Rectangle */}
            <div className="w-95 h-64 bg-white/10 backdrop-blur-sm border border-white/20 relative overflow-hidden rounded-2xl shadow-2xl border border-black">
             {/* BAC Text - Inverted colors using mix-blend-mode */}
