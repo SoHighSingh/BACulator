@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { parseDrinkToStandards } from "~/lib/genai";
 
 interface AddDrinkFormProps {
   standards: number;
@@ -17,11 +18,35 @@ export function AddDrinkForm({
   handleTimeChange,
   roundToOneDecimal,
 }: AddDrinkFormProps) {
+  // const [drinkText, setDrinkText] = useState("");
+
+  // async function handleParseDrink() {
+  //   if (!drinkText) return;
+  //   const standards = await parseDrinkToStandards(drinkText);
+  //   if (standards != null) {
+  //     setStandards(roundToOneDecimal(standards));
+  //   } else {
+  //     alert("Could not understand that drink, try again.");
+  //   }
+  // }
+
   return (
     <div className="flex flex-col gap-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-md p-4 mb-4">
       <div className="flex items-center gap-4 text-[#e5e5e5]">
         <label className="w-56 text-sm">Standards</label>
         <div className="flex items-center gap-2">
+          {/* <input
+            type="text"
+            value={drinkText}
+            onChange={e => setDrinkText(e.target.value)}
+            placeholder="e.g. 2 schooners of VB"
+            className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 flex-1"
+          />
+          <button
+            onClick={handleParseDrink}
+            className="px-3 py-2 rounded-md bg-blue-600 text-white"
+          >
+          </button> */}
           <button
             onClick={() => setStandards(Math.max(0, standards - 0.5))}
             className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg flex items-center justify-center transition-colors active:scale-95"

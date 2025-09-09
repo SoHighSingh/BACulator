@@ -3,7 +3,7 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { SessionProvider } from "next-auth/react";
-import UserInfoSlideOutProvider from "./_components/UserInfoSlideOutProvider";
+import UserInfoSlideOutProvider from "../components/UserInfoSlideOutProvider";
 
 export const metadata: Metadata = {
   title: "BACulator",

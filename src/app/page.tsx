@@ -10,7 +10,7 @@ import { useAutoReload } from "../hooks/useAutoReload";
 import { useDrinks } from "../hooks/useDrinks";
 import { useTab } from "../hooks/useTab";
 import { useUserInfoData } from "../hooks/useUserInfoData";
-import { useUserInfo } from "./_components/UserInfoSlideOutProvider";
+import { useUserInfo } from "../components/UserInfoSlideOutProvider";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -64,22 +64,38 @@ export default function Home() {
     };
   }, [drinks, userWeight, userSex, refreshTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
+
   // Auto-refresh every minute when there's an active drinking session or alcohol in system
   useAutoReload({
     intervalMinutes: 1,
     enabled: hasActiveTab || hasAlcoholInSystem, // Refresh when active tab or drinks present
     showNotification: true,
     onRefresh: async () => {
+      const wasActiveBeforeRefresh = hasActiveTab;
+      
       // Refresh all the queries to get updated data
       await Promise.all([
         currentTabQuery.refetch(),
         drinksQuery.refetch(),
         userInfoQuery.refetch()
       ]);
+      
+      // Check if tab was auto-ended (was active, now isn't, and we have drinks indicating sobriety period)
+      if (wasActiveBeforeRefresh && !currentTabQuery.data && drinks?.length > 0) {
+        // Show notification that tab was auto-ended due to 12-hour sobriety
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('BACulator - Tab Automatically Ended', {
+            body: 'Your drinking session has been automatically ended after 12 hours of sobriety.',
+            icon: '/BACULATOR.png'
+          });
+        }
+      }
+      
       // Trigger BAC recalculation with updated time
       setRefreshTrigger(prev => prev + 1);
     }
   });
+
 
   if (!session) {
     return (

@@ -61,6 +61,32 @@ export const postRouter = createTRPCRouter({
   }),
   getCurrentTab: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
+    
+    // Check for auto-end based on 12-hour sobriety rule
+    const tab = await ctx.db.tab.findFirst({ 
+      where: { userId, finishedAt: null },
+      include: { drinks: true }
+    });
+    
+    if (tab && tab.drinks.length > 0) {
+      // Find the most recent drink
+      const lastDrink = tab.drinks.reduce((latest, drink) => 
+        new Date(drink.finishedAt) > new Date(latest.finishedAt) ? drink : latest
+      );
+      
+      // Calculate hours since last drink
+      const hoursSinceLastDrink = (new Date().getTime() - new Date(lastDrink.finishedAt).getTime()) / (1000 * 60 * 60);
+      
+      // If it's been 12+ hours since the last drink, auto-end the tab
+      if (hoursSinceLastDrink >= 12) {
+        await ctx.db.tab.update({
+          where: { id: tab.id },
+          data: { finishedAt: new Date() }
+        });
+        return null; // Return null to indicate no active tab
+      }
+    }
+    
     return ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
   }),
   addDrink: protectedProcedure

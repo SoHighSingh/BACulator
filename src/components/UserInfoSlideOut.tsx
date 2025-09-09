@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import { signOut } from "next-auth/react";
 import { api } from "~/trpc/react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "../../components/ui/drawer";
-import { Button } from "../../components/ui/button";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "./ui/drawer";
+import { Button } from "./ui/button";
+import TutorialCard from "./TutorialModal";
 
 interface UserInfoSlideOutProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export default function UserInfoSlideOut({
   const [weight, setWeight] = useState<string>(initialWeight !== undefined ? String(initialWeight) : "");
   const [sex, setSex] = useState<"male" | "female" | "">(initialSex as "male" | "female" | "");
   const [submitted, setSubmitted] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const utils = api.useUtils();
   const updateUserInfo = api.post.updateUserInfo.useMutation({
@@ -62,7 +64,19 @@ export default function UserInfoSlideOut({
     <Drawer open={isOpen} onOpenChange={open => !open && onClose()}>
       <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center">
         <div className="mx-auto w-full max-w-md flex flex-col min-h-0 max-h-[100vh]">
-          <DrawerHeader className="flex-shrink-0">
+          <DrawerHeader className="flex-shrink-0 relative">
+            <div className="absolute top-2 right-4">
+              <button 
+                className="w-8 h-8 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+                onClick={() => {
+                  setShowTutorial(true);
+                  onClose(); // Close the user info slide out when tutorial opens
+                }}
+                aria-label="Help"
+              >
+                <span className="text-sm font-medium">?</span>
+              </button>
+            </div>
             <DrawerTitle className="text-white">{userName ? `Hi ${userName}!` : "User Details"}</DrawerTitle>
             <DrawerDescription className="text-white/80">Your details:</DrawerDescription>
           </DrawerHeader>
@@ -132,6 +146,11 @@ export default function UserInfoSlideOut({
           </div>
         </div>
       </DrawerContent>
+      
+      <TutorialCard 
+        isOpen={showTutorial} 
+        onClose={() => setShowTutorial(false)} 
+      />
     </Drawer>
   );
 }
