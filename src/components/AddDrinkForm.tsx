@@ -164,6 +164,7 @@ export function AddDrinkForm({
                   onChange={(e) => setDrinkText(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder={placeholders[currentPlaceholder]}
+                  tabIndex={-1}
                   className="flex-1 min-w-0 rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 placeholder:text-white/50 placeholder:italic"
                 />
                 <Button

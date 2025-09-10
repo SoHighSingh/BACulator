@@ -78,7 +78,7 @@ export function EditDrinkModals({
               handleTimeChange={handleEditTimeChange}
               roundToOneDecimal={roundToOneDecimal}
             />
-            <div className="flex gap-2 w-full">
+            <div className="flex gap-2 w-full mt-2">
               <Button 
                 onClick={handleEditDrink} 
                 disabled={updateDrink.status === 'pending'} 
