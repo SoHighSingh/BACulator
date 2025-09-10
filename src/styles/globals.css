@@ -216,4 +216,27 @@
   select:focus {
     font-size: 16px !important; /* Prevents zoom on iOS */
   }
+
+  /* UserInfo Drawer specific styles */
+  [vaul-drawer]:has(#userInfoForm) {
+    /* Ensure drawer doesn't move when keyboard appears */
+    position: fixed !important;
+  }
+
+  /* Prevent UserInfo drawer from resizing with keyboard */
+  [vaul-drawer]:has(#userInfoForm) [vaul-drawer-direction="bottom"] {
+    height: auto !important;
+    max-height: 85vh !important;
+    max-height: 85dvh !important;
+  }
+
+  /* Keep UserInfo drawer stable when inputs are focused */
+  @media (max-width: 768px) {
+    [vaul-drawer]:has(#userInfoForm input:focus),
+    [vaul-drawer]:has(#userInfoForm select:focus) {
+      position: fixed !important;
+      bottom: 0 !important;
+      transform: translateY(0) !important;
+    }
+  }
 }
