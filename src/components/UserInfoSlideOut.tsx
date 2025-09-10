@@ -61,7 +61,13 @@ export default function UserInfoSlideOut({
   };
 
   return (
-    <Drawer open={isOpen} onOpenChange={open => !open && onClose()} repositionInputs={false}>
+    <Drawer open={isOpen} onOpenChange={open => {
+      if (!open) onClose();
+      // Blur active element when drawer opens to prevent aria-hidden warning
+      if (open && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }} repositionInputs={false}>
       <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center" style={{ height: '85vh', maxHeight: '85dvh' }}>
         <div className="mx-auto w-full max-w-md flex flex-col h-full">
           <DrawerHeader className="flex-shrink-0 relative">
@@ -120,7 +126,7 @@ export default function UserInfoSlideOut({
           </div>
           
           {/* Fixed footer with buttons */}
-          <DrawerFooter className="flex-shrink-0 bg-black/40 backdrop-blur-sm flex flex-col gap-2 border-t border-white/10 p-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+          <DrawerFooter className="flex-shrink-0 flex flex-col gap-2 border-t border-white/10 p-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
             {submitted && (
               <div className="mb-2 p-4 bg-green-600/20 border border-green-400/30 rounded-lg">
                 <p className="text-green-300 text-center">

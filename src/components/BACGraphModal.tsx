@@ -133,7 +133,13 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      onOpenChange(newOpen);
+      // Blur active element when dialog opens to prevent aria-hidden warning
+      if (newOpen && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }}>
       <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-md bg-black/40 backdrop-blur-sm p-0 shadow-lg border border-white/10 data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-2xl font-bold text-white">BAC Graph</DialogTitle>

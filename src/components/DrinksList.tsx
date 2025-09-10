@@ -52,7 +52,7 @@ export function DrinksList({ drinksQuery, userWeight, userSex }: DrinksListProps
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="overflow-auto min-h-[120px] max-h-38 rounded-md border border-white/20 bg-white/10 backdrop-blur-sm custom-scrollbar mt-2">
+            <div className="overflow-auto max-h-38 rounded-md border border-white/20 bg-white/10 backdrop-blur-sm custom-scrollbar mt-2">
               <Table>
                 <TableHeader>
                   <TableRow className="border-white/20 hover:bg-white/15">

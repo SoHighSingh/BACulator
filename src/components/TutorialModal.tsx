@@ -100,7 +100,7 @@ export default function TutorialCard({ isOpen, onClose }: TutorialCardProps) {
                   </p>
                   <div className="bg-green-600/20 rounded-md p-4 border border-green-500/30">
                     <p className="text-sm text-green-200">
-                      😯 Missed inputting a drink? The BACulator will adjust accordingly with your past drinks.
+                      🤖 Pro tip: Use the AI input box &quot;What are you having?&quot; to quickly calculate standards!
                     </p>
                   </div>
                 </div>

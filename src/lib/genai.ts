@@ -47,7 +47,7 @@ export async function analyseDrinkDetailed(drinkInput: string): Promise<DrinkAna
 You are a precise alcohol content analyzer for a BAC calculator app. Analyze the following drink input and determine the number of standard drinks.
 
 IMPORTANT RULES:
-- 1 standard drink = 10g (0.6 oz) of pure alcohol
+- 1 standard drink = 10g (0.42 oz) of pure alcohol
 - Common standards: 12oz beer (5% ABV) = 1 standard, 5oz wine (12% ABV) = 1 standard, 1.5oz spirits (40% ABV) = 1 standard
 - If volume/ABV not specified, use typical values for the drink type
 - Be conservative with estimates - round down when uncertain

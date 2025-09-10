@@ -24,20 +24,22 @@ export function AddDrinkForm({
   const [drinkText, setDrinkText] = useState("");
   const [isAnalysing, setisAnalysing] = useState(false);
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
+  const [nextPlaceholder, setNextPlaceholder] = useState(1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [typedText, setTypedText] = useState("");
   const [isAiUpdated, setIsAiUpdated] = useState(false);
   const [previousStandards, setPreviousStandards] = useState(standards);
 
   const placeholders = [
-    "3 vodka red bulls", "half bottle of soju", "2 iced coffees with baileys", "1 shot of pink whitney",
-    "pregame with 2 196s", "2 aperol spritzes", "bottle of prosecco", "1 tequila soda", 
-    "a jager bomb", "2 vodka lemonades", "glass of red wine", "gin and tonic",
-    "one long island iced tea", "shot of fireball", "4 beers", "2 vodka cruisers",
-    "3 mango margaritas", "half bottle of wine", "2 whiskey sours", "3 vodka shots", 
-    "2 pina coladas", "a corona with lime", "double rum and coke", "2 cosmopolitans",
-    "a white claw", "2 old fashioneds", "3 mimosas", "shot of patron",
-    "2 dirty shirley temples", "4 seltzers", "3 vodka sodas", "2 negronis",
-    "5 bud lights", "2 espresso martinis", "half bottle of champagne", "3 manhattans"
+    "e.g. 3 vodka red bulls", "e.g. half bottle of soju", "e.g. 2 iced coffees with baileys", "e.g. 1 shot of pink whitney",
+    "e.g. pregame with 2 196s", "e.g. 2 aperol spritzes", "e.g. bottle of prosecco", "e.g. 1 tequila soda", 
+    "e.g. a jager bomb", "e.g. 2 vodka lemonades", "e.g. glass of red wine", "e.g. gin and tonic",
+    "e.g. one long island iced tea", "e.g. shot of fireball", "e.g. 4 beers", "e.g. 2 vodka cruisers",
+    "e.g. 3 mango margaritas", "e.g. half bottle of wine", "e.g. 2 whiskey sours", "e.g. 3 vodka shots", 
+    "e.g. 2 pina coladas", "e.g. a corona with lime", "e.g. double rum and coke", "e.g. 2 cosmopolitans",
+    "e.g. a white claw", "e.g. 2 old fashioneds", "e.g. 3 mimosas", "e.g. shot of patron",
+    "e.g. 2 dirty shirley temples", "e.g. 4 seltzers", "e.g. 1 vodka soda", "e.g. 2 negronis",
+    "e.g. 5 bud lights", "e.g. 2 espresso martinis", "e.g. half bottle of champagne", "e.g. 3 manhattans"
   ];
 
   const loadingMessagesRef = useRef([
@@ -46,13 +48,28 @@ export function AddDrinkForm({
     "Measuring regret levels...", "Analysing poor decisions...", "Computing social lubricant..."
   ]);
 
-  // Rotate placeholders every 7 seconds - randomly
+  // Rotate placeholders every 4 seconds with smooth transitions
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentPlaceholder(Math.floor(Math.random() * placeholders.length));
-    }, 7000);
+      if (!drinkText && !isAnalysing) { // Only transition when input is empty and not analyzing
+        // Pick a random placeholder that's different from current
+        let nextIndex = Math.floor(Math.random() * placeholders.length);
+        while (nextIndex === currentPlaceholder && placeholders.length > 1) {
+          nextIndex = Math.floor(Math.random() * placeholders.length);
+        }
+        
+        setNextPlaceholder(nextIndex);
+        setIsTransitioning(true);
+        
+        // Complete the transition after animation duration
+        setTimeout(() => {
+          setCurrentPlaceholder(nextIndex);
+          setIsTransitioning(false);
+        }, 600); // Match the animation duration
+      }
+    }, 4000);
     return () => clearInterval(interval);
-  }, [placeholders.length]);
+  }, [placeholders.length, drinkText, isAnalysing, currentPlaceholder]);
 
   // Pick a random loading message when analysis starts and type it out
   useEffect(() => {
@@ -63,7 +80,6 @@ export function AddDrinkForm({
 
     // Pick a random message once when analysis starts
     const randomMessage = loadingMessagesRef.current[Math.floor(Math.random() * loadingMessagesRef.current.length)] ?? "Analysing...";
-    console.log("Selected message:", randomMessage); // Debug log
     setTypedText("");
     
     // Delay before starting to type
@@ -106,8 +122,6 @@ export function AddDrinkForm({
         new Promise(resolve => setTimeout(resolve, 2000)) // 2 second minimum delay
       ]);
       
-      console.log("AI Drink Analysis:", analysis);
-      
       if (analysis.standardDrinks > 0) {
         setPreviousStandards(standards); // Store current value before changing
         const aiValue = roundToOneDecimal(analysis.standardDrinks);
@@ -132,7 +146,7 @@ export function AddDrinkForm({
     <div className="flex flex-col gap-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-md p-4">
       {/* AI Drink Input */}
       <div className="flex flex-col gap-2">
-        <label className="text-[#e5e5e5] text-sm font-medium">Type your drink with AI</label>
+        <label className="text-[#e5e5e5] text-sm font-medium">What are you having?</label>
         <div className="flex gap-2">
           <AnimatePresence mode="wait">
             {isAnalysing ? (
@@ -158,15 +172,34 @@ export function AddDrinkForm({
                 transition={{ duration: 0.3 }}
                 className="flex gap-2 w-full"
               >
-                <input
-                  type="text"
-                  value={drinkText}
-                  onChange={(e) => setDrinkText(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={placeholders[currentPlaceholder]}
-                  tabIndex={-1}
-                  className="flex-1 min-w-0 rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 placeholder:text-white/50 placeholder:italic"
-                />
+                <div className="relative flex-1 min-w-0">
+                  <input
+                    type="text"
+                    value={drinkText}
+                    onChange={(e) => setDrinkText(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder=" " // Empty placeholder since we'll handle it with overlays
+                    tabIndex={-1}
+                    className="w-full rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30"
+                  />
+                  {/* Animated placeholder overlay */}
+                  {!drinkText && (
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none overflow-hidden">
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={isTransitioning ? nextPlaceholder : currentPlaceholder}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.6, ease: "easeInOut" }}
+                          className="text-white/30 italic whitespace-nowrap"
+                        >
+                          {placeholders[isTransitioning ? nextPlaceholder : currentPlaceholder]}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
                 <Button
                   onClick={handleAnalyseDrink}
                   disabled={!drinkText.trim()}

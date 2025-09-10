@@ -70,7 +70,13 @@ export function AddDrinkDrawer({
       {/* Fixed Bottom Bar */}
       <Drawer 
         open={drawerOpen} 
-        onOpenChange={setDrawerOpen} 
+        onOpenChange={(open) => {
+          setDrawerOpen(open);
+          // Blur active element when drawer opens to prevent aria-hidden warning
+          if (open && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        }}
         modal={true} 
         repositionInputs={false}
         shouldScaleBackground={false}
@@ -144,9 +150,30 @@ export function AddDrinkDrawer({
               </div>
               
               {/* Fixed footer with buttons only */}
-              <DrawerFooter className="flex-shrink-0 bg-black/40 backdrop-blur-sm flex flex-col gap-2 border-t border-white/10 p-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-                <Button onClick={handleAddDrink} disabled={addDrink.status === 'pending' || !currentTabQuery.data} className="w-full h-12 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15">
-                  {addDrink.status === 'pending' ? 'Adding...' : 'Add Drink'}
+              <DrawerFooter 
+                className="flex-shrink-0 flex flex-col gap-2 border-t border-white/10 p-4" 
+                style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+              >
+                <Button 
+                  onClick={handleAddDrink} 
+                  disabled={addDrink.status === 'pending' || !currentTabQuery.data} 
+                  className="relative w-full h-20 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15 transition-all duration-300"
+                  style={{
+                    animation: addDrink.status === 'pending' ? 'none' : 'subtle-pulse 3s ease-in-out infinite',
+                  }}
+                >
+                  {/* Very subtle blue overlay for pulsating effect */}
+                  <div 
+                    className="absolute inset-0 rounded-md bg-blue-500/20 opacity-0 pointer-events-none"
+                    style={{
+                      animation: addDrink.status === 'pending' ? 'none' : 'subtle-blue-pulse 3s ease-in-out infinite',
+                    }}
+                  />
+                  
+                  {/* Button content */}
+                  <span className="relative z-10">
+                    {addDrink.status === 'pending' ? 'Adding...' : 'Add Drink'}
+                  </span>
                 </Button>
                 <div className="flex gap-2 w-full">
                   {/* Stop Drinking Confirmation Dialog */}

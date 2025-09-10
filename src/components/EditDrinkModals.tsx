@@ -63,7 +63,13 @@ export function EditDrinkModals({
   return (
     <>
       {/* Edit Drink Dialog */}
-      <Dialog open={!!editingDrink} onOpenChange={(open) => !open && setEditingDrink(null)}>
+      <Dialog open={!!editingDrink} onOpenChange={(open) => {
+        if (!open) setEditingDrink(null);
+        // Blur active element when dialog opens to prevent aria-hidden warning
+        if (open && document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }}>
         <DialogContent className="flex flex-col w-[90vw] max-w-md rounded-md bg-black/40 backdrop-blur-sm shadow-lg border border-white/10 data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in sm:w-full">
           <DialogHeader className="px-6 pt-6 pb-4">
             <DialogTitle className="text-2xl font-bold mb-2 text-white">Edit Drink</DialogTitle>
@@ -99,6 +105,10 @@ export function EditDrinkModals({
         setEditDrawerOpen(open);
         if (!open) {
           setSelectedDrink(null);
+        }
+        // Blur active element when drawer opens to prevent aria-hidden warning
+        if (open && document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
         }
       }}>
         <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center">

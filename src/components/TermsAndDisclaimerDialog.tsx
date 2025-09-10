@@ -10,7 +10,13 @@ interface TermsAndDisclaimerDialogProps {
 
 export function TermsAndDisclaimerDialog({ isOpen, onClose, onContinue }: TermsAndDisclaimerDialogProps) {
   return (
-    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={open => {
+      if (!open) onClose();
+      // Blur active element when dialog opens to prevent aria-hidden warning
+      if (open && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }}>
       <DialogContent className="bg-black/40 backdrop-blur-sm border border-white/10 max-w-[45vh] max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-white text-2xl text-center">Terms and Disclaimer</DialogTitle>
