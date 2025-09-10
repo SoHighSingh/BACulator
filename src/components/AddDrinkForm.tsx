@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { analyseDrinkDetailed } from "~/lib/genai";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { AnimatedCounter } from "./ui/AnimatedCounter";
 
 interface AddDrinkFormProps {
   standards: number;
@@ -24,6 +25,8 @@ export function AddDrinkForm({
   const [isAnalysing, setisAnalysing] = useState(false);
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const [typedText, setTypedText] = useState("");
+  const [isAiUpdated, setIsAiUpdated] = useState(false);
+  const [previousStandards, setPreviousStandards] = useState(standards);
 
   const placeholders = [
     "3 vodka red bulls", "half bottle of soju", "2 iced coffees with baileys", "1 shot of pink whitney",
@@ -80,6 +83,17 @@ export function AddDrinkForm({
     return () => clearTimeout(startDelay);
   }, [isAnalysing]); // Removed loadingMessages dependency
 
+  // Reset AI update animation after 3 seconds
+  useEffect(() => {
+    if (isAiUpdated) {
+      const timeout = setTimeout(() => {
+        setIsAiUpdated(false);
+      }, 2500); // Animation lasts 3 seconds
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isAiUpdated]);
+
   async function handleAnalyseDrink() {
     if (!drinkText.trim()) return;
     
@@ -95,8 +109,11 @@ export function AddDrinkForm({
       console.log("AI Drink Analysis:", analysis);
       
       if (analysis.standardDrinks > 0) {
-        setStandards(roundToOneDecimal(analysis.standardDrinks));
+        setPreviousStandards(standards); // Store current value before changing
+        const aiValue = roundToOneDecimal(analysis.standardDrinks);
+        setStandards(aiValue);
         setDrinkText(""); // Clear input after successful analysis
+        setIsAiUpdated(true); // Trigger blue gradient animation
       }
     } catch (error) {
       console.error("Error analyzing drink:", error);
@@ -112,7 +129,7 @@ export function AddDrinkForm({
   };
 
   return (
-    <div className="flex flex-col gap-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-md p-4 mb-4">
+    <div className="flex flex-col gap-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-md p-4">
       {/* AI Drink Input */}
       <div className="flex flex-col gap-2">
         <label className="text-[#e5e5e5] text-sm font-medium">Type your drink with AI</label>
@@ -121,9 +138,9 @@ export function AddDrinkForm({
             {isAnalysing ? (
               <motion.div
                 key="loading"
-                initial={{ width: "calc(100% - 88px)", opacity: 0 }}
+                initial={{ width: "calc(100% - 48px)", opacity: 0 }}
                 animate={{ width: "100%", opacity: 1 }}
-                exit={{ width: "calc(100% - 88px)", opacity: 0 }}
+                exit={{ width: "calc(100% - 48px)", opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="h-[42px] rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-start italic"
               >
@@ -147,12 +164,12 @@ export function AddDrinkForm({
                   onChange={(e) => setDrinkText(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder={placeholders[currentPlaceholder]}
-                  className="flex-1 rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 placeholder:text-white/50 placeholder:italic"
+                  className="flex-1 min-w-0 rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 placeholder:text-white/50 placeholder:italic"
                 />
                 <Button
                   onClick={handleAnalyseDrink}
                   disabled={!drinkText.trim()}
-                  className="h-[42px] px-4 rounded-md bg-black/60 hover:bg-white/15 backdrop-blur-sm border border-white/10 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="h-[42px] w-20 flex-shrink-0 rounded-md bg-black/60 hover:bg-white/15 backdrop-blur-sm border border-white/10 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                 >
                   Analyse
                 </Button>
@@ -175,32 +192,87 @@ export function AddDrinkForm({
           >
             −
           </button>
-          <input
-            type="number"
-            min="0.1"
-            max="20"
-            step="0.1"
-            value={standards || ""}
-            onChange={e => {
-              const value = e.target.value;
-              if (value === "") {
-                setStandards(0);
-                return;
-              }
-              const numValue = Number(value);
-              if (!isNaN(numValue) && numValue >= 0) {
-                setStandards(numValue);
-              }
+          <motion.div
+            className="relative w-18 h-10 rounded-md border backdrop-blur-sm"
+            animate={{
+              backgroundColor: isAiUpdated ? "rgba(64, 131, 255, 0.45)" : "rgba(255, 255, 255, 0.2)",
+              borderColor: isAiUpdated ? "#82b7fc" : "rgba(255, 255, 255, 0.3)",
             }}
-            onBlur={e => {
-              const numValue = Number(e.target.value);
-              if (!isNaN(numValue) && numValue >= 0) {
-                setStandards(roundToOneDecimal(numValue));
-              }
+            transition={{
+              duration: 0.5,
+              ease: "easeInOut",
             }}
-            className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 w-18 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            placeholder="1.0"
-          />
+          >
+            {/* Gradient overlay that sweeps across */}
+            <motion.div
+              className="absolute inset-0 rounded-md pointer-events-none"
+              style={{
+                background: "linear-gradient(90deg, transparent 0%, #479cfd 50%, #4079ff 100%)",
+                opacity: 0,
+              }}
+              animate={{
+                opacity: isAiUpdated ? [0, 1, 0] : 0,
+                x: isAiUpdated ? ["-100%", "0%", "100%"] : "-100%",
+              }}
+              transition={{
+                duration: isAiUpdated ? 2 : 0,
+                ease: "easeOut",
+                times: isAiUpdated ? [0, 0.5, 1] : [0, 1],
+              }}
+            />
+            
+            {/* Dark background overlay when transitioning back */}
+            <motion.div
+              className="absolute inset-0 rounded-md"
+              animate={{
+                backgroundColor: isAiUpdated ? "rgba(6, 0, 16, 0.8)" : "rgba(6, 0, 16, 0)",
+              }}
+              transition={{ duration: 0.5, delay: isAiUpdated ? 1.5 : 0 }}
+              style={{ zIndex: 1 }}
+            />
+            
+            {/* Input field */}
+            <input
+              type="number"
+              min="0.1"
+              max="20"
+              step="0.1"
+              value={standards ? standards.toFixed(1) : ""}
+              onChange={e => {
+                const value = e.target.value;
+                if (value === "") {
+                  setStandards(0);
+                  setIsAiUpdated(false); // Clear animation if user manually changes
+                  return;
+                }
+                const numValue = Number(value);
+                if (!isNaN(numValue) && numValue >= 0) {
+                  setStandards(numValue);
+                  setIsAiUpdated(false); // Clear animation if user manually changes
+                }
+              }}
+              onBlur={e => {
+                const numValue = Number(e.target.value);
+                if (!isNaN(numValue) && numValue >= 0) {
+                  setStandards(roundToOneDecimal(numValue));
+                }
+              }}
+              className={`relative z-10 w-full h-full bg-transparent border-none outline-none text-white text-center px-3 py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isAiUpdated ? 'opacity-0' : 'opacity-100'}`}
+              placeholder="1.0"
+            />
+            
+            {/* Animated counter overlay when AI is updating */}
+            {isAiUpdated && (
+              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                <AnimatedCounter 
+                  value={standards} 
+                  startValue={previousStandards}
+                  decimals={1}
+                  className="text-white font-medium"
+                />
+              </div>
+            )}
+          </motion.div>
           <button
             onClick={() => setStandards(Math.min(20, Math.round((standards + 0.5) * 10) / 10))}
             className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg flex items-center justify-center transition-colors active:scale-95"

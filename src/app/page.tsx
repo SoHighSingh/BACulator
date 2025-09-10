@@ -139,7 +139,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col justify-between relative text-white overflow-hidden">
+    <main className="min-h-screen flex flex-col justify-between relative text-white">
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <DarkVeil 

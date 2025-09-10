@@ -68,7 +68,13 @@ export function AddDrinkDrawer({
   return (
     <>
       {/* Fixed Bottom Bar */}
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+      <Drawer 
+        open={drawerOpen} 
+        onOpenChange={setDrawerOpen} 
+        modal={true} 
+        repositionInputs={false}
+        shouldScaleBackground={false}
+      >
         <div className="fixed bottom-0 left-0 w-full bg-black/40 backdrop-blur-sm border-t border-white/10 p-4 z-50 flex gap-4">
           {currentTabQuery.data ? (
             <>
@@ -108,79 +114,88 @@ export function AddDrinkDrawer({
             </Button>
           )}
         </div>
-          <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center h-full">
-           <div className="mx-auto w-full max-w-md flex flex-col min-h-0">
-             <DrawerHeader className="flex-shrink-0">
-               <DrawerTitle className="text-[#e5e5e5]">Add Drink</DrawerTitle>
-               <DrawerDescription className="text-[#e5e5e5]/80">Log your drinks below.</DrawerDescription>
-             </DrawerHeader>
-             <div className="flex-1 p-4 pb-0">
-               <div className="mb-4">
-                 <DrinksList 
-                   drinksQuery={drinksQuery}
-                   userWeight={userWeight}
-                   userSex={userSex}
-                 />
-               </div>
-             </div>
-             <DrawerFooter className="fixed max-w-md w-full flex-shrink-0 bg-transparent flex flex-col gap-2 border-t border-white/10 p-4 bottom-0">
-               <AddDrinkForm
-                 standards={newStandards}
-                 setStandards={setNewStandards}
-                 selectedTime={selectedTime}
-                 convertTo24Hour={convertTo24Hour}
-                 handleTimeChange={handleTimeChange}
-                 roundToOneDecimal={roundToOneDecimal}
-               />
-               <Button onClick={handleAddDrink} disabled={addDrink.status === 'pending' || !currentTabQuery.data} className="w-full h-18 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"> {addDrink.status === 'pending' ? 'Adding...' : 'Add Drink'} </Button>
-               <div className="flex gap-2 w-full">
-                 {/* Stop Drinking Confirmation Dialog */}
-                 <Dialog open={confirmStopOpen} onOpenChange={setConfirmStopOpen}>
-                   <DialogTrigger asChild>
-                     <Button
-                       variant="destructive"
-                       disabled={!currentTabQuery.data || stopTab.status === 'pending'}
-                       className="flex-1"
-                     >
-                       Stop Drinking
-                     </Button>
-                   </DialogTrigger>
-                   <DialogContent className="bg-black/40 backdrop-blur-sm border border-white/10">
-                     <DialogHeader>
-                       <DialogTitle className="text-[#e5e5e5]">Stop Drinking?</DialogTitle>
-                       <DialogDescription className="text-[#e5e5e5]/50">
-                         This will end your current tab and cannot be undone.
-                       </DialogDescription>
-                     </DialogHeader>
-                     <DialogFooter>
-                       <Button
-                         variant="destructive"
-                         onClick={async () => {
-                           try {
-                             await stopTab.mutateAsync();
-                             setConfirmStopOpen(false);
-                             setDrawerOpen(false);
-                           } catch (error) {
-                             console.error('Error stopping tab:', error);
-                             alert('Failed to stop drinking session. Please try again.');
-                           }
-                         }}
-                         disabled={!currentTabQuery.data || stopTab.status === 'pending'}
-                       >
-                         Yes, stop drinking
-                       </Button>
-                       <DialogClose asChild>
-                         <Button variant="outline">Cancel</Button>
-                       </DialogClose>
-                     </DialogFooter>
-                   </DialogContent>
-                 </Dialog>
-                 <DrawerClose asChild>
-                   <Button variant="outline" className="flex-1">Cancel</Button>
-                 </DrawerClose>
-               </div>
-             </DrawerFooter>
-          </div>
+          <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center" style={{ height: '85vh', maxHeight: '85dvh' }}>
+            <div className="mx-auto w-full max-w-md flex flex-col h-full">
+              <DrawerHeader className="flex-shrink-0">
+                <DrawerTitle className="text-[#e5e5e5]">Add Drink</DrawerTitle>
+                <DrawerDescription className="text-[#e5e5e5]/80">Log your drinks below.</DrawerDescription>
+              </DrawerHeader>
+              
+              {/* Scrollable content area */}
+              <div className="flex-1 overflow-y-auto px-4 pb-2 custom-scrollbar">
+                {/* Drinks list - constrained height */}
+                <div className="mb-4">
+                  <DrinksList 
+                    drinksQuery={drinksQuery}
+                    userWeight={userWeight}
+                    userSex={userSex}
+                  />
+                </div>
+                
+                {/* Add drink form - MOVED HERE from footer */}
+                <AddDrinkForm
+                  standards={newStandards}
+                  setStandards={setNewStandards}
+                  selectedTime={selectedTime}
+                  convertTo24Hour={convertTo24Hour}
+                  handleTimeChange={handleTimeChange}
+                  roundToOneDecimal={roundToOneDecimal}
+                />
+              </div>
+              
+              {/* Fixed footer with buttons only */}
+              <DrawerFooter className="flex-shrink-0 bg-black/40 backdrop-blur-sm flex flex-col gap-2 border-t border-white/10 p-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                <Button onClick={handleAddDrink} disabled={addDrink.status === 'pending' || !currentTabQuery.data} className="w-full h-12 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15">
+                  {addDrink.status === 'pending' ? 'Adding...' : 'Add Drink'}
+                </Button>
+                <div className="flex gap-2 w-full">
+                  {/* Stop Drinking Confirmation Dialog */}
+                  <Dialog open={confirmStopOpen} onOpenChange={setConfirmStopOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        disabled={!currentTabQuery.data || stopTab.status === 'pending'}
+                        className="flex-1"
+                      >
+                        Stop Drinking
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-black/40 backdrop-blur-sm border border-white/10">
+                      <DialogHeader>
+                        <DialogTitle className="text-[#e5e5e5]">Stop Drinking?</DialogTitle>
+                        <DialogDescription className="text-[#e5e5e5]/50">
+                          This will end your current tab and cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button
+                          variant="destructive"
+                          onClick={async () => {
+                            try {
+                              await stopTab.mutateAsync();
+                              setConfirmStopOpen(false);
+                              setDrawerOpen(false);
+                            } catch (error) {
+                              console.error('Error stopping tab:', error);
+                              alert('Failed to stop drinking session. Please try again.');
+                            }
+                          }}
+                          disabled={!currentTabQuery.data || stopTab.status === 'pending'}
+                        >
+                          Yes, stop drinking
+                        </Button>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <DrawerClose asChild>
+                    <Button variant="outline" className="flex-1">Cancel</Button>
+                  </DrawerClose>
+                </div>
+              </DrawerFooter>
+            </div>
         </DrawerContent>
       </Drawer>
     </>

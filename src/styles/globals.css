@@ -182,4 +182,38 @@
       max-height: 100vh;
     }
   }
+
+  /* Prevent viewport resize on mobile keyboard */
+  .drawer-content-mobile {
+    position: fixed !important;
+  }
+
+  /* Vaul drawer specific overrides for mobile keyboard */
+  [vaul-drawer][vaul-drawer-direction="bottom"] {
+    /* Use visual viewport height */
+    height: auto !important;
+    max-height: 85vh !important;
+    max-height: 85dvh !important;
+  }
+
+  /* Prevent drawer from moving with keyboard on mobile */
+  @media (max-width: 768px) {
+    [vaul-drawer-direction="bottom"][data-state="open"] {
+      transform: translate3d(0, 0, 0) !important;
+    }
+    
+    /* Keep drawer at fixed position when input is focused */
+    [vaul-drawer]:has(input:focus, textarea:focus) {
+      position: fixed !important;
+      bottom: 0 !important;
+      transform: translateY(0) !important;
+    }
+  }
+
+  /* Ensure inputs don't cause viewport jumps */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
 }
