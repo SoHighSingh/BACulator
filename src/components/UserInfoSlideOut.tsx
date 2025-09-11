@@ -91,7 +91,7 @@ export default function UserInfoSlideOut({
           <DrawerHeader className="flex-shrink-0 relative">
             <div className="absolute top-2 right-4">
               <button 
-                className="w-8 h-8 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+                className="w-8 h-8 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
                 onClick={() => {
                   setShowTutorial(true);
                   onClose(); // Close the user info slide out when tutorial opens
@@ -132,7 +132,7 @@ export default function UserInfoSlideOut({
                 <select
                   value={sex}
                   onChange={e => setSex(e.target.value as "male" | "female" | "")}
-                  className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 focus:border-white/40 focus:outline-none transition-colors [&>option]:bg-black [&>option]:text-white"
+                  className="rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 focus:border-white/40 focus:outline-none transition-colors [&>option]:bg-black [&>option]:text-white cursor-pointer"
                   required
                 >
                   <option value="" disabled>Select</option>

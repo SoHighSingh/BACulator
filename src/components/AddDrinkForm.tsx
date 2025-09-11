@@ -222,7 +222,7 @@ export function AddDrinkForm({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setStandards(Math.max(0, standards - 0.5))}
-            className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg flex items-center justify-center transition-colors active:scale-95"
+            className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
           >
             −
           </button>
@@ -309,7 +309,7 @@ export function AddDrinkForm({
           </motion.div>
           <button
             onClick={() => setStandards(Math.min(20, Math.round((standards + 0.5) * 10) / 10))}
-            className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg flex items-center justify-center transition-colors active:scale-95"
+            className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
           >
             +
           </button>
@@ -331,7 +331,7 @@ export function AddDrinkForm({
               handleTimeChange(timeString);
             }
           }}
-          className="rounded-md w-40 px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30"
+          className="rounded-md w-40 px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30 cursor-pointer"
         />
       </div>
     </div>

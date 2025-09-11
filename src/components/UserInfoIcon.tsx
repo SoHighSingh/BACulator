@@ -27,7 +27,7 @@ export function UserInfoIcon({ onClick }: UserInfoIconProps) {
         onClick?.();
       }}
         title="User Info"
-        className="hover:opacity-80 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-4 py-2 text-sm font-medium text-center"
+        className="hover:opacity-80 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-4 py-2 text-sm font-medium text-center cursor-pointer"
       >
         <Image
           src="/UserIcon.png"

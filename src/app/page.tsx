@@ -120,7 +120,7 @@ export default function Home() {
           </p>
           <button
             onClick={() => setIsTermsDialogOpen(true)}
-            className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-6 py-3 text-lg sm:text-xl font-medium min-w-[160px] text-center hover:bg-black/50 transition-colors"
+            className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-6 py-3 text-lg sm:text-xl font-medium min-w-[160px] text-center hover:bg-black/50 transition-colors cursor-pointer"
           >
             Sign in with Google
           </button>

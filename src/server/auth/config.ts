@@ -35,6 +35,15 @@ export const authConfig = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+          // Force the auth to happen in a proper browser window
+          display: "page",
+        },
+      },
     }),
     /**
      * ...add more providers here.
@@ -55,5 +64,19 @@ export const authConfig = {
         id: user.id,
       },
     }),
+    async signIn({ account }) {
+      // You can add additional checks here
+      if (account?.provider === "google") {
+        return true;
+      }
+      return false;
+    },
+    async redirect({ url, baseUrl }) {
+      // Always redirect to base URL after sign in
+      // This helps avoid issues with WebViews
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
   },
 } satisfies NextAuthConfig;
