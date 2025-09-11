@@ -101,16 +101,20 @@ export function EditDrinkModals({
       </Dialog>
 
       {/* Edit Drinks Drawer */}
-      <Drawer open={editDrawerOpen} onOpenChange={(open) => {
-        setEditDrawerOpen(open);
-        if (!open) {
-          setSelectedDrink(null);
-        }
-        // Blur active element when drawer opens to prevent aria-hidden warning
-        if (open && document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
-      }}>
+      <Drawer 
+        open={editDrawerOpen} 
+        onOpenChange={(open) => {
+          setEditDrawerOpen(open);
+          if (!open) {
+            setSelectedDrink(null);
+          }
+          // Blur active element when drawer opens to prevent aria-hidden warning
+          if (open && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        }}
+        modal={true}
+      >
         <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center">
           <div className="mx-auto w-full max-w-md flex flex-col h-[70vh]">
             <DrawerHeader>

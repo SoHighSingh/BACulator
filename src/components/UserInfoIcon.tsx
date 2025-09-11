@@ -19,7 +19,13 @@ export function UserInfoIcon({ onClick }: UserInfoIconProps) {
     <div className="absolute top-4 right-4 z-50">
       <button
         type="button"
-        onClick={onClick}
+        onClick={(e) => {
+        // Blur the button before opening drawer
+        if (e.currentTarget instanceof HTMLElement) {
+          e.currentTarget.blur();
+        }
+        onClick?.();
+      }}
         title="User Info"
         className="hover:opacity-80 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-4 py-2 text-sm font-medium text-center"
       >

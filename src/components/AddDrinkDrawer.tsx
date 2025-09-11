@@ -90,8 +90,14 @@ export function AddDrinkDrawer({
               <Button 
                 className="flex-[1] h-20 rounded-md bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/15"
                 onClick={() => {
+                  // Blur focus before transitioning drawers
+                  if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur();
+                  }
                   setDrawerOpen(false);
-                  setEditDrawerOpen(true);
+                  setTimeout(() => {
+                    setEditDrawerOpen(true);
+                  }, 50); // Small delay to ensure proper transition
                 }}
               >
                 Edit

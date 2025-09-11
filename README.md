@@ -1,6 +1,7 @@
 # 🍻 BACulator
 
 <div align="center">
+  <img src="https://img.shields.io/badge/Google_Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini AI" />
   <img src="https://img.shields.io/badge/Next.js-15.4.1-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/tRPC-10.0-398ccb?style=for-the-badge&logo=trpc&logoColor=white" alt="tRPC" />
@@ -45,6 +46,7 @@ Most BAC calculators oversimplify alcohol metabolism, leading to dangerous inacc
 Built with cutting-edge pharmacokinetic science, BACulator provides:
 
 🔬 **Scientific Precision** - Advanced absorption curve modeling with exponential uptake functions  
+🤖 **AI-Powered Input** - Natural language drink recognition with intelligent parsing  
 ⏱️ **Real-Time Accuracy** - Live BAC calculations updated every minute  
 📈 **Peak Prediction** - Know exactly when your BAC will peak and plateau  
 🎯 **Intelligent Elimination** - Proper zero-order kinetics with continuous metabolism modeling  
@@ -64,6 +66,13 @@ Experience the difference that scientific accuracy makes in BAC calculation.
 - **Gender-Specific Distribution**: Male (0.68) vs Female (0.55) body water ratios
 - **Timeline Reconstruction**: Adaptive time-step algorithm for precise BAC tracking
 
+### 🤖 **AI-Powered Drink Recognition**
+- **Smart Drink Analysis**: Advanced AI that understands natural drink descriptions
+- **Automatic Standard Calculation**: Instantly converts "3 vodka red bulls" to accurate standard drinks
+- **Context-Aware Processing**: Recognizes drink sizes, alcohol content, and regional variations
+- **Confidence Scoring**: AI provides accuracy estimates for each drink analysis
+- **Fallback Safety**: Multiple validation layers ensure reliable calculations
+
 ### 📊 **Intelligent Tracking & Predictions**
 - **Real-Time BAC Monitoring**: Live updates with minute-by-minute precision
 - **Peak BAC Calculation**: Scientifically determine when maximum intoxication occurs
@@ -72,11 +81,12 @@ Experience the difference that scientific accuracy makes in BAC calculation.
 - **Rising/Falling Detection**: Know if your BAC is still increasing
 
 ### 🎨 **Premium User Experience**
+- **Natural Language Input**: Type drinks as you'd describe them - "2 beers and a shot"
 - **Animated BAC Visualizations**: Dynamic water-level indicators and trend graphs
 - **Session Management**: Start/stop drinking periods with comprehensive drink logging
 - **Mobile-First Design**: Optimized touch interface with responsive layouts
 - **Real-Time Sync**: Seamless data persistence across devices
-- **Intuitive Controls**: One-tap drink logging with smart time defaults
+- **Intuitive Controls**: AI-powered drink logging with smart time defaults
 
 ### 🔐 **Enterprise-Grade Security**
 - **Google OAuth Integration**: Secure authentication without password management
@@ -156,6 +166,7 @@ Understanding what different BAC levels mean for your body:
 - **🔐 NextAuth.js**: Production-ready authentication with Google OAuth
 - **🎨 Tailwind CSS**: Utility-first styling with shadcn/ui components
 - **🐘 PostgreSQL**: Robust relational database for complex data relationships
+- **🤖 Google Gemini AI**: Advanced natural language processing for drink recognition
 
 ### **Core Algorithm Implementation**
 
@@ -171,6 +182,16 @@ function calculateBACWithProperElimination(
   // Exponential absorption curve modeling
   // Continuous elimination tracking
   // Precision rounding to 4 decimal places
+}
+```
+
+#### **AI Drink Analysis Engine**
+```typescript
+async function analyseDrinkDetailed(drinkInput: string): Promise<DrinkAnalysis> {
+  // Google Gemini AI integration for natural language processing
+  // Conservative estimation with confidence scoring
+  // Fallback validation layers for reliability
+  // JSON parsing with error handling
 }
 ```
 
@@ -210,64 +231,6 @@ Drink {
   standards: Float -- Australian standard drinks (10g alcohol each)
   finishedAt: DateTime -- When consumption completed
 }
-```
-
----
-
-## 🚀 **Professional Development Setup**
-
-### **Prerequisites**
-- **Node.js** 18.17+ (LTS recommended)
-- **PostgreSQL** 14+ database instance
-- **Google Cloud Console** project with OAuth credentials
-
-### **Installation & Configuration**
-
-1. **Repository Setup**
-   ```bash
-   git clone https://github.com/yourusername/baculator.git
-   cd baculator
-   npm install
-   ```
-
-2. **Environment Configuration**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Configure your environment variables:
-   ```env
-   # Database Connection
-   DATABASE_URL="postgresql://username:password@localhost:5432/baculator"
-   
-   # Authentication Security
-   NEXTAUTH_SECRET="your-cryptographically-secure-secret"
-   NEXTAUTH_URL="http://localhost:3000"
-   
-   # Google OAuth Credentials
-   GOOGLE_CLIENT_ID="your-google-oauth-client-id"
-   GOOGLE_CLIENT_SECRET="your-google-oauth-client-secret"
-   ```
-
-3. **Database Initialization**
-   ```bash
-   npx prisma db push    # Create database schema
-   npx prisma generate   # Generate Prisma client
-   npx prisma studio     # Optional: Visual database browser
-   ```
-
-4. **Development Server**
-   ```bash
-   npm run dev          # Start development server
-   npm run typecheck    # Verify TypeScript compilation
-   npm run lint         # Code quality checks
-   ```
-
-### **Production Deployment**
-```bash
-npm run build         # Optimized production build
-npm start            # Production server
-npm run db:migrate   # Database migrations for production
 ```
 
 ---
@@ -312,11 +275,12 @@ Traditional BAC calculators can be dangerously misleading. BACulator's scientifi
 - **🔬 Research**: Accurate BAC modeling for academic or clinical studies
 
 ### **Competitive Advantages**
+- **🤖 Natural Language Processing**: First BAC calculator with AI-powered drink recognition
 - **⏱️ Time-Aware Calculations**: Accounts for when drinks were consumed, not just quantity
 - **📈 Peak Prediction**: Know when maximum intoxication will occur
 - **🔄 Session Continuity**: Resume calculations across app restarts
-- **📱 Offline Capability**: Core calculations work without internet connection
 - **🎯 Precision**: 4-decimal-place accuracy vs typical 2-decimal competitors
+- **🧠 Smart Input**: Type drinks naturally - no complex menus or conversions needed
 
 ---
 
@@ -351,7 +315,5 @@ Standard Drinks = (Volume in ml × Alcohol % × 0.789) ÷ 10
 **Remember: This tool is for educational purposes only. Never drink and drive.**
 
 ---
-
-**⭐ Find this project valuable? Give it a star to support responsible drinking education! ⭐**
 
 </div>

@@ -211,11 +211,9 @@ export function BACIndicator({
       animationId = requestAnimationFrame(animate);
     };
     
-    console.log('Starting wave animation');
     animate();
     
     return () => {
-      console.log('Cleaning up wave animation');
       if (animationId) {
         cancelAnimationFrame(animationId);
       }

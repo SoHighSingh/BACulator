@@ -60,14 +60,32 @@ export default function UserInfoSlideOut({
     }, 1500);
   };
 
-  return (
-    <Drawer open={isOpen} onOpenChange={open => {
-      if (!open) onClose();
-      // Blur active element when drawer opens to prevent aria-hidden warning
-      if (open && document.activeElement instanceof HTMLElement) {
+  // Add useEffect to handle focus when opening
+  React.useEffect(() => {
+    if (isOpen) {
+      // Immediately blur any active element when drawer opens
+      if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
-    }} repositionInputs={false}>
+      // Double-check after a short delay
+      const timer = setTimeout(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  return (
+    <Drawer 
+      open={isOpen} 
+      onOpenChange={open => {
+        if (!open) onClose();
+      }} 
+      repositionInputs={false}
+      modal={true}
+    >
       <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center" style={{ height: '85vh', maxHeight: '85dvh' }}>
         <div className="mx-auto w-full max-w-md flex flex-col h-full">
           <DrawerHeader className="flex-shrink-0 relative">

@@ -23,7 +23,14 @@ export default function UserInfoSlideOutProvider({ children }: { children: React
   const { data: session } = useSession();
 
   const openUserInfo = () => {
-    setIsUserInfoOpen(true);
+    // Blur any active element first
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    // Small delay to ensure focus is cleared
+    setTimeout(() => {
+      setIsUserInfoOpen(true);
+    }, 50);
   };
 
   return (
