@@ -78,7 +78,7 @@ export function AddDrinkDrawer({
           }
         }}
         modal={true} 
-        repositionInputs={true}
+        repositionInputs={false}
         shouldScaleBackground={false}
       >
         <div className="fixed bottom-0 left-0 w-full bg-black/40 backdrop-blur-sm border-t border-white/10 p-4 z-50 flex gap-4">
@@ -126,7 +126,7 @@ export function AddDrinkDrawer({
             </Button>
           )}
         </div>
-          <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center" style={{ height: '85vh', maxHeight: '85dvh' }}>
+          <DrawerContent className="bg-black/40 backdrop-blur-sm border border-white/10 flex flex-col items-center" style={{ height: '85vh', maxHeight: 'min(85vh, 85dvh)' }}>
             <div className="mx-auto w-full max-w-md flex flex-col h-full">
               <DrawerHeader className="flex-shrink-0">
                 <DrawerTitle className="text-[#e5e5e5]">Add Drink</DrawerTitle>
