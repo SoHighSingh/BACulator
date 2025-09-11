@@ -179,7 +179,6 @@ export function AddDrinkForm({
                     onChange={(e) => setDrinkText(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder=" " // Empty placeholder since we'll handle it with overlays
-                    tabIndex={-1}
                     className="w-full rounded-md px-3 py-2 text-white bg-white/20 backdrop-blur-sm border border-white/30"
                   />
                   {/* Animated placeholder overlay */}

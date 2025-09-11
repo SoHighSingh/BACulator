@@ -78,7 +78,7 @@ export function AddDrinkDrawer({
           }
         }}
         modal={true} 
-        repositionInputs={false}
+        repositionInputs={true}
         shouldScaleBackground={false}
       >
         <div className="fixed bottom-0 left-0 w-full bg-black/40 backdrop-blur-sm border-t border-white/10 p-4 z-50 flex gap-4">
