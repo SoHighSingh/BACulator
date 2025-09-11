@@ -1,10 +1,37 @@
 import { z } from "zod";
+import type { PrismaClient } from "@prisma/client";
 
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
+
+// Helper function to clean up old tabs, keeping only the 5 most recent
+async function cleanupOldTabs(db: PrismaClient, userId: string) {
+  // Get all tabs for the user, ordered by creation date (newest first)
+  const allTabs = await db.tab.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true }
+  });
+
+  // If user has more than 5 tabs, delete the oldest ones
+  if (allTabs.length > 5) {
+    const tabsToDelete = allTabs.slice(5); // Keep first 5, delete the rest
+    const tabIdsToDelete = tabsToDelete.map(tab => tab.id);
+
+    // Delete drinks associated with old tabs first (due to foreign key constraint)
+    await db.drink.deleteMany({
+      where: { tabId: { in: tabIdsToDelete } }
+    });
+
+    // Then delete the old tabs
+    await db.tab.deleteMany({
+      where: { id: { in: tabIdsToDelete } }
+    });
+  }
+}
 
 export const postRouter = createTRPCRouter({
   hello: publicProcedure
@@ -48,6 +75,10 @@ export const postRouter = createTRPCRouter({
         data: { finishedAt: new Date() } 
       });
     }
+    
+    // Clean up old tabs - keep only the 5 most recent tabs per user
+    await cleanupOldTabs(ctx.db, userId);
+    
     // Create new tab
     return ctx.db.tab.create({
       data: { userId, name: `Session ${new Date().toLocaleString()}` },
@@ -57,6 +88,10 @@ export const postRouter = createTRPCRouter({
     const userId = ctx.session.user.id;
     const openTab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
     if (!openTab) throw new Error("No open tab");
+    
+    // Clean up old tabs when stopping a tab
+    await cleanupOldTabs(ctx.db, userId);
+    
     return ctx.db.tab.update({ where: { id: openTab.id }, data: { finishedAt: new Date() } });
   }),
   getCurrentTab: protectedProcedure.query(async ({ ctx }) => {
