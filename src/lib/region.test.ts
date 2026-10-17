@@ -56,9 +56,11 @@ describe("region", () => {
       expect(serves).toHaveLength(6);
       for (const s of serves) expect(s.standards).toBeGreaterThan(0);
     }
-    // A US 12 oz beer at 5% is about one US standard drink.
+    // A US 12 oz beer at 5% is one US standard drink, and must read "1.0", not "1.1".
     const beer = servesFor(us)[0]!;
-    expect(toRegionStandards(beer.standards, us)).toBeCloseTo(1, 0);
+    expect((Math.round(toRegionStandards(beer.standards, us) * 10) / 10).toFixed(1)).toBe("1.0");
+    // Never rounded below the alcohol actually in the serve.
+    for (const s of servesFor(metric)) expect(s.standards * 10).toBeGreaterThanOrEqual((s.volumeMl * s.abv * 0.789) / 100 - 1e-9);
   });
 
   it("uses the region's emergency number", () => {

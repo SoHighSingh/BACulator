@@ -1,7 +1,7 @@
 import { useRef } from "react";
 
 import type { LoggedDrink } from "~/hooks/useNight";
-import type { NightModel } from "~/lib/estimate-display";
+import { formatPoint, type NightModel } from "~/lib/estimate-display";
 import { AddDock, type Notice, type QuickDrink } from "./AddDock";
 import { FluidGauge } from "./FluidGauge";
 import { GetHome } from "./GetHome";
@@ -40,7 +40,7 @@ export function NightView(props: NightViewProps) {
 
   return (
     <div className="app-shell fixed inset-0 bg-bg text-ink">
-      <header className="app-top mx-auto flex w-full max-w-[480px] items-center gap-3 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pr-32 pb-2 max-[360px]:pr-28">
+      <header className="app-top mx-auto flex w-full max-w-[480px] items-center gap-3 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pr-28 pb-2">
         <h1 className="min-w-0 flex-1 truncate text-xl font-bold tracking-[-0.01em]">BACulator</h1>
         <button
           type="button"
@@ -54,10 +54,15 @@ export function NightView(props: NightViewProps) {
       <main className="app-main min-h-0 overflow-y-auto overscroll-contain">
         <div className="mx-auto flex w-full max-w-[480px] flex-col gap-4 px-4 pb-6">
           {model.notSafeToDrive && (
-            <p role="status" className="sticky top-0 z-10 -mx-4 bg-bg px-4 py-2 text-[22px] font-bold text-alert">
-              <span className="flex min-h-12 items-center gap-2 rounded-2xl bg-surface px-4 py-2">
-                <WarningMark />
-                Not safe to drive
+            <p role="status" className="sticky top-0 z-10 -mx-4 bg-bg px-4 pt-1 pb-2 text-xl font-bold text-alert">
+              <span className="flex min-h-12 items-center gap-2 rounded-2xl bg-surface px-4">
+                <WarningMark className="size-6" />
+                <span className="flex-1 whitespace-nowrap max-[360px]:text-lg">Not safe to drive</span>
+                {model.bac !== null && model.bac > 0 && (
+                  <span className="text-lg font-semibold whitespace-nowrap text-ink tabular-nums max-[360px]:text-base">
+                    about {formatPoint(model.bac)}
+                  </span>
+                )}
               </span>
             </p>
           )}

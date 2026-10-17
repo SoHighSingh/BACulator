@@ -33,10 +33,10 @@ export function TonightList({ drinks, onRemove }: TonightListProps) {
         </p>
       </header>
       <ul className="mt-4 flex flex-col">
-        {newestFirst.map((drink, i) => (
+        {newestFirst.map((drink) => (
           <li
             key={drink.id}
-            className={`-mx-2 flex items-center justify-between gap-6 rounded-xl px-2 py-3 ${i % 2 === 0 ? "bg-surface-2/50" : ""}`}
+            className="flex items-center justify-between gap-6 py-3"
           >
             <div className="min-w-0">
               <p className="text-lg font-semibold text-ink">{drinkLabel(drink, std)}</p>

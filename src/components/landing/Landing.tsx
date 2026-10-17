@@ -175,15 +175,15 @@ export function Landing({ onStart }: LandingProps) {
           </div>
           <div className="flex flex-col justify-end gap-6 text-xl leading-relaxed">
             <p>
-              You get one clear number, and the range it likely sits in, because bodies and pours vary by about a
-              fifth either way. Plus a window for when it should be back to zero.
+              You get one clear number, and the range it likely sits in, because bodies and pours vary a lot. Plus
+              a window for when it should be back to zero.
             </p>
             <p className="inline-flex -rotate-2 items-center gap-3 self-start rounded-lg border-[3px] border-stamp px-4 py-2 text-2xl font-bold text-stamp">
               Not safe to drive
             </p>
             <p>
-              While the estimate is above zero, that&apos;s the only thing it says about driving. No limit lines, no
-              green zones, no countdowns.
+              Until you&apos;re well clear of zero, that&apos;s the only thing it says about driving. No limit lines,
+              no green zones, no countdowns.
             </p>
           </div>
         </div>

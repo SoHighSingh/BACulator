@@ -170,7 +170,7 @@ export function AddSheet({ open, onClose, onAdd }: AddSheetProps) {
                 }
               }}
               onKeyDown={(e) => e.key === "Enter" && void readDrink()}
-              placeholder="e.g. 2 schooners of Great Northern"
+              placeholder={region.example}
               autoComplete="off"
               enterKeyHint="go"
               className="min-h-14 min-w-0 flex-1 rounded-xl border-2 border-line bg-surface px-4 text-lg text-ink placeholder:text-ink-2 focus:border-amber focus:outline-none"

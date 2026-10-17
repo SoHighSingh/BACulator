@@ -62,8 +62,8 @@ export function AddDock({ repeat, recents, lastDrink, notice, now, onAdd, onOpen
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[480px] flex-col gap-3 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
-      <div className={`flex min-h-16 items-center gap-3 rounded-2xl px-4 ${live ? "bg-surface-3" : "bg-surface"}`}>
+    <div className="mx-auto flex w-full max-w-[480px] flex-col gap-2.5 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className={`flex min-h-14 items-center gap-3 rounded-2xl px-4 ${live ? "bg-surface-3" : "bg-surface"}`}>
         {/* One persistent live region: screen readers announce text changes, not remounts. */}
         <p aria-live="polite" className="min-w-0 flex-1 truncate text-lg text-ink">
           <span key={live?.at ?? "idle"} className="snack inline">
@@ -85,7 +85,7 @@ export function AddDock({ repeat, recents, lastDrink, notice, now, onAdd, onOpen
         <button
           type="button"
           onClick={() => onAdd(repeat)}
-          className="press dock-primary mt-2 flex min-h-24 w-full items-center gap-4 rounded-[28px] bg-amber px-5 text-left text-bg active:bg-amber-press"
+          className="press dock-primary mt-1.5 flex min-h-[84px] w-full items-center gap-4 rounded-[28px] bg-amber px-5 text-left text-bg active:bg-amber-press"
         >
           <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-bg/10">
             <DrinkIcon kind={drinkKind(repeat)} className="size-8" />
@@ -103,7 +103,7 @@ export function AddDock({ repeat, recents, lastDrink, notice, now, onAdd, onOpen
         <button
           type="button"
           onClick={onOpenAdd}
-          className="press dock-primary mt-2 flex min-h-24 w-full items-center gap-4 rounded-[28px] bg-amber px-5 text-left text-[26px] font-bold text-bg active:bg-amber-press"
+          className="press dock-primary mt-1.5 flex min-h-[84px] w-full items-center gap-4 rounded-[28px] bg-amber px-5 text-left text-[26px] font-bold text-bg active:bg-amber-press"
         >
           + Add a drink
         </button>
@@ -116,7 +116,7 @@ export function AddDock({ repeat, recents, lastDrink, notice, now, onAdd, onOpen
               key={`${drink.name ?? ""}|${drink.standards}`}
               type="button"
               onClick={() => onAdd(drink)}
-              className="press flex min-h-[72px] items-center gap-3 rounded-2xl bg-surface-3 px-3 py-2 text-left text-ink active:bg-line"
+              className="press flex min-h-16 items-center gap-3 rounded-2xl bg-surface-3 px-3 py-2 text-left text-ink active:bg-line"
             >
               <DrinkIcon kind={drinkKind(drink)} className="size-6" />
               <span className="min-w-0">
@@ -129,7 +129,7 @@ export function AddDock({ repeat, recents, lastDrink, notice, now, onAdd, onOpen
             type="button"
             onClick={onOpenAdd}
             className={`press flex items-center justify-center rounded-2xl bg-surface-3 px-3 text-lg font-bold text-ink active:bg-line ${
-              shortcuts.length % 2 === 0 ? "col-span-2 min-h-14" : "min-h-[72px]"
+              shortcuts.length % 2 === 0 ? "col-span-2 min-h-12" : "min-h-16"
             }`}
           >
             + New drink

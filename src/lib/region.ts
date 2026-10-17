@@ -1,4 +1,4 @@
-import { computeStandards } from "./drinks/standards";
+import { rawStandards } from "./drinks/standards";
 
 /**
  * Where the user drinks decides what "one standard drink" means, how weight and volume are written,
@@ -23,6 +23,8 @@ export interface Region {
   weightUnit: "kg" | "lb";
   volumeUnit: "ml" | "oz";
   emergency: string;
+  /** Example for the free-text drink box, in the region's own words. */
+  example: string;
   serves: Serve[];
 }
 
@@ -38,6 +40,7 @@ export const REGIONS: Record<RegionId, Region> = {
     weightUnit: "kg",
     volumeUnit: "ml",
     emergency: "000",
+    example: "e.g. 2 schooners of lager",
     serves: [
       { label: "Schooner of beer", volumeMl: 425, abv: 4.8 },
       { label: "Pint of beer", volumeMl: 570, abv: 4.8 },
@@ -54,6 +57,7 @@ export const REGIONS: Record<RegionId, Region> = {
     weightUnit: "lb",
     volumeUnit: "oz",
     emergency: "911",
+    example: "e.g. 2 Bud Lights",
     serves: [
       { label: "Can or bottle of beer", volumeMl: 355, abv: 5 },
       { label: "Pint of beer", volumeMl: 473, abv: 5 },
@@ -97,6 +101,12 @@ export const kgToRegionWeight = (kg: number, region: Region) =>
 export const regionWeightToKg = (weight: number, region: Region) =>
   region.weightUnit === "lb" ? Math.round((weight / LB_PER_KG) * 10) / 10 : weight;
 
-/** Quick-pick serves with their stored (10 g) standards. */
+/**
+ * Quick-pick serves with their stored (10 g) standards, rounded up to hundredths: rounding up to
+ * tenths in 10 g units turned a 12 oz US beer (14.0 g) into "1.1" US standard drinks.
+ */
 export const servesFor = (region: Region) =>
-  region.serves.map((s) => ({ ...s, standards: computeStandards(1, s.volumeMl, s.abv) }));
+  region.serves.map((s) => ({
+    ...s,
+    standards: Math.ceil(rawStandards(1, s.volumeMl, s.abv) * 100 - 1e-6) / 100,
+  }));

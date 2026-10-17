@@ -11,6 +11,8 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 const config = {
   // Keep Prisma out of the Next bundle so OpenNext can wire up its Workers (wasm) build.
   serverExternalPackages: ["@prisma/client", ".prisma/client"],
+  // The floating dev badge sits over the dock's buttons on phone-size previews.
+  devIndicators: false,
   async headers() {
     return [
       {

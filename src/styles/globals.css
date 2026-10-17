@@ -403,3 +403,8 @@ html:has(.app-shell) body {
     clip-path: inset(0 0 0 0);
   }
 }
+
+/* Content scrolls out under the dock with a short fade instead of a hard cut. */
+.app-main {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+}

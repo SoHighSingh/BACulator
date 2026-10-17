@@ -97,7 +97,7 @@ export function FluidGauge({ bac, peak, status }: FluidGaugeProps) {
   return (
     <div className="flex items-stretch gap-4 rounded-[36px] bg-surface p-5 max-[360px]:gap-3 max-[360px]:p-4">
       <div className="flex min-w-0 flex-1 flex-col justify-center">
-        <p className="text-lg font-semibold text-ink-2">Estimated blood alcohol</p>
+        <p className="text-lg font-semibold text-ink-2">Blood alcohol</p>
         {displayBac > 0.0095 && <p className="mt-1 text-2xl leading-none font-semibold text-ink">about</p>}
         <p className="text-[clamp(56px,18vw,96px)] leading-[0.95] font-bold tracking-[-0.04em] text-ink tabular-nums">
           {formatPoint(displayBac)}

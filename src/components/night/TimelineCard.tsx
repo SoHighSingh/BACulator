@@ -34,12 +34,20 @@ export function TimelineChart({ simulation, now, height, axes = false }: ChartPr
 
   const geo = useMemo(() => {
     const t0 = samples[0]?.t ?? now.getTime();
-    const t1 = Math.max(samples[samples.length - 1]?.t ?? t0 + 1, now.getTime() + 30 * 60_000);
-    const max = Math.max(0.04, ...samples.map((s) => s.bac)) * 1.15;
+    const nowT = now.getTime();
+    const last = samples[samples.length - 1]?.t ?? t0 + 1;
+    // Show as much ahead as has passed (at least 3 h), so tonight isn't squashed into a corner by
+    // a long tail. Back to zero is still spelled out under the glass.
+    const ahead = Math.max(3 * 3_600_000, nowT - t0);
+    const t1 = Math.max(nowT + 30 * 60_000, Math.min(last, nowT + ahead));
+    const max = Math.max(0.04, ...samples.filter((s) => s.t <= t1).map((s) => s.bac)) * 1.15;
     const x = (t: number) => ((t - t0) / (t1 - t0)) * W;
     const y = (b: number) => padTop + (1 - b / max) * (H - padTop - padBottom);
-    const line = samples.map((s, i) => `${i ? "L" : "M"}${x(s.t).toFixed(1)} ${y(s.bac).toFixed(1)}`).join(" ");
-    const area = `${line} L${x(samples[samples.length - 1]?.t ?? t1).toFixed(1)} ${y(0)} L${x(t0).toFixed(1)} ${y(0)} Z`;
+    // One point past the window keeps the line running off the edge instead of stopping short.
+    const end = samples.findIndex((s) => s.t > t1);
+    const shown = end === -1 ? samples : samples.slice(0, end + 1);
+    const line = shown.map((s, i) => `${i ? "L" : "M"}${x(s.t).toFixed(1)} ${y(s.bac).toFixed(1)}`).join(" ");
+    const area = `${line} L${x(shown[shown.length - 1]?.t ?? t1).toFixed(1)} ${y(0)} L${x(t0).toFixed(1)} ${y(0)} Z`;
     const hours: number[] = [];
     const firstHour = new Date(t0);
     firstHour.setMinutes(0, 0, 0);
@@ -79,7 +87,7 @@ export function TimelineChart({ simulation, now, height, axes = false }: ChartPr
         onPointerUp={() => setScrub(null)}
         onPointerCancel={() => setScrub(null)}
       >
-        <svg aria-hidden="true" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
+        <svg aria-hidden="true" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-hidden">
           <defs>
             <clipPath id={`past-${id}`}>
               <rect x={0} y={0} width={Math.max(0, nowX)} height={H} />
@@ -135,7 +143,7 @@ export function TimelineChart({ simulation, now, height, axes = false }: ChartPr
               <span
                 key={t}
                 className="absolute bottom-0 -translate-x-1/2 text-base text-ink-2 tabular-nums"
-                style={{ left: `${(geo.x(t) / W) * 100}%` }}
+                style={{ left: `${Math.min(92, Math.max(8, (geo.x(t) / W) * 100))}%` }}
               >
                 {hourLabel(t)}
               </span>

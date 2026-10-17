@@ -10,12 +10,11 @@ import type { LoggedDrink, NewDrink } from "~/hooks/useNight";
 import { useRegion } from "~/hooks/useRegion";
 import { describeNight } from "~/lib/estimate-display";
 import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
-import { REGION_IDS } from "~/lib/region";
 
 /**
  * Dev-only: the real NightView, AddSheet and curve with sample drinks and no sign-in, for checking
  * the design at phone size. Only reachable outside production (see page.tsx).
- * `?empty` starts with no drinks; `?noweight` hides the estimate.
+ * `?empty` starts with no drinks; `?noweight` hides the estimate; `?us` / `?metric` set the region.
  */
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 const SAMPLE: LoggedDrink[] = [
@@ -39,15 +38,17 @@ export function DevNight() {
   const [addOpen, setAddOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
   const lastTap = useRef<{ key: string; at: number } | null>(null);
-  const { region, setRegion } = useRegion();
+  const { setRegion } = useRegion();
 
   useEffect(() => {
     const q = window.location.search;
     if (!q.includes("empty")) setDrinks(SAMPLE);
     if (q.includes("noweight")) setWeight(null);
+    if (q.includes("us")) setRegion("us");
+    else if (q.includes("metric")) setRegion("metric");
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
-  }, []);
+  }, [setRegion]);
 
   const model = useMemo(() => describeNight(drinks, weight, "female", now), [drinks, weight, now]);
   const last = drinks.reduce<LoggedDrink | null>((l, d) => (!l || d.finishedAt > l.finishedAt ? d : l), null);
@@ -114,13 +115,6 @@ export function DevNight() {
       />
       <AddSheet open={addOpen} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
       <BACGraphModal open={graphOpen} onOpenChange={setGraphOpen} drinks={drinks} userWeight={weight} userSex="female" />
-      <button
-        type="button"
-        className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-50 min-h-12 rounded-full bg-surface-2 px-4 text-base font-semibold text-ink"
-        onClick={() => setRegion(REGION_IDS[(REGION_IDS.indexOf(region.id) + 1) % REGION_IDS.length]!)}
-      >
-        {region.id === "us" ? "US" : "10 g"}
-      </button>
     </>
   );
 }

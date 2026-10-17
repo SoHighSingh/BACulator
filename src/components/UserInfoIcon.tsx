@@ -6,7 +6,7 @@ interface UserInfoIconProps {
 
 export function UserInfoIcon({ onClick }: UserInfoIconProps) {
   return (
-    <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-40">
+    <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-[max(1rem,calc((100vw-480px)/2+1rem))] z-40">
       <button
         type="button"
         onClick={onClick}
