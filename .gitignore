@@ -52,3 +52,6 @@ yarn-error.log*
 
 # prisma cli scratch db
 prisma/dev.db*
+
+# Screenshots from scripts/shoot.mjs
+.shots/

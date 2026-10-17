@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "shoot": "node scripts/shoot.mjs",
     "build": "next build",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "check": "next lint && tsc --noEmit",
@@ -56,6 +57,7 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.2.3",
+    "playwright-core": "^1.56.1",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
