@@ -56,6 +56,17 @@ export const postRouter = createTRPCRouter({
   analyseDrink: protectedProcedure
     .input(z.object({ drinkText: z.string().trim().min(1).max(200) }))
     .mutation(({ ctx, input }) => analyseDrinkText(ctx.db, ctx.session.user.id, input.drinkText)),
+  // Permanently removes the user and everything linked to them. Deleted child-first so it
+  // doesn't depend on the database enforcing the schema's cascades.
+  deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    await ctx.db.drink.deleteMany({ where: { tab: { userId } } });
+    await ctx.db.tab.deleteMany({ where: { userId } });
+    await ctx.db.session.deleteMany({ where: { userId } });
+    await ctx.db.account.deleteMany({ where: { userId } });
+    await ctx.db.user.delete({ where: { id: userId } });
+    return { deleted: true };
+  }),
   updateUserInfo: protectedProcedure
     .input(z.object({
       weight: z.number().positive().max(1000),
