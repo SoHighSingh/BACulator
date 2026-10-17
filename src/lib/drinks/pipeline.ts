@@ -7,6 +7,25 @@ import type { ParsedItem, ParseResult, ParseSource } from "./types";
 /** Bump when parsing rules or the catalog change in a way that should invalidate cached parses. */
 export const PARSER_VERSION = 2;
 
+/*
+ * The parse cache is shared by everyone, so it only keeps short phrases that read like a drink
+ * order and that the AI parsed with some confidence. Anything longer (a sentence that might name
+ * a person or a place) or holding a long number (a phone number, an address) is parsed but never
+ * stored. Rows also expire (CACHE_TTL_MS, enforced by the server on read and by pruning).
+ */
+export const CACHE_RULES = { maxChars: 48, maxWords: 8, minConfidence: 0.5 };
+export const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function isCacheable(norm: string, items: ParsedItem[]) {
+  return (
+    items.length > 0 &&
+    norm.length <= CACHE_RULES.maxChars &&
+    norm.split(" ").length <= CACHE_RULES.maxWords &&
+    !/\d{5,}/.test(norm.replace(/ /g, "")) && // "0412 345 678" counts as one long number
+    items.every((i) => i.confidence >= CACHE_RULES.minConfidence)
+  );
+}
+
 export interface BartenderDeps {
   index: CatalogIndex;
   /** The user's most recent drink, for "same again" / "another one". */
@@ -58,7 +77,7 @@ export async function parseDrinks(text: string, deps: BartenderDeps): Promise<Pa
   try {
     const aiItems = await parseWithAi(deps.ai, catalog.unparsed.join("; "), deps.index);
     const items = [...catalog.items, ...aiItems];
-    if (aiItems.length > 0) await deps.cachePut?.(norm, items).catch(() => undefined);
+    if (aiItems.length > 0 && isCacheable(norm, items)) await deps.cachePut?.(norm, items).catch(() => undefined);
     // Text the AI looked at but found no drink in (e.g. an injection attempt) is reported, not counted.
     return result(items, aiItems.length > 0 ? [] : catalog.unparsed, "ai");
   } catch (err) {

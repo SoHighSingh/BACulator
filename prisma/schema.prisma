@@ -124,4 +124,16 @@ model ParseCache {
   hits      Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([createdAt]) // rows expire after 30 days (CACHE_TTL_MS)
+}
+
+// Workers AI spending counters (see src/lib/drinks/ai-quota.ts). Keys carry their hour/day
+// bucket; rows past expiresAt (epoch ms) are pruned by src/server/bartender.ts.
+model AiUsage {
+  key       String @id // ai:u:<userId>:h:<hour> | ai:u:<userId>:d:<day> | ai:global:d:<day>
+  count     Int    @default(0)
+  expiresAt Int
+
+  @@index([expiresAt])
 }
