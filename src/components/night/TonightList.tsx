@@ -21,7 +21,7 @@ export function TonightList({ drinks, onRemove }: TonightListProps) {
   const newestFirst = [...drinks].sort((a, b) => b.finishedAt.getTime() - a.finishedAt.getTime());
 
   return (
-    <section aria-labelledby="tonight-heading" className="mt-6 rounded-3xl bg-surface px-5 pt-5 pb-3">
+    <section aria-labelledby="tonight-heading" className="rounded-[28px] bg-surface px-5 pt-5 pb-3">
       <header className="flex items-end justify-between gap-4">
         <h2 id="tonight-heading" className="text-[22px] font-bold text-ink">
           Your tab

@@ -19,6 +19,8 @@
   --color-ink-2: #bdb8b0;
   --color-amber: #f2b84b;
   --color-amber-press: #d99e32;
+  /* Alcohol still being absorbed: the pale layer in the glass. Shape only, never text. */
+  --color-amber-soft: #7d6230;
   /* The docket on the landing page: thermal-paper white with its own ink and stamp colour. */
   --color-paper: #f3eee4;
   --color-paper-2: #e4ddcf;
@@ -294,6 +296,49 @@
   from {
     transform: translateY(28px);
     opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* App feel on the night screen: no rubber-band page, no grey tap flash, no text selection on controls. */
+.app-shell {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.app-shell button,
+.app-shell a {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* "Added …" slides up into the dock; it is a response to the tap, then it stays put. */
+  .snack {
+    animation: snack-in 260ms var(--ease-out) both;
+  }
+  /* Sheets rise from the bottom like a native sheet. */
+  .sheet {
+    animation: sheet-up 340ms var(--ease-out) both;
+  }
+}
+@keyframes snack-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(24%);
+    opacity: 0.6;
   }
   to {
     transform: none;

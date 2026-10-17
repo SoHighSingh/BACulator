@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   applicationName: "BACulator",
+  appleWebApp: { capable: true, title: "BACulator", statusBarStyle: "black-translucent" },
   alternates: { canonical: "/" },
   icons: [{ rel: "icon", url: "/BACULATROR.png" }],
   openGraph: {

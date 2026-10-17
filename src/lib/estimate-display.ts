@@ -9,7 +9,9 @@ const ZERO_LATE = 1.25;
 const QUARTER_HOUR_MS = 15 * 60 * 1000;
 
 export interface EstimateDisplay {
-  /** "0.05–0.08", "under 0.01" or "0.00" */
+  /** The headline number: "0.07", "under 0.01" or "0.00" */
+  point: string;
+  /** The likely range around it: "0.05–0.08", "under 0.01" or "0.00" */
   band: string;
   status: "rising" | "falling" | "none";
   /** "between 2:30 and 4:00 am", or null when nothing is left to wear off */
@@ -20,6 +22,13 @@ export interface EstimateDisplay {
 
 const floor2 = (n: number) => Math.floor(n * 100) / 100;
 const ceil2 = (n: number) => Math.ceil(n * 100) / 100;
+
+/** One number, rounded to two places, for the headline. The band beside it carries the doubt. */
+export function formatPoint(bac: number): string {
+  if (bac <= 0) return "0.00";
+  if (bac < 0.01) return "under 0.01";
+  return (Math.round(bac * 100) / 100).toFixed(2);
+}
 
 export function formatBand(bac: number): string {
   if (bac <= 0) return "0.00";
@@ -50,6 +59,7 @@ export function describeEstimate(result: BACResult, drinks: Drink[], now: Date):
   const counted = drinks.some((d) => new Date(d.finishedAt).getTime() <= now.getTime());
   const status = result.isRising ? "rising" : result.currentBAC > 0 ? "falling" : "none";
   return {
+    point: formatPoint(result.currentBAC),
     band: formatBand(result.currentBAC),
     status,
     backToZero: formatBackToZero(result.timeToSober, now),

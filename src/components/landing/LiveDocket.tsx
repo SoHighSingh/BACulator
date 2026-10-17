@@ -122,13 +122,19 @@ export function LiveDocket() {
           </div>
 
           <div className="px-6 pt-5 pb-10">
-            <p className="text-base font-medium text-paper-ink-2">Estimated blood alcohol, roughly</p>
+            <p className="text-base font-medium text-paper-ink-2">Estimated blood alcohol</p>
             <p
-              key={estimate?.band ?? "none"}
-              className="docket-roll text-[clamp(48px,13vw,72px)] leading-[0.95] font-bold tracking-[-0.035em] tabular-nums"
+              key={estimate?.point ?? "none"}
+              className="docket-roll flex items-baseline gap-2 tabular-nums"
             >
-              {estimate?.band ?? "0.00"}
+              {estimate && estimate.point !== "0.00" && <span className="text-2xl font-semibold">about</span>}
+              <span className="text-[clamp(56px,16vw,84px)] leading-[0.95] font-bold tracking-[-0.04em]">
+                {estimate?.point ?? "0.00"}
+              </span>
             </p>
+            {estimate && estimate.point !== "0.00" && (
+              <p className="text-lg font-medium">Likely {estimate.band.replace("–", " to ")}</p>
+            )}
             {estimate?.backToZero && (
               <p className="mt-2 text-lg font-medium">Back to zero {estimate.backToZero}</p>
             )}

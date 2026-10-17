@@ -4,10 +4,10 @@ The app keeps your bar tab. Every surface is built from that one idea: drinks pr
 
 Two modes share one palette:
 
-- **Night screen (Operate):** warm near-black, off-white type, one amber action colour. The estimate is the largest thing on screen; "Same again" is a big amber slab in the thumb zone. Nothing moves on its own. The only motion is press feedback that answers the thumb within 120 ms.
-- **Landing page (Persuade):** the same world, louder. A live paper docket is the hero; whole fields of colour (paper, surface, amber) change section by section; motion is allowed with transform and opacity only, and switched off for `prefers-reduced-motion`.
+- **Night screen (Operate, app-like):** a fixed top bar, one scrolling column, and a fixed bottom dock, laid out like a native app, not a page. The estimate is a pint glass filling with amber beside one big number ("about 0.08", likely range under it). Motion only answers a change: the glass pours, sloshes once and settles still within 2 s; the number counts to its new value. Nothing moves at rest.
+- **Landing page (Persuade):** the same world, louder. A live paper docket is the hero; whole fields of colour change section by section; motion uses transform and opacity only, and switches off for `prefers-reduced-motion`.
 
-Retired and not coming back: animated WebGL veil, glass blur, wave gauge, pulsing buttons, gradient text, hairline borders as separators.
+Retired and not coming back: WebGL veil, glass blur, gradients, hairline separators, looping waves, the band-only estimate ("0.06–0.11" was too wide to act on).
 
 ## Tokens (`src/styles/globals.css`, `@theme` → Tailwind utilities)
 | Token | Value | Use | Contrast |
@@ -21,6 +21,7 @@ Retired and not coming back: animated WebGL veil, glass blur, wave gauge, pulsin
 | `ink-2` | `#BDB8B0` | secondary text | 9.6:1 on bg |
 | `amber` | `#F2B84B` | primary action fill (text `bg` on it, 10.5:1) | 10.3:1 on bg |
 | `amber-press` | `#D99E32` | amber pressed/hover (text `bg`, 8.0:1) | — |
+| `amber-soft` | `#7D6230` | the "still absorbing" layer in the glass (shape only, never text) | — |
 | `alert` | `#FF9A8A` | "Not safe to drive" on dark only | 9.2:1 on bg |
 | `paper` | `#F3EEE4` | the docket, the "range" section | — |
 | `paper-2` | `#E4DDCF` | tone step on paper (totals row) | — |
@@ -33,34 +34,39 @@ No green, no red/green status, no colour-only meaning. Status is word + icon + c
 Surfaces are separated by a step in tone, never by a hairline or a shadow. Selected chips use `surface-3` + a 3px amber ring.
 
 ## Type (Geist, one family)
-- Night estimate band: `clamp(56px, 17vw, 76px)` / 700, tracking −0.03em, tabular.
-- "Same again": 26px / 700; its std number 40px / 700 tabular.
+- Night estimate: "about" 24px / 600 above the point number `clamp(64px, 21vw, 96px)` / 700, tracking −0.04em, tabular.
+- "+ Add another": 26px / 700; drink name · std 18px / 600.
 - Section headings on the night screen: 22px / 700. Body and list rows: 18px / 500–600. Never below 16px on the logging screen.
 - Landing hero: `clamp(56px, 11vw, 104px)` (7vw from `lg`), leading 0.9, tracking −0.045em, **two lines at every width** ("Your night, / on one tab."). Section headings `clamp(40px, 6vw, 88px)`. Body 20px, ≤ 52ch.
 - No eyebrows, no tracked uppercase labels, no monospace.
 
 ## Targets and layout (night screen)
-- "Same again" (or "Add a drink" when nothing is logged): full width, ≥ 120px tall, `rounded-3xl`, amber.
-- Recents: 2×2 grid, ≥ 72px. "+ Add a different drink" fills the last cell (or spans the row).
-- Every other target ≥ 56px (48px floor), ≥ 12px apart.
-- Order, top to bottom: estimate (fixed min-height 248px so the buttons never move) → Same again → recents → Last added + Undo → Your tab → Getting home. Last added sits **below** the add buttons so appearing never pushes them.
-- Destructive actions (Remove, Sign out, Delete account) never sit next to a routine target; Remove lives in tab rows.
-- Single column, max-width 480px, 16px gutter, safe-area padding.
+- App shell: `fixed inset-0` column. Top bar (BACulator · Get home · Profile), scrolling middle, fixed dock. No rubber-band overscroll, no tap flash, no text selection on controls.
+- Scroll order: Not safe to drive banner (whenever > 0) → glass gauge → back-to-zero line → Tonight's curve → Your tab → Getting home. "Get home" in the top bar scrolls to the card.
+- Dock, top to bottom: status line ("Added Vodka soda [Undo]", "Removed … [Add back]", or "Last: … · 6 min ago"), primary **+ Add another** (96px, full width, drink icon, name · std; "+ Add" when nothing is logged tonight), then 3 × 84px buttons: two recents (icon, name, std) and **+ New drink**.
+- Undo and Add back mirror each other, so a wrong tap on either is reversible.
+- Every target ≥ 48px, primary row gaps ≥ 12px. Remove lives only in tab rows.
+- Max-width 480px, 16px gutter, safe-area padding.
+
+## The glass (FluidGauge)
+- Pint silhouette (112 × 208), outline `ink-2` 3px. Full at 0.20 and no markings: the level shows more or less, never a limit.
+- Solid `amber` = estimate now. `amber-soft` above it = alcohol from drinks still being absorbed (the projected peak). Adding a drink raises the soft layer at once, so the tap always visibly lands, with "↑ Heading to about 0.13 by 10:00 pm" in amber text.
+- Number: "about" + point (2 decimals, `clamp(64px,21vw,96px)`), "Likely 0.07 to 0.12" below. A screen-reader live line carries the final values; the animated text is hidden from it.
+
+## Tonight's curve (TimelineCard)
+- Inline on the main screen. Past solid amber area, future dashed and paler, a white "now" line with its label under the chart. No horizontal grid or reference lines. Draws in over 900ms. "Bigger" opens the full chart with times and values.
 
 ## Motion
-- **Night screen:** none on its own. `.press` scales to 0.97 in 120ms on `:active`; colour steps to the `-press`/`surface-3` token. That's it.
-- **Landing:** the docket prints in from above on load (900ms, `--ease-out` = `cubic-bezier(0.16,1,0.3,1)`); each added line prints top-down via `clip-path` (420ms); totals and band roll up on change (380ms); the stamp lands with a slight overshoot (`--ease-spring`, 420ms) and rests at −2°; "Start over" tears the docket off (520ms) before a fresh one prints. Hero lines rise in with 90ms stagger. Sections rise on scroll via CSS scroll-driven animation (progressive; content is visible without it). FAQ `+` rotates to ×.
-- All of it sits inside `@media (prefers-reduced-motion: no-preference)`; the global reduced-motion rule also zeroes durations.
-- For the Swift port: same durations and curves (`.spring(response: 0.42, dampingFraction: 0.72)` ≈ the stamp; `.easeOut` with the 0.16/1/0.3/1 control points ≈ everything else). On the night screen use only the system press highlight.
+- **Night screen:** only in answer to a change. Glass pour 900ms ease-out (quartic) with a slosh that decays to still within 2000ms of wall-clock time; number counts in step; "Added …" slides up 260ms; sheets rise 340ms; buttons squeeze to 0.97 in 120ms. Haptic tick (12ms) on add where supported. Optimistic adds: the glass fills on tap, before the server answers.
+- **Landing:** docket prints in (900ms), lines print (420ms), numbers roll (380ms), stamp lands with overshoot (420ms), Start over tears the docket (520ms), hero rises with 90ms stagger, sections rise on scroll (CSS scroll-driven, progressive).
+- Everything is off under `prefers-reduced-motion` (JS checks `useReducedMotion`; CSS sits in `no-preference` blocks).
+- Swift port: pour = `.easeOut(duration: 0.9)`; slosh = damped sine, τ ≈ 0.45 s, stop at 2 s; stamp ≈ `.spring(response: 0.42, dampingFraction: 0.72)`; sheets = system sheet.
 
 ## Components
-- **EstimatePanel** (no card): label, band, Rising/Falling + back-to-zero window, ⚠ Not safe to drive, "Estimate only. Bodies and pours vary.", See the timeline.
-- **QuickAdd**: Same again slab (drink name + std) + recents + "Add a different drink".
-- **LastAdded**: "Last added / name / std · time ago" with Undo (2 min) on the right.
-- **TonightList → "Your tab"**: header with the 24-hour total where a tab puts the price; rows on alternating tone steps; Remove per row.
-- **GetHome**: Text a mate, Call {region emergency number}, poisoning signs line.
-- **AddSheet**: type-or-pick, region serve chips, ± stepper in the region's standard drinks, time chips, Add.
-- **Landing / LiveDocket**: the paper docket with region serve chips, real engine, demo person stated on the docket (75 kg / 165 lb woman, one drink every 30 min).
+- **NightView** (presentational, shared by the real screen and `/dev/night`), **NightScreen** (data, optimistic adds, undo/add back).
+- **FluidGauge**, **TimelineCard**, **AddDock**, **DrinkIcon** (beer, wine, shot, can, cocktail, drink; guessed from name, then size and strength).
+- **TonightList → "Your tab"**, **GetHome** (Text a mate, Call {region number}, poisoning signs), **AddSheet** (rises as a sheet).
+- **Landing / LiveDocket**: paper docket, region serve chips, real engine, demo person stated on it.
 
 ## Region (`src/lib/region.ts`, `useRegion`)
 Storage and the BAC engine always use 10 g standards. Region only changes display and entry: 10 g / kg / ml / 000, or US 14 g / lb / oz / 911. Serve chips per region. Chosen per device (localStorage), guessed from the browser language, editable in Your details and on the landing page. Copy never names a country other than "US".

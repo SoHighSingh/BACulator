@@ -16,9 +16,9 @@ Secondary users: a sober friend holding the phone (needs emergency info fast); a
 ## Non-negotiables (from the designing-for-impaired-users skill and harm-reduction stance)
 - Never imply fitness to drive: no legal-limit lines, no green zones, no "time until 0.05", no "under the limit". While the estimate is above zero, always say **Not safe to drive**.
 - Never encourage or reward drinking: no streaks, badges, celebrations, round reminders, upsells or drink notifications.
-- Nothing moves, times out or interrupts on the logging path. Undo instead of confirm dialogs.
+- Nothing times out or interrupts on the logging path, and nothing moves at rest. Motion only answers a change (the glass pours and settles, numbers count) and is off under reduced motion. (User decision, 17 Oct 2026: "fluid" is the main driver.) Undo instead of confirm dialogs.
 - Repeat drink = 1 tap; new drink ≤ 3 taps; typing optional, never required.
-- Estimate is ±20% at best: show a band and "estimate only".
+- Estimate is ±20% at best: show one rounded number ("about 0.08") with the likely range under it, and "estimate only". (User decision, 17 Oct 2026: a band alone was too wide to act on.)
 - Drinking data is sensitive: stored in D1, never sold or shared; self-serve account deletion exists at /account/delete.
 
 ## Terminology

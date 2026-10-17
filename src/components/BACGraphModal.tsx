@@ -1,5 +1,5 @@
 import React from "react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import type { Drink } from "~/types/bac";
@@ -16,7 +16,7 @@ function CustomTooltip({ active, payload, label }: BacTooltipProps) {
     const timeLabel = payload[0]?.payload?.clockTime ?? String(label ?? "");
     
     return (
-      <div className="rounded-md bg-black/40 backdrop-blur-sm px-4 py-2 border border-white/10 text-white shadow">
+      <div className="rounded-xl bg-surface-3 px-4 py-2 text-base text-ink">
         <div className="font-semibold">Time: {timeLabel}</div>
         <div>About {((payload[0]?.value ?? 0)).toFixed(2)}</div>
       </div>
@@ -140,7 +140,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
         document.activeElement.blur();
       }
     }}>
-      <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line bg-surface p-0 mx-auto">
+      <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-0 bg-surface p-0 mx-auto">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-2xl font-semibold text-ink">Your timeline</DialogTitle>
           <DialogDescription className="text-lg text-ink-2">
@@ -149,18 +149,12 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
         </DialogHeader>
         <div className="flex flex-col gap-4 px-6 pb-6">
           {/* Card Content (Chart) */}
-          <div className="h-80 rounded-xl border border-line bg-bg p-1">
+          <div className="h-80 rounded-2xl bg-bg p-1 pt-5">
             <ResponsiveContainer width="100%" height="100%">
                               <AreaChart 
                   data={advancedTimeline?.data ?? []} 
                   margin={{ left: -20, right: 20, top: 10, bottom: 0 }}
                 >
-                <defs>
-                  <linearGradient id="bacGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
                 <XAxis 
                   dataKey="hour"
                   type="number"
@@ -193,15 +187,14 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
                   axisLine={{ stroke: '#374151', strokeWidth: 1 }}
                   tickLine={{ stroke: '#374151', strokeWidth: 1 }}
                 />
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.3} />
                 <Tooltip content={<CustomTooltip />} />
                 <Area 
                   type="monotone" 
                   dataKey="bac" 
-                  stroke="#edeae4" 
-                  strokeWidth={2}
-                  fillOpacity={0.8} 
-                  fill="url(#bacGradient)" 
+                  stroke="#f2b84b"
+                  strokeWidth={3}
+                  fillOpacity={0.3}
+                  fill="#f2b84b"
                   name="Blood Alcohol Content"
                   isAnimationActive={false}
                   connectNulls={false}
@@ -213,8 +206,9 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
                     return (
                       <ReferenceLine 
                         x={currentHour}
-                        stroke="#a6a6a6"
-                        strokeWidth={1}
+                        stroke="#edeae4"
+                        strokeWidth={2}
+                        label={{ value: "now", position: "top", fill: "#edeae4", fontSize: 15, fontWeight: 600 }}
                       />
                     );
                   }
@@ -224,7 +218,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
             </ResponsiveContainer>
           </div>
           <Button
-            className="mt-2 min-h-14 w-full rounded-xl border border-line bg-surface-2 text-lg font-semibold text-ink hover:bg-surface-2"
+            className="press mt-2 min-h-14 w-full rounded-2xl bg-surface-3 text-lg font-bold text-ink hover:bg-surface-3"
             onClick={() => onOpenChange(false)}
           >
             Close

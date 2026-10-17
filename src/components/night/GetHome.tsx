@@ -8,7 +8,7 @@ export function GetHome() {
   const call = `Call ${region.emergency}`;
 
   return (
-    <section aria-labelledby="get-home-heading" className="mt-6 rounded-3xl bg-surface-2 p-5">
+    <section aria-labelledby="get-home-heading" className="rounded-[28px] bg-surface-2 p-5">
       <h2 id="get-home-heading" className="text-[22px] font-bold text-ink">
         Getting home
       </h2>

@@ -166,16 +166,17 @@ export function Landing({ onStart }: LandingProps) {
         <div className="reveal mx-auto grid max-w-[1240px] gap-10 px-4 py-24 sm:px-8 lg:grid-cols-[1.2fr_1fr] lg:py-40">
           <div>
             <h2 id="band-heading" className="text-[clamp(40px,6vw,88px)] leading-[0.95] font-bold tracking-[-0.04em]">
-              A range, not a verdict.
+              A number, not a verdict.
             </h2>
             <p aria-hidden="true" className="mt-10 text-[clamp(56px,15vw,220px)] leading-[0.85] font-bold tracking-[-0.05em] tabular-nums">
-              0.05–0.08
+              0.07
             </p>
+            <p className="mt-4 text-2xl font-semibold">Likely 0.05 to 0.09</p>
           </div>
           <div className="flex flex-col justify-end gap-6 text-xl leading-relaxed">
             <p>
-              Bodies and pours vary by about a fifth either way. So you see a range, never a falsely exact number, and
-              a window for when it should be back to zero.
+              You get one clear number, and the range it likely sits in, because bodies and pours vary by about a
+              fifth either way. Plus a window for when it should be back to zero.
             </p>
             <p className="inline-flex -rotate-2 items-center gap-3 self-start rounded-lg border-[3px] border-stamp px-4 py-2 text-2xl font-bold text-stamp">
               Not safe to drive

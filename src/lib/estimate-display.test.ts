@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeEstimate, drinkLabel, formatBackToZero, formatBand, timeAgo } from "./estimate-display";
+import { describeEstimate, drinkLabel, formatBackToZero, formatBand, formatPoint, timeAgo } from "./estimate-display";
 
 const base = {
   currentBAC: 0,
@@ -82,5 +82,16 @@ describe("labels", () => {
     expect(timeAgo(new Date(now.getTime() - 20000), now)).toBe("just now");
     expect(timeAgo(new Date(now.getTime() - 6 * 60000), now)).toBe("6 min ago");
     expect(timeAgo(new Date(now.getTime() - 80 * 60000), now)).toBe("1 h 20 min ago");
+  });
+});
+
+describe("formatPoint", () => {
+  it("rounds to two places, and never shows a falsely precise third digit", () => {
+    expect(formatPoint(0)).toBe("0.00");
+    expect(formatPoint(-0.01)).toBe("0.00");
+    expect(formatPoint(0.004)).toBe("under 0.01");
+    expect(formatPoint(0.0749)).toBe("0.07");
+    expect(formatPoint(0.075)).toBe("0.08");
+    expect(formatPoint(0.1234)).toBe("0.12");
   });
 });

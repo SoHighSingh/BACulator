@@ -6,11 +6,11 @@ interface UserInfoIconProps {
 
 export function UserInfoIcon({ onClick }: UserInfoIconProps) {
   return (
-    <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-40">
+    <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-40">
       <button
         type="button"
         onClick={onClick}
-        className="min-h-12 rounded-xl border border-line bg-surface-2 px-4 text-lg font-medium text-ink"
+        className="press min-h-12 rounded-full bg-surface-2 px-4 text-lg font-semibold text-ink active:bg-surface-3"
       >
         Profile
       </button>

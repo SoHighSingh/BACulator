@@ -111,7 +111,7 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
   const selectedChip = details?.source === "manual" ? details.name : null;
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="add-heading" className="fixed inset-0 z-50 flex flex-col bg-bg">
+    <div role="dialog" aria-modal="true" aria-labelledby="add-heading" className="sheet app-shell fixed inset-0 z-50 flex flex-col bg-bg">
       <header className="mx-auto flex w-full max-w-[480px] items-center justify-between gap-4 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
         <h2 id="add-heading" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">
           Add a drink
