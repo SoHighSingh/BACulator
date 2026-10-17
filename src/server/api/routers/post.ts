@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { PrismaClient } from "@prisma/client";
 
+import { analyseDrinkDetailed } from "~/lib/genai";
+
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -41,6 +43,9 @@ export const postRouter = createTRPCRouter({
         greeting: `Hello ${input.text}`,
       };
     }),
+  analyseDrink: protectedProcedure
+    .input(z.object({ drinkText: z.string().trim().min(1).max(200) }))
+    .mutation(({ input }) => analyseDrinkDetailed(input.drinkText)),
   updateUserInfo: protectedProcedure
     .input(z.object({
       weight: z.number().positive().max(1000),

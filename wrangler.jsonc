@@ -1,0 +1,27 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "baculator",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2026-06-01",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			// Self-reference service binding, must match the worker name (OpenNext caching)
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "baculator"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "baculator",
+			// Replace with the id printed by `npx wrangler d1 create baculator`
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "migrations"
+		}
+	]
+}

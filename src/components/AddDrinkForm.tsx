@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { analyseDrinkDetailed } from "~/lib/genai";
+import { api } from "~/trpc/react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedCounter } from "./ui/AnimatedCounter";
@@ -110,6 +110,8 @@ export function AddDrinkForm({
     }
   }, [isAiUpdated]);
 
+  const analyseDrink = api.post.analyseDrink.useMutation();
+
   async function handleAnalyseDrink() {
     if (!drinkText.trim()) return;
     
@@ -118,7 +120,7 @@ export function AddDrinkForm({
     try {
       // Add a minimum delay to let the typing animation show
       const [analysis] = await Promise.all([
-        analyseDrinkDetailed(drinkText.trim()),
+        analyseDrink.mutateAsync({ drinkText: drinkText.trim() }),
         new Promise(resolve => setTimeout(resolve, 2000)) // 2 second minimum delay
       ]);
       

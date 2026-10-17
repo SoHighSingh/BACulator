@@ -1,11 +1,10 @@
+import "server-only";
 import { GoogleGenAI } from "@google/genai";
 
-if (!process.env.NEXT_PUBLIC_GOOGLE_GENAI_API_KEY) {
-  throw new Error("Missing NEXT_PUBLIC_GOOGLE_GENAI_API_KEY in .env");
-}
+import { env } from "~/env";
 
 const ai = new GoogleGenAI({
-  apiKey: process.env.NEXT_PUBLIC_GOOGLE_GENAI_API_KEY,
+  apiKey: env.GEMINI_API_KEY,
 });
 
 export interface DrinkAnalysis {

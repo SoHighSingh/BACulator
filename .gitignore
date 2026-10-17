@@ -44,3 +44,11 @@ yarn-error.log*
 
 # idea files
 .idea
+# cloudflare
+.open-next
+.wrangler
+.dev.vars*
+!.dev.vars.example
+
+# prisma cli scratch db
+prisma/dev.db*
