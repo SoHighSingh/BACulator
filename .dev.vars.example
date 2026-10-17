@@ -1,0 +1,19 @@
+# Local secrets. Copy to .dev.vars (gitignored) and fill in.
+# `npm run dev` (via scripts/load-dev-vars.js) and `npm run preview` / `wrangler dev` both read it.
+#
+# Do NOT use .env / .env.local: OpenNext copies every .env* file into the Worker bundle, and the
+# Worker falls back to those values when a secret is missing. The Worker build refuses to run
+# while any .env* file exists (scripts/check-env-files.js).
+#
+# Production values are Worker secrets: `npx wrangler secret put AUTH_SECRET` (and the two below).
+# Use a different AUTH_SECRET locally than in production.
+# When adding a variable, update the schema in src/env.js as well.
+
+# Generate with: npx auth secret
+AUTH_SECRET=""
+
+# Google OAuth client (project baculator-app, "BACulator Web")
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+
+# Database: Cloudflare D1 via the "DB" binding in wrangler.jsonc (no connection string needed).

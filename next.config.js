@@ -2,6 +2,8 @@
  * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially useful
  * for Docker builds.
  */
+// Local secrets come from .dev.vars, never .env (see the file). Must stay above the env import.
+import "./scripts/load-dev-vars.js";
 import "./src/env.js";
 
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
