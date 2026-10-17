@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import type { PrismaClient } from "@prisma/client";
 
+import { TERMS_VERSION } from "~/lib/consent";
 import { analyseDrinkText } from "~/server/bartender";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
@@ -91,6 +92,75 @@ export const postRouter = createTRPCRouter({
       ctx.db.user.delete({ where: { id: userId } }),
     ]);
     return { deleted: true };
+  }),
+  // Which terms version this person last agreed to, so the app only asks again when it changes.
+  consentStatus: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.db.user.findUnique({
+      where: { id: ctx.session.user.id },
+      select: { termsVersion: true, ageConfirmedAt: true },
+    });
+    return { termsVersion: user?.termsVersion ?? null, ageConfirmedAt: user?.ageConfirmedAt ?? null };
+  }),
+  // Saves the consent step: legal drinking age confirmed and the current terms agreed to.
+  recordConsent: protectedProcedure
+    .input(z.object({ termsVersion: z.literal(TERMS_VERSION), ageConfirmed: z.literal(true) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.user.update({
+        where: { id: ctx.session.user.id },
+        data: { termsVersion: input.termsVersion, ageConfirmedAt: new Date() },
+      });
+      return { termsVersion: input.termsVersion };
+    }),
+  // Everything we hold about the signed-in user, for "Download my data" (APP 12 access).
+  // Sign-in tokens are left out: they are secrets, not information about the person.
+  exportMyData: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const user = await ctx.db.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        email: true,
+        image: true,
+        weight: true,
+        sex: true,
+        ageConfirmedAt: true,
+        termsVersion: true,
+        accounts: { select: { provider: true } },
+        tabs: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            name: true,
+            createdAt: true,
+            finishedAt: true,
+            drinks: {
+              orderBy: { finishedAt: "asc" },
+              select: {
+                standards: true,
+                finishedAt: true,
+                name: true,
+                volumeMl: true,
+                abv: true,
+                count: true,
+                source: true,
+                rawText: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
+    const { accounts, tabs, weight, ...details } = user;
+    return {
+      exportedAt: new Date().toISOString(),
+      notes: [
+        "Standard drinks are stored as 10 g of alcohol each, whatever region the app shows.",
+        "Weight is stored in kilograms.",
+        "Sign-in tokens from Google are kept to sign you in but are not included here.",
+      ],
+      details: { ...details, weightKg: weight, signInWith: accounts.map((a) => a.provider) },
+      sessions: tabs.map(({ drinks, ...tab }) => ({ ...tab, drinks: drinks.map(({ standards, ...d }) => ({ ...d, standards10g: standards })) })),
+    };
   }),
   updateUserInfo: protectedProcedure
     .input(z.object({

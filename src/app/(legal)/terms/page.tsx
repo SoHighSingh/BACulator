@@ -33,12 +33,15 @@ export default function TermsPage() {
           machinery, or do anything else where alcohol puts you or others at risk.
         </strong>{" "}
         If you&apos;ve been drinking, don&apos;t drive: use a designated driver, public
-        transport, a taxi or a rideshare. In an emergency in Australia, call 000.
+        transport, a taxi or a rideshare. In an emergency, call 000 (911 in the US) or your
+        local emergency number.
       </p>
 
       <h2>Using BACulator</h2>
       <ul>
-        <li>You must be of legal drinking age where you live (18+ in Australia).</li>
+        <li>
+          You must be of legal drinking age where you live, and at least 18 (21 in the US).
+        </li>
         <li>Don&apos;t misuse the service, try to break it, or access other people&apos;s data.</li>
         <li>We may change, suspend or stop BACulator at any time.</li>
       </ul>

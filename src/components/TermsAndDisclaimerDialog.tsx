@@ -1,92 +1,134 @@
-import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "./ui/dialog";
+"use client";
+
+import Link from "next/link";
+import { useEffect, useId, useState } from "react";
+
+import { useRegion } from "~/hooks/useRegion";
+import { legalAgeFor } from "~/lib/consent";
 import { Button } from "./ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 
 interface TermsAndDisclaimerDialogProps {
   isOpen: boolean;
+  /** "Not now". Before sign-in this just closes; after sign-in the page signs the user out. */
   onClose: () => void;
-  onContinue: () => void;
+  /** Called only once the age box is ticked. */
+  onAgree: () => void;
+  /** Label for the main button: "Continue with Google" before sign-in, "Continue" after. */
+  agreeLabel?: string;
+  busy?: boolean;
+  /** Shown above the buttons when saving the answer failed. */
+  error?: string;
 }
 
-export function TermsAndDisclaimerDialog({ isOpen, onClose, onContinue }: TermsAndDisclaimerDialogProps) {
+/**
+ * The consent step: estimate only, never for driving decisions, legal drinking age, and what we store.
+ * Kept short on purpose; the full wording lives on /terms and /privacy.
+ */
+export function TermsAndDisclaimerDialog({
+  isOpen,
+  onClose,
+  onAgree,
+  agreeLabel = "Continue with Google",
+  busy = false,
+  error,
+}: TermsAndDisclaimerDialogProps) {
+  const { region, setRegion } = useRegion();
+  const age = legalAgeFor(region.id);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const checkboxId = useId();
+
+  // The age changes with the region, so a tick for "18 or older" never carries over to "21 or older".
+  useEffect(() => setAgeConfirmed(false), [age, isOpen]);
+
   return (
-    <Dialog open={isOpen} onOpenChange={open => {
-      if (!open) onClose();
-      // Blur active element when dialog opens to prevent aria-hidden warning
-      if (open && document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-    }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+        // Blur active element when dialog opens to prevent aria-hidden warning
+        if (open && document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }}
+    >
       <DialogContent className="flex max-h-[85dvh] w-[92vw] max-w-md flex-col overflow-hidden rounded-2xl border border-line bg-surface">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="text-2xl font-semibold text-ink">Terms and Disclaimer</DialogTitle>
-          <DialogDescription className="text-lg text-ink-2">
-            Important Notice – Please Read Carefully
-          </DialogDescription>
+          <DialogTitle className="text-2xl font-semibold text-ink">Before you start</DialogTitle>
+          <DialogDescription className="text-lg text-ink-2">Three things to know.</DialogDescription>
         </DialogHeader>
-        
-        <div className="flex-1 overflow-y-auto px-1 text-lg text-ink space-y-6">
-          <div>
-            <h3 className="mb-2 font-semibold text-ink">1. For Informational Use Only</h3>
-            <p>
-              This Blood Alcohol Concentration (BAC) calculator provides an approximate estimate only, based on limited input parameters. It does not account for numerous individual factors including your metabolism, food intake, medication, body composition, health conditions, gender, and more that can significantly influence your actual BAC. Therefore, it cannot determine your true level of intoxication with any certainty.
+
+        <div className="flex-1 space-y-5 overflow-y-auto px-1 text-lg text-ink">
+          <ul className="space-y-4">
+            <li>
+              <strong className="font-semibold">It&apos;s only a guess.</strong> Your real blood alcohol can be much
+              higher than we show.
+            </li>
+            <li>
+              <strong className="font-semibold">Never use it to decide if you can drive.</strong> If you&apos;ve had a
+              drink, don&apos;t drive.
+            </li>
+            <li>
+              We store your drinks, weight and sex to estimate your blood alcohol.{" "}
+              <Link href="/privacy" target="_blank" className="text-amber underline underline-offset-4">
+                Privacy
+              </Link>
+            </li>
+          </ul>
+
+          <label
+            htmlFor={checkboxId}
+            className="flex min-h-14 cursor-pointer items-center gap-4 rounded-xl border border-line bg-surface-2 px-4 py-3"
+          >
+            <input
+              id={checkboxId}
+              type="checkbox"
+              checked={ageConfirmed}
+              onChange={(e) => setAgeConfirmed(e.target.checked)}
+              className="size-7 flex-shrink-0 cursor-pointer accent-amber"
+            />
+            <span className="font-semibold">I&apos;m {age} or older</span>
+          </label>
+
+          <p className="text-base text-ink-2">
+            {region.id === "us" ? "Not in the US? " : "In the US? "}
+            <button
+              type="button"
+              onClick={() => setRegion(region.id === "us" ? "metric" : "us")}
+              className="min-h-12 cursor-pointer text-amber underline underline-offset-4"
+            >
+              {region.id === "us" ? "Switch to 18+" : "Switch to US (21+)"}
+            </button>
+          </p>
+
+          <p className="text-base text-ink-2">
+            By continuing you agree to the{" "}
+            <Link href="/terms" target="_blank" className="text-amber underline underline-offset-4">
+              Terms
+            </Link>
+            .
+          </p>
+          {error && (
+            <p role="alert" className="text-base text-alert">
+              {error}
             </p>
-          </div>
-          
-          <div>
-            <h3 className="mb-2 font-semibold text-ink">2. Not a Substitute for Professional Tools or Advice</h3>
-            <p>
-              This calculator is not a legal, medical, or diagnostic tool. It should never be relied upon to assess your fitness to drive, operate machinery, or perform any safety-sensitive task. Only a certified breathalyser test or medical analysis can provide an accurate measurement of BAC.
-            </p>
-          </div>
-          
-          <div>
-            <h3 className="mb-2 font-semibold text-ink">3. Legal BAC Limits in Australia</h3>
-            <p>
-              In Australia, the general legal BAC limit for fully licensed drivers is 0.05%. However, several categories of drivers including those holding learner, provisional, probationary, or commercial licences (such as taxi, bus, or heavy vehicle drivers) are subject to a strict zero-BAC requirement (0.00%).
-            </p>
-          </div>
-          
-          <div>
-            <h3 className="mb-2 font-semibold text-ink">4. No Assurances Use Caution</h3>
-            <p className="mb-2">By proceeding, you acknowledge that:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>The information provided may contain inaccuracies or errors.</li>
-              <li>You assume all responsibility for any actions or decisions made based on the information.</li>
-              <li>Neither the app developer nor any affiliate assumes any liability to the fullest extent permitted by law for any consequences arising from your use of this tool.</li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="mb-2 font-semibold text-ink">5. If in Doubt, Don&apos;t Drive</h3>
-            <p className="mb-2">If you have consumed any alcohol:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Do not drive even if the estimate appears to show a BAC under the legal limit.</li>
-              <li>Consider safe alternatives such as booking a ride-share, calling a taxi or Uber, using public transportation, or designating a sober driver.</li>
-              <li>If you feel impaired or uncertain, err on the side of caution and avoid any activities that require alertness or coordination.</li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="mb-2 font-semibold text-ink">6. Emergency Situations</h3>
-            <p>
-              If you experience any symptoms of severe intoxication such as confusion, difficulty walking, vomiting, loss of consciousness, slow or irregular breathing, or decreased responsiveness seek medical attention immediately by calling 000 or going to the nearest hospital emergency department.
-            </p>
-          </div>
-          
-          <div className="pt-2 border-t border-line/40">
-            <p className="text-center font-medium">
-              Thank you for using this tool responsibly. Your safety and the safety of others is paramount.
-            </p>
-          </div>
+          )}
         </div>
-        
-        <DialogFooter className="flex-shrink-0 flex gap-3 pt-4 border-t border-line/40">
-          <DialogClose asChild>
-            <Button variant="outline" className="min-h-14 flex-1 rounded-xl border-line bg-surface-2 text-lg text-ink">Cancel</Button>
-          </DialogClose>
-          <Button onClick={onContinue} className="min-h-14 flex-1 rounded-xl bg-amber text-lg font-semibold text-bg hover:bg-amber">
-            Agree and Continue
+
+        <DialogFooter className="flex flex-shrink-0 gap-3 border-t border-line/40 pt-4">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="min-h-14 flex-1 rounded-xl border-line bg-surface-2 text-lg text-ink"
+          >
+            Not now
+          </Button>
+          <Button
+            onClick={onAgree}
+            disabled={!ageConfirmed || busy}
+            className="min-h-14 flex-1 rounded-xl bg-amber text-lg font-semibold text-bg hover:bg-amber disabled:opacity-40"
+          >
+            {agreeLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

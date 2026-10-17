@@ -53,6 +53,8 @@ model User {
     sessions      Session[]
     weight        Float?    // User's weight in kg
     sex           String?   // User's sex ("male" or "female")
+    ageConfirmedAt DateTime? // when they confirmed legal drinking age on the consent step
+    termsVersion   String?   // TERMS_VERSION they last agreed to (src/lib/consent.ts)
     tabs          Tab[]
 }
 
