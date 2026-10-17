@@ -18,7 +18,7 @@ function CustomTooltip({ active, payload, label }: BacTooltipProps) {
     return (
       <div className="rounded-md bg-black/40 backdrop-blur-sm px-4 py-2 border border-white/10 text-white shadow">
         <div className="font-semibold">Time: {timeLabel}</div>
-        <div>BAC: {((payload[0]?.value ?? 0)).toFixed(3)}</div>
+        <div>About {((payload[0]?.value ?? 0)).toFixed(2)}</div>
       </div>
     );
   }
@@ -140,20 +140,16 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
         document.activeElement.blur();
       }
     }}>
-      <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-md bg-black/40 backdrop-blur-sm p-0 shadow-lg border border-white/10 data-[state=open]:animate-fade-in data-[state=open]:animate-scale-in mx-auto">
+      <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line bg-surface p-0 mx-auto">
         <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-2xl font-bold text-white">BAC Graph</DialogTitle>
-          <DialogDescription className="text-white/80">
-            View your blood alcohol content over time since you started drinking.
+          <DialogTitle className="text-2xl font-semibold text-ink">Your timeline</DialogTitle>
+          <DialogDescription className="text-lg text-ink-2">
+            Estimated blood alcohol since your first drink, and where it&apos;s heading. Estimate only.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 px-6 pb-6">
-          {/* Card Header */}
-          <div>
-            <div className="mb-2 text-white/80">BAC vs Time</div>
-          </div>
           {/* Card Content (Chart) */}
-          <div className="bg-black/40 backdrop-blur-sm rounded-md border border-white/10 h-96 p-1">
+          <div className="h-80 rounded-xl border border-line bg-bg p-1">
             <ResponsiveContainer width="100%" height="100%">
                               <AreaChart 
                   data={advancedTimeline?.data ?? []} 
@@ -184,7 +180,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
                     const minutes = Math.round(((h as number) - hours) * 60);
                     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
                   }}
-                  tick={{ fill: '#9CA3AF', fontSize: 10 }}
+                  tick={{ fill: '#bdb8b0', fontSize: 13 }}
                   axisLine={{ stroke: '#374151', strokeWidth: 1 }}
                   tickLine={{ stroke: '#374151', strokeWidth: 1 }}
                 />
@@ -192,7 +188,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
                   domain={axisSettings.yDomain}
                   ticks={axisSettings.yTicks}
                   tickFormatter={v => (v * 1).toFixed(2)} 
-                  tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                  tick={{ fill: '#bdb8b0', fontSize: 13 }}
                   label={{position: 'insideLeft', style: { fill: '#e5e5e5' } }}
                   axisLine={{ stroke: '#374151', strokeWidth: 1 }}
                   tickLine={{ stroke: '#374151', strokeWidth: 1 }}
@@ -202,11 +198,12 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
                 <Area 
                   type="monotone" 
                   dataKey="bac" 
-                  stroke="#a6a6a6" 
+                  stroke="#edeae4" 
                   strokeWidth={2}
                   fillOpacity={0.8} 
                   fill="url(#bacGradient)" 
                   name="Blood Alcohol Content"
+                  isAnimationActive={false}
                   connectNulls={false}
                 />
                 {/* Current time marker */}
@@ -227,7 +224,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
             </ResponsiveContainer>
           </div>
           <Button
-            className="w-full mt-2 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 text-white hover:bg-black/50"
+            className="mt-2 min-h-14 w-full rounded-xl border border-line bg-surface-2 text-lg font-semibold text-ink hover:bg-surface-2"
             onClick={() => onOpenChange(false)}
           >
             Close

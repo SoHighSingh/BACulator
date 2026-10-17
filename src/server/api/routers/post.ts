@@ -45,6 +45,27 @@ async function cleanupOldTabs(db: PrismaClient, userId: string) {
   }
 }
 
+const NIGHT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// Drinks that can still affect the estimate: everything finished in the last 24 hours,
+// whatever session it was logged in, so stopping a session never hides alcohol still in the body.
+function nightDrinksWhere(userId: string) {
+  return { tab: { userId }, finishedAt: { gte: new Date(Date.now() - NIGHT_WINDOW_MS) } };
+}
+
+async function findOrStartTab(db: PrismaClient, userId: string) {
+  const open = await db.tab.findFirst({ where: { userId, finishedAt: null } });
+  if (open) return open;
+  await cleanupOldTabs(db, userId);
+  return db.tab.create({ data: { userId, name: `Session ${new Date().toLocaleString()}` } });
+}
+
+async function findOwnDrink(db: PrismaClient, userId: string, drinkId: string) {
+  const drink = await db.drink.findFirst({ where: { id: drinkId, tab: { userId } } });
+  if (!drink) throw new Error("Drink not found");
+  return drink;
+}
+
 export const postRouter = createTRPCRouter({
   hello: publicProcedure
     .input(z.object({ text: z.string() }))
@@ -158,9 +179,7 @@ export const postRouter = createTRPCRouter({
       details: drinkDetailsSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      const tab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
-      if (!tab) throw new Error("No open tab");
+      const tab = await findOrStartTab(ctx.db, ctx.session.user.id);
       return ctx.db.drink.create({
         data: {
           tabId: tab.id,
@@ -178,16 +197,7 @@ export const postRouter = createTRPCRouter({
       finishedAt: z.string(), // ISO string
     }))
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      // Verify the drink belongs to the user's current tab
-      const tab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
-      if (!tab) throw new Error("No open tab");
-      
-      const drink = await ctx.db.drink.findFirst({
-        where: { id: input.drinkId, tabId: tab.id },
-      });
-      if (!drink) throw new Error("Drink not found");
-      
+      await findOwnDrink(ctx.db, ctx.session.user.id, input.drinkId);
       return ctx.db.drink.update({
         where: { id: input.drinkId },
         data: {
@@ -201,16 +211,7 @@ export const postRouter = createTRPCRouter({
       drinkId: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      // Verify the drink belongs to the user's current tab
-      const tab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
-      if (!tab) throw new Error("No open tab");
-      
-      const drink = await ctx.db.drink.findFirst({
-        where: { id: input.drinkId, tabId: tab.id },
-      });
-      if (!drink) throw new Error("Drink not found");
-      
+      await findOwnDrink(ctx.db, ctx.session.user.id, input.drinkId);
       return ctx.db.drink.delete({
         where: { id: input.drinkId },
       });
@@ -223,6 +224,31 @@ export const postRouter = createTRPCRouter({
       where: { tabId: tab.id },
       orderBy: { finishedAt: "asc" },
     });
+  }),
+  getNight: protectedProcedure.query(({ ctx }) =>
+    ctx.db.drink.findMany({
+      where: nightDrinksWhere(ctx.session.user.id),
+      orderBy: { finishedAt: "asc" },
+    }),
+  ),
+  // Up to four distinct drinks the user has had lately, newest first, for one-tap re-adding.
+  recentDrinks: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.drink.findMany({
+      where: { tab: { userId: ctx.session.user.id } },
+      orderBy: { finishedAt: "desc" },
+      take: 60,
+      select: { standards: true, name: true, volumeMl: true, abv: true, count: true },
+    });
+    const seen = new Set<string>();
+    const recents: typeof rows = [];
+    for (const row of rows) {
+      const key = `${row.name ?? ""}|${row.standards}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      recents.push(row);
+      if (recents.length === 4) break;
+    }
+    return recents;
   }),
   getTabs: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;

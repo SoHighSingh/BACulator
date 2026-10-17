@@ -1,45 +1,46 @@
 import "~/styles/globals.css";
-import { type Metadata } from "next";
+import { type Metadata, type Viewport } from "next";
 import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { SessionProvider } from "next-auth/react";
 import UserInfoSlideOutProvider from "../components/UserInfoSlideOutProvider";
 
+const SITE_URL = "https://www.baculator.com";
+const TITLE = "BACulator — Blood Alcohol & Standard Drinks Calculator";
+const DESCRIPTION =
+  "Free BAC calculator. Add beers, wine, spirits or cocktails in one tap and estimate your blood alcohol and when it'll be back to zero. An estimate only — not a measure of fitness to drive.";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://baculator.com"),
-  title: "BACulator - The BAC Calculator",
-  description: "Advanced Blood Alcohol Content calculator with AI drink recognition, real-time tracking, and scientific pharmacokinetic modeling. Type drinks naturally and get accurate BAC predictions.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: "BACulator",
+  alternates: { canonical: "/" },
   icons: [{ rel: "icon", url: "/BACULATROR.png" }],
   openGraph: {
-    title: "BACulator - The BAC Calculator",
-    description: "Advanced Blood Alcohol Content calculator with AI drink recognition, real-time tracking, and scientific pharmacokinetic modeling. Type drinks naturally and get accurate BAC predictions.",
-    url: "https://baculator.com", // Replace with your actual domain
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
     siteName: "BACulator",
-    images: [
-      {
-        url: "/BACulatorThumbnail.png",
-        width: 1200,
-        height: 630,
-        alt: "BACulator - The BAC Calculator",
-      },
-    ],
+    images: [{ url: "/BACulatorThumbnail.png", width: 1200, height: 630, alt: "BACulator blood alcohol calculator" }],
     locale: "en_US",
+    alternateLocale: ["en_AU", "en_GB"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "BACulator - The BAC Calculator",
-    description: "Advanced Blood Alcohol Content calculator with AI drink recognition, real-time tracking, and scientific pharmacokinetic modeling.",
+    title: TITLE,
+    description: DESCRIPTION,
     images: ["/BACulatorThumbnail.png"],
   },
 };
 
-export const viewport = {
+// Pinch-zoom stays enabled: people reading this at night may need it.
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
+  themeColor: "#121110",
 };
 
 const geist = Geist({
@@ -47,12 +48,29 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "BACulator",
+  alternateName: "Blood Alcohol Calculator",
+  url: SITE_URL,
+  applicationCategory: "HealthApplication",
+  operatingSystem: "Any",
+  inLanguage: "en",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  description: DESCRIPTION,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable} bg-black`}>
-      <body>
+    <html lang="en" className={`${geist.variable} bg-bg`}>
+      <body className="bg-bg text-ink antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <SessionProvider>
           <TRPCReactProvider>
             <UserInfoSlideOutProvider>

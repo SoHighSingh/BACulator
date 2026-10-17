@@ -1,7 +1,7 @@
 import { api } from "~/trpc/react";
 
-export function useUserInfoData() {
-  const userInfoQuery = api.post.userInfo.useQuery();
+export function useUserInfoData(enabled = true) {
+  const userInfoQuery = api.post.userInfo.useQuery(undefined, { enabled });
 
   return {
     userInfoQuery,

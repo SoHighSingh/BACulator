@@ -8,6 +8,18 @@
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+/* "Last orders" palette — see DESIGN.md. Contrast ratios are against --color-bg. */
+@theme {
+  --color-bg: #121110;
+  --color-surface: #1c1b19;
+  --color-surface-2: #262421;
+  --color-line: #6e6a64;
+  --color-ink: #edeae4;
+  --color-ink-2: #bdb8b0;
+  --color-amber: #f2b84b;
+  --color-alert: #ff9a8a;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -120,142 +132,23 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-black text-foreground;
+    @apply bg-bg text-ink;
   }
 }
 
-/* Custom Scrollbar Styles */
-@layer utilities {
-  /* Webkit browsers (Chrome, Safari, Edge) */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+@layer base {
+  html {
+    color-scheme: dark;
   }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #000000;
-    border-radius: 4px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #333333;
-    border-radius: 4px;
-    transition: background 0.2s ease;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #555555;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-corner {
-    background: #000000;
-  }
-
-  /* Firefox */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #333333 #000000;
-  }
-
-  /* Hide scrollbar but keep functionality */
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
-  }
-
-  /* Mobile keyboard handling */
-  @supports (height: 100dvh) {
-    .mobile-viewport-height {
-      height: 100dvh;
-      max-height: 100dvh;
-    }
-  }
-  
-  /* Fallback for browsers that don't support dvh */
-  @supports not (height: 100dvh) {
-    .mobile-viewport-height {
-      height: 100vh;
-      max-height: 100vh;
-    }
-  }
-
-  /* Prevent viewport resize on mobile keyboard */
-  .drawer-content-mobile {
-    position: fixed !important;
-  }
-
-  /* Vaul drawer specific overrides for mobile keyboard */
-  [vaul-drawer][vaul-drawer-direction="bottom"] {
-    /* Use visual viewport height */
-    height: auto !important;
-    max-height: 85vh !important;
-    max-height: 85dvh !important;
-  }
-
-  /* Prevent drawer from moving with keyboard on mobile */
-  @media (max-width: 768px) {
-    [vaul-drawer-direction="bottom"][data-state="open"] {
-      transform: translate3d(0, 0, 0) !important;
-    }
-    
-    /* Keep drawer at fixed position when input is focused */
-    [vaul-drawer]:has(input:focus, textarea:focus) {
-      position: fixed !important;
-      bottom: 0 !important;
-      transform: translateY(0) !important;
-    }
-  }
-
-  /* Ensure inputs don't cause viewport jumps */
-  input:focus,
-  textarea:focus,
-  select:focus {
-    font-size: 16px !important; /* Prevents zoom on iOS */
-  }
-
-  /* UserInfo Drawer specific styles */
-  [vaul-drawer]:has(#userInfoForm) {
-    /* Ensure drawer doesn't move when keyboard appears */
-    position: fixed !important;
-  }
-
-  /* Prevent UserInfo drawer from resizing with keyboard */
-  [vaul-drawer]:has(#userInfoForm) [vaul-drawer-direction="bottom"] {
-    height: auto !important;
-    max-height: 85vh !important;
-    max-height: 85dvh !important;
-  }
-
-  /* Keep UserInfo drawer stable when inputs are focused */
-  @media (max-width: 768px) {
-    [vaul-drawer]:has(#userInfoForm input:focus),
-    [vaul-drawer]:has(#userInfoForm select:focus) {
-      position: fixed !important;
-      bottom: 0 !important;
-      transform: translateY(0) !important;
-    }
-  }
-
-  /* Subtle pulsating blue button animations */
-  @keyframes subtle-pulse {
-    0%, 100% {
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
-    }
-    50% {
-      box-shadow: 0 0 24px rgba(59, 130, 246, 0.6);
-    }
-  }
-  
-  @keyframes subtle-blue-pulse {
-    0%, 100% {
-      opacity: 0.1;
-    }
-    50% {
-      opacity: 0.8;
+  /* Nothing should move for people who've asked for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }
