@@ -78,6 +78,50 @@ model Drink {
   id         String   @id @default(cuid())
   tab        Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
   tabId      String
-  standards  Float    // number of standard drinks
+  standards  Float    // number of standard drinks (what the user confirmed)
   finishedAt DateTime // time when finished drinking
+  name       String?  // e.g. "Victoria Bitter" or "2× VB + Tequila" for a multi-drink entry
+  volumeMl   Float?   // volume of one serve (total volume for a multi-drink entry)
+  abv        Float?   // % alcohol by volume (ethanol-weighted for a multi-drink entry)
+  count      Float?   // number of serves
+  source     String?  // recent | cache | catalog | ai | manual | edited
+  confidence Float?   // 0-1, from the parser
+  rawText    String?  // what the user typed; normalised to look up recents
+
+  @@index([tabId])
+}
+
+// Curated drink catalog (seeded from src/lib/drinks/catalog.ts by migrations/0003_seed_catalog.sql)
+model DrinkCatalog {
+  id        String  @id
+  name      String
+  brand     String?
+  category  String  // beer | cider | wine | sparkling | fortified | spirit | liqueur | rtd | cocktail | soju_sake | non_alcoholic
+  abv       Float
+  serveMl   Float   // default serve when the user gives no size
+  aliases   String  // JSON array of lower-case phrases
+  isMixer   Boolean @default(false)
+  sourceUrl String?
+}
+
+// Australian serve sizes (schooner, pot, SA pint, ...)
+model ServeSize {
+  id              String  @id
+  name            String
+  kind            String  // measure | container
+  volumeMl        Float
+  categoryMl      String? // JSON map of category -> ml for containers
+  impliesCategory String?
+  aliases         String  // JSON array
+  sourceUrl       String?
+}
+
+// Successful AI parses, keyed by normalised text, so each phrase only costs one AI call
+model ParseCache {
+  key       String   @id // normalised drink text
+  version   Int      // PARSER_VERSION at the time of the parse
+  items     String   // JSON ParsedItem[]
+  hits      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -1,13 +1,23 @@
 import { z } from "zod";
 import type { PrismaClient } from "@prisma/client";
 
-import { analyseDrinkDetailed } from "~/lib/genai";
+import { analyseDrinkText } from "~/server/bartender";
 
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
+
+const drinkDetailsSchema = z.object({
+  name: z.string().max(200).optional(),
+  volumeMl: z.number().min(0).max(50000).optional(),
+  abv: z.number().min(0).max(100).optional(),
+  count: z.number().min(0).max(100).optional(),
+  source: z.enum(["recent", "cache", "catalog", "ai", "manual", "edited"]).optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  rawText: z.string().max(200).optional(),
+});
 
 // Helper function to clean up old tabs, keeping only the 5 most recent
 async function cleanupOldTabs(db: PrismaClient, userId: string) {
@@ -45,7 +55,7 @@ export const postRouter = createTRPCRouter({
     }),
   analyseDrink: protectedProcedure
     .input(z.object({ drinkText: z.string().trim().min(1).max(200) }))
-    .mutation(({ input }) => analyseDrinkDetailed(input.drinkText)),
+    .mutation(({ ctx, input }) => analyseDrinkText(ctx.db, ctx.session.user.id, input.drinkText)),
   updateUserInfo: protectedProcedure
     .input(z.object({
       weight: z.number().positive().max(1000),
@@ -131,8 +141,10 @@ export const postRouter = createTRPCRouter({
   }),
   addDrink: protectedProcedure
     .input(z.object({
-      standards: z.number().positive().max(20),
+      standards: z.number().positive().max(50),
       finishedAt: z.string(), // ISO string
+      // What the bartender parsed, if the drink came from text (all optional for manual entry)
+      details: drinkDetailsSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
@@ -143,13 +155,15 @@ export const postRouter = createTRPCRouter({
           tabId: tab.id,
           standards: input.standards,
           finishedAt: new Date(input.finishedAt),
+          source: "manual",
+          ...input.details,
         },
       });
     }),
   updateDrink: protectedProcedure
     .input(z.object({
       drinkId: z.string(),
-      standards: z.number().positive().max(20),
+      standards: z.number().positive().max(50),
       finishedAt: z.string(), // ISO string
     }))
     .mutation(async ({ ctx, input }) => {

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { BACIndicator } from "./BACIndicator";
 import { EditDrinkModals } from "./EditDrinkModals";
 import { AddDrinkDrawer } from "./AddDrinkDrawer";
+import type { DrinkDetails } from "~/lib/drinks/details";
 import type { Drink } from "~/types/bac";
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { api } from "~/trpc/react";
@@ -50,6 +51,7 @@ export function MainContent({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [newStandards, setNewStandards] = useState(1);
+  const [newDetails, setNewDetails] = useState<DrinkDetails | undefined>(undefined);
   const [newTime, setNewTime] = useState(getCurrentTimeString);
   const [selectedTime, setSelectedTime] = useState('');
   const [resolvedDateTime, setResolvedDateTime] = useState<Date | null>(null);
@@ -203,9 +205,11 @@ export function MainContent({
     
     await addDrink.mutateAsync({ 
       standards: newStandards, 
-      finishedAt: utcISOString  // Send as proper UTC ISO string instead of raw newTime
+      finishedAt: utcISOString,  // Send as proper UTC ISO string instead of raw newTime
+      details: newDetails,
     });
     setNewStandards(1);
+    setNewDetails(undefined);
     const currentTime = getCurrentTimeString12Hour();
     setSelectedTime(currentTime);
     const resolvedDate = resolveTimeToDateTime(currentTime);
@@ -316,6 +320,7 @@ export function MainContent({
         setDrawerOpen={setDrawerOpen}
         newStandards={newStandards}
         setNewStandards={setNewStandards}
+        setNewDetails={setNewDetails}
         newTime={newTime}
         setNewTime={setNewTime}
         selectedTime={selectedTime}

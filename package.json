@@ -10,6 +10,7 @@
     "db:migrate:local": "wrangler d1 migrations apply baculator --local",
     "db:migrate:remote": "wrangler d1 migrations apply baculator --remote",
     "db:migrations:sql": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
+    "db:catalog-sql": "tsx scripts/build-catalog-sql.ts",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "dev": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
@@ -20,11 +21,11 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:drinks": "tsx scripts/eval-drinks.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
-    "@google/genai": "^1.17.0",
     "@opennextjs/cloudflare": "^1.20.12",
     "@prisma/adapter-d1": "^6.12.0",
     "@prisma/client": "^6.5.0",
@@ -69,6 +70,7 @@
     "prettier-plugin-tailwindcss": "^0.6.11",
     "prisma": "^6.5.0",
     "tailwindcss": "^4.0.15",
+    "tsx": "^4.23.15",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.27.0",
