@@ -14,11 +14,11 @@ Secondary users: a sober friend holding the phone (needs emergency info fast); a
 - A simulation-based estimate (absorption + zero-order elimination, never "banking" sober time), shown as a band, not a precise number.
 
 ## Non-negotiables (from the designing-for-impaired-users skill and harm-reduction stance)
-- Never imply fitness to drive: no legal-limit lines, no green zones, no "time until 0.05", no "under the limit". While the estimate is above zero, always say **Not safe to drive**.
+- Never imply fitness to drive: no legal-limit lines, no green zones, no "time until 0.05", no "under the limit". Say **Not safe to drive** whenever drinks are counted and the estimate is above zero, when there's no weight to estimate with, and through the slow-eliminator tail after the model reaches zero.
 - Never encourage or reward drinking: no streaks, badges, celebrations, round reminders, upsells or drink notifications.
 - Nothing times out or interrupts on the logging path, and nothing moves at rest. Motion only answers a change (the glass pours and settles, numbers count) and is off under reduced motion. (User decision, 17 Oct 2026: "fluid" is the main driver.) Undo instead of confirm dialogs.
 - Repeat drink = 1 tap; new drink ≤ 3 taps; typing optional, never required.
-- Estimate is ±20% at best: show one rounded number ("about 0.08") with the likely range under it, and "estimate only". (User decision, 17 Oct 2026: a band alone was too wide to act on.)
+- Estimate is ±20% (1 SD) at best: show one number rounded UP ("about 0.08") with the likely range (0.75–1.4×) under it, and "estimate only". Back to zero is shown as 0.75–1.6× of the model. (User decision, 17 Oct 2026: a band alone was too wide to act on.)
 - Drinking data is sensitive: stored in D1, never sold or shared; self-serve account deletion exists at /account/delete.
 
 ## Terminology

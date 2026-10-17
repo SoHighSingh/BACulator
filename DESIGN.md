@@ -21,7 +21,7 @@ Retired and not coming back: WebGL veil, glass blur, gradients, hairline separat
 | `ink-2` | `#BDB8B0` | secondary text | 9.6:1 on bg |
 | `amber` | `#F2B84B` | primary action fill (text `bg` on it, 10.5:1) | 10.3:1 on bg |
 | `amber-press` | `#D99E32` | amber pressed/hover (text `bg`, 8.0:1) | — |
-| `amber-soft` | `#7D6230` | the "still absorbing" layer in the glass (shape only, never text) | — |
+| `amber-soft` | `#A07D38` | the "still absorbing" layer in the glass (shape only, never text) | — |
 | `alert` | `#FF9A8A` | "Not safe to drive" on dark only | 9.2:1 on bg |
 | `paper` | `#F3EEE4` | the docket, the "range" section | — |
 | `paper-2` | `#E4DDCF` | tone step on paper (totals row) | — |
@@ -42,19 +42,24 @@ Surfaces are separated by a step in tone, never by a hairline or a shadow. Selec
 
 ## Targets and layout (night screen)
 - App shell: `fixed inset-0` column. Top bar (BACulator · Get home · Profile), scrolling middle, fixed dock. No rubber-band overscroll, no tap flash, no text selection on controls.
-- Scroll order: Not safe to drive banner (whenever > 0) → glass gauge → back-to-zero line → Tonight's curve → Your tab → Getting home. "Get home" in the top bar scrolls to the card.
-- Dock, top to bottom: status line ("Added Vodka soda [Undo]", "Removed … [Add back]", or "Last: … · 6 min ago"), primary **+ Add another** (96px, full width, drink icon, name · std; "+ Add" when nothing is logged tonight), then 3 × 84px buttons: two recents (icon, name, std) and **+ New drink**.
+- Scroll order: Not safe to drive banner (sticky, so it never scrolls away) → glass gauge → back-to-zero line → Tonight's curve → Getting home → Your tab. "Get home" in the top bar scrolls to the card.
+- Shell is a CSS grid (`minmax(0,1fr)` column). Under 700px tall the recents fold into one "+ New drink" button and the primary drops to 80px. Landscape phones (≤540px tall) put the estimate left and the dock right.
+- Dock, top to bottom: status line ("Added Vodka soda ×2 [Undo one]", "Removed … [Add back]", or "Last: … · 6 min ago"), primary **+ Add another** (96px, full width, Lucide drink icon, name · std; "+ Add" when nothing is logged tonight), then two recents (72px, `surface-3`, 18px names) and **+ New drink**.
+- A second tap on the same drink within 600ms is a double tap and is ignored; taps further apart are real drinks and stack as ×2, ×3.
 - Undo and Add back mirror each other, so a wrong tap on either is reversible.
 - Every target ≥ 48px, primary row gaps ≥ 12px. Remove lives only in tab rows.
 - Max-width 480px, 16px gutter, safe-area padding.
 
 ## The glass (FluidGauge)
 - Pint silhouette (112 × 208), outline `ink-2` 3px. Full at 0.20 and no markings: the level shows more or less, never a limit.
-- Solid `amber` = estimate now. `amber-soft` above it = alcohol from drinks still being absorbed (the projected peak). Adding a drink raises the soft layer at once, so the tap always visibly lands, with "↑ Heading to about 0.13 by 10:00 pm" in amber text.
+- Solid `amber` = estimate now. `amber-soft` above it = alcohol from drinks still being absorbed (the projected peak). Adding a drink raises the soft layer at once, so the tap always visibly lands, with "↑ Still rising: about 0.13 by 10:00 pm" in ink (never amber, which reads as encouragement).
+- Opens at the real values: no count-up from 0.00.
 - Number: "about" + point (2 decimals, `clamp(64px,21vw,96px)`), "Likely 0.07 to 0.12" below. A screen-reader live line carries the final values; the animated text is hidden from it.
 
-## Tonight's curve (TimelineCard)
-- Inline on the main screen. Past solid amber area, future dashed and paler, a white "now" line with its label under the chart. No horizontal grid or reference lines. Draws in over 900ms. "Bigger" opens the full chart with times and values.
+## Tonight's curve (TimelineCard / TimelineChart)
+- Hand-drawn SVG from one `simulateNight` run (no chart library). One continuous line, split at "now" by clipping: solid with a 32% fill before, dashed with a 10% fill after, so there is never a gap. A white "now" line and dot.
+- Scrub: drag a thumb across it (touch-action pan-y, so vertical scroll still works) and the row above reads "10:40 pm · about 0.09"; release snaps back to "Now".
+- No horizontal grid or reference lines. Draws in left to right once (900ms clip reveal). "Bigger" opens the same chart at 300px with hour labels and the top value.
 
 ## Motion
 - **Night screen:** only in answer to a change. Glass pour 900ms ease-out (quartic) with a slosh that decays to still within 2000ms of wall-clock time; number counts in step; "Added …" slides up 260ms; sheets rise 340ms; buttons squeeze to 0.97 in 120ms. Haptic tick (12ms) on add where supported. Optimistic adds: the glass fills on tap, before the server answers.
@@ -70,6 +75,12 @@ Surfaces are separated by a step in tone, never by a hairline or a shadow. Selec
 
 ## Region (`src/lib/region.ts`, `useRegion`)
 Storage and the BAC engine always use 10 g standards. Region only changes display and entry: 10 g / kg / ml / 000, or US 14 g / lb / oz / 911. Serve chips per region. Chosen per device (localStorage), guessed from the browser language, editable in Your details and on the landing page. Copy never names a country other than "US".
+
+## Gauge lab (`/dev/gauges`, dev only)
+Three candidate displays on the same sample night, for choosing the next main gauge:
+1. **Living glass**: canvas pint glass on a height-field liquid model (`src/lib/fluid/surface.ts`: spring-coupled columns, volume-conserving, wall reflections). Pours fall in as drops that ripple where they land; touch or drag pushes the liquid; optional phone tilt leans it. Sleeps when still.
+2. **Liquid number**: the digits are the glass; liquid fills the glyphs from below (canvas `source-atop`).
+3. **Minimal dial**: 260° arc with a sprung value, ghost arc for "still rising". No ticks, zones or red line.
 
 ## Dev preview
 `/dev/night` renders the night screen with sample drinks and no sign-in (404 in production). Use it for phone-size checks.
