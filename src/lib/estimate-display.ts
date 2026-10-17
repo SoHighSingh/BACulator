@@ -58,8 +58,11 @@ export function describeEstimate(result: BACResult, drinks: Drink[], now: Date):
 }
 
 /** "Schooner of lager", or "1.5 std drink" for a drink entered by number only */
-export function drinkLabel(drink: Pick<Drink, "standards"> & { name?: string | null }): string {
-  return drink.name?.trim() ? drink.name : `${formatStandards(drink.standards)} std drink`;
+export function drinkLabel(
+  drink: Pick<Drink, "standards"> & { name?: string | null },
+  std: (stored: number) => string = formatStandards,
+): string {
+  return drink.name?.trim() ? drink.name : `${std(drink.standards)} std drink`;
 }
 
 export function formatStandards(standards: number): string {

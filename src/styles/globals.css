@@ -13,10 +13,18 @@
   --color-bg: #121110;
   --color-surface: #1c1b19;
   --color-surface-2: #262421;
+  --color-surface-3: #34312c;
   --color-line: #6e6a64;
   --color-ink: #edeae4;
   --color-ink-2: #bdb8b0;
   --color-amber: #f2b84b;
+  --color-amber-press: #d99e32;
+  /* The docket on the landing page: thermal-paper white with its own ink and stamp colour. */
+  --color-paper: #f3eee4;
+  --color-paper-2: #e4ddcf;
+  --color-paper-ink: #1a1816;
+  --color-paper-ink-2: #4f4a43;
+  --color-stamp: #861c0f;
   --color-alert: #ff9a8a;
 }
 
@@ -150,5 +158,145 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Motion. The logging screen has none beyond instant press feedback. The landing page moves, but
+   only with transform and opacity, and only for people who haven't asked for less motion.
+   --------------------------------------------------------------------------------------------- */
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Press feedback: answers the thumb immediately, never drifts on its own. */
+.press {
+  transition:
+    transform 120ms var(--ease-out),
+    background-color 120ms linear;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* The docket: thermal paper with a torn bottom edge. */
+.docket {
+  --tooth: 14px;
+  position: relative;
+  padding-bottom: var(--tooth);
+  clip-path: polygon(
+    0 0, 100% 0, 100% calc(100% - var(--tooth)),
+    95% 100%, 90% calc(100% - var(--tooth)), 85% 100%, 80% calc(100% - var(--tooth)), 75% 100%,
+    70% calc(100% - var(--tooth)), 65% 100%, 60% calc(100% - var(--tooth)), 55% 100%,
+    50% calc(100% - var(--tooth)), 45% 100%, 40% calc(100% - var(--tooth)), 35% 100%,
+    30% calc(100% - var(--tooth)), 25% 100%, 20% calc(100% - var(--tooth)), 15% 100%,
+    10% calc(100% - var(--tooth)), 5% 100%, 0 calc(100% - var(--tooth))
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .docket-print {
+    animation: docket-print 900ms var(--ease-out) both;
+  }
+  .docket-tear {
+    animation: docket-tear 520ms cubic-bezier(0.55, 0, 0.75, 0.2) forwards;
+    transform-origin: 0% 0%;
+  }
+  .docket-line {
+    animation: docket-line 420ms var(--ease-out) both;
+  }
+  .docket-roll {
+    display: inline-block;
+    animation: docket-roll 380ms var(--ease-out) both;
+  }
+  .docket-stamp {
+    animation: docket-stamp 420ms var(--ease-spring) both;
+  }
+  .landing .rise {
+    animation: rise 900ms var(--ease-out) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .faq-mark {
+    transition: transform 240ms var(--ease-out);
+  }
+  .faq[open] .faq-mark {
+    transform: rotate(45deg);
+  }
+  .faq[open] > p {
+    animation: rise 360ms var(--ease-out) both;
+  }
+
+  @supports (animation-timeline: view()) {
+    .reveal > * {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+    .reveal > *:nth-child(2) {
+      animation-range: entry 8% entry 55%;
+    }
+  }
+}
+
+/* The stamp sits slightly askew, the way a rubber stamp lands. Static, so it holds with less motion too. */
+.docket-stamp {
+  rotate: -2deg;
+}
+
+@keyframes docket-print {
+  from {
+    transform: translateY(-40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes docket-tear {
+  to {
+    transform: translateY(70%) rotate(7deg);
+    opacity: 0;
+  }
+}
+@keyframes docket-line {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-8px);
+  }
+  to {
+    clip-path: inset(0);
+    transform: none;
+  }
+}
+@keyframes docket-roll {
+  from {
+    transform: translateY(35%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes docket-stamp {
+  from {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes rise {
+  from {
+    transform: translateY(28px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
   }
 }

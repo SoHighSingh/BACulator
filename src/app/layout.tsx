@@ -4,6 +4,7 @@ import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { SessionProvider } from "next-auth/react";
 import UserInfoSlideOutProvider from "../components/UserInfoSlideOutProvider";
+import { RegionProvider } from "~/hooks/useRegion";
 
 const SITE_URL = "https://www.baculator.com";
 const TITLE = "BACulator — Blood Alcohol & Standard Drinks Calculator";
@@ -73,9 +74,9 @@ export default function RootLayout({
         />
         <SessionProvider>
           <TRPCReactProvider>
-            <UserInfoSlideOutProvider>
-              {children}
-            </UserInfoSlideOutProvider>
+            <RegionProvider>
+              <UserInfoSlideOutProvider>{children}</UserInfoSlideOutProvider>
+            </RegionProvider>
           </TRPCReactProvider>
         </SessionProvider>
       </body>

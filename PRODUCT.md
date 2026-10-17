@@ -22,10 +22,10 @@ Secondary users: a sober friend holding the phone (needs emergency info fast); a
 - Drinking data is sensitive: stored in D1, never sold or shared; self-serve account deletion exists at /account/delete.
 
 ## Terminology
-- "Standard drink" = 10 g of alcohol in Australia/UK-style units, 14 g in the US (not yet region-aware in code: GRAMS_PER_STANDARD = 10 in src/lib/bac-calculator.ts). Abbreviate "std" only next to a number.
+- "Standard drink" = 10 g of alcohol in Australia/UK-style units, 14 g in the US (storage and the engine stay in 10 g units; `src/lib/region.ts` converts for display and entry per region). Abbreviate "std" only next to a number.
 - Core action verb is **Add** everywhere.
 - Serves: pot/middy 285 ml, schooner 425 ml, pint 570 ml, can/stubby 375 ml, wine glass 150 ml, nip 30 ml.
-- Emergency number: 000 (AU), 911 (US) — the GetHome strip currently hard-codes 000.
+- Emergency number: 000 (default region), 911 (US), from the region setting.
 
 ## Platform
 web (mobile-first; must also work on desktop). Pinch-zoom must stay enabled.

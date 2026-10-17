@@ -115,9 +115,9 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[480px] flex-col gap-4 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <div className="mx-auto flex w-full max-w-[480px] flex-col gap-5 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <header className="flex min-h-12 items-center pr-28">
-        <h1 className="text-xl font-semibold text-ink">BACulator</h1>
+        <h1 className="text-xl font-bold tracking-[-0.01em] text-ink">BACulator</h1>
       </header>
 
       <EstimatePanel estimate={estimate} onAddDetails={onOpenUserInfo} onShowTimeline={() => setTimelineOpen(true)} />
@@ -133,7 +133,7 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
       <LastAdded lastDrink={lastDrink} notice={notice} now={now} onUndo={() => void undo()} />
 
       {night.error && (
-        <p role="alert" className="rounded-xl border border-alert p-4 text-lg font-medium text-alert">
+        <p role="alert" className="rounded-xl bg-surface-2 p-4 text-lg font-semibold text-alert">
           {night.error}
         </p>
       )}

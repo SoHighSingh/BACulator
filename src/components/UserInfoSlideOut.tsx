@@ -4,6 +4,8 @@ import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 
+import { useRegion } from "~/hooks/useRegion";
+import { kgToRegionWeight, REGION_IDS, REGIONS, regionWeightToKg } from "~/lib/region";
 import { api } from "~/trpc/react";
 
 interface UserInfoSlideOutProps {
@@ -18,6 +20,8 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
   const [sex, setSex] = useState<"male" | "female" | "">("");
   const [saved, setSaved] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const { region, setRegion } = useRegion();
+  const [weightKg, setWeightKg] = useState<number | null>(null);
 
   const utils = api.useUtils();
   const updateUserInfo = api.post.updateUserInfo.useMutation({
@@ -37,19 +41,25 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
   useEffect(() => {
     const data = userInfoQuery.data;
     if (!data) return;
-    if (data.weight != null) setWeight(String(data.weight));
+    if (data.weight != null) setWeightKg(data.weight);
     if (data.sex === "male" || data.sex === "female") setSex(data.sex);
   }, [userInfoQuery.data]);
 
+  // The saved weight is kg; show it in whatever unit the region uses.
+  useEffect(() => {
+    if (weightKg != null) setWeight(String(kgToRegionWeight(weightKg, region)));
+  }, [weightKg, region]);
+
   if (!isOpen) return null;
 
-  const weightNumber = Number(weight);
+  const weightNumber = regionWeightToKg(Number(weight), region);
   const valid = weight !== "" && weightNumber >= 30 && weightNumber <= 300 && sex !== "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (sex === "" || !valid) return;
     await updateUserInfo.mutateAsync({ weight: weightNumber, sex });
+    setWeightKg(weightNumber);
     setSaved(true);
   }
 
@@ -71,17 +81,37 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
 
         <p className="text-lg text-ink-2">Used only to work out your estimate. Change them any time.</p>
 
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-lg font-medium">Standard drinks and units</legend>
+          <div className="flex flex-col gap-3">
+            {REGION_IDS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={region.id === id}
+                onClick={() => setRegion(id)}
+                className={`min-h-14 rounded-xl border bg-surface-2 px-4 py-2 text-left text-lg font-semibold ${
+                  region.id === id ? "border-amber ring-2 ring-amber" : "border-line"
+                }`}
+              >
+                {REGIONS[id].label}
+              </button>
+            ))}
+          </div>
+          <p className="text-base text-ink-2">Saved on this phone. Your drinks stay the same, only the numbers change.</p>
+        </fieldset>
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <label htmlFor="weight" className="text-lg font-medium">
-              Weight (kg)
+              Weight ({region.weightUnit})
             </label>
             <input
               id="weight"
               type="number"
               inputMode="decimal"
-              min={30}
-              max={300}
+              min={kgToRegionWeight(30, region)}
+              max={kgToRegionWeight(300, region)}
               step="0.1"
               value={weight}
               onChange={(e) => {

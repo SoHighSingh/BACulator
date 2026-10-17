@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
-import { describeItem, MANUAL_CHIPS, toDrinkDetails, type DrinkDetails } from "~/lib/drinks/details";
+import { describeItem, toDrinkDetails, type DrinkDetails } from "~/lib/drinks/details";
 import type { ParseResult } from "~/lib/drinks/types";
-import { formatStandards } from "~/lib/estimate-display";
 import type { NewDrink } from "~/hooks/useNight";
+import { useRegion } from "~/hooks/useRegion";
+import { fromRegionStandards, servesFor, toRegionStandards } from "~/lib/region";
 import { api } from "~/trpc/react";
 
 const MAX_STANDARDS = 50;
@@ -36,6 +37,8 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
   const [minutesAgo, setMinutesAgo] = useState(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const analyse = api.post.analyseDrink.useMutation();
+  const { region, std } = useRegion();
+  const chips = servesFor(region);
 
   // Every open starts fresh at "Now", so a drink is never stamped with a stale time.
   useEffect(() => {
@@ -74,7 +77,7 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
     }
   }
 
-  function pickChip(chip: (typeof MANUAL_CHIPS)[number]) {
+  function pickChip(chip: (typeof chips)[number]) {
     setStandards(chip.standards);
     setDetails({
       name: chip.label,
@@ -87,8 +90,10 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
     });
   }
 
-  function changeStandards(next: number) {
-    const value = Math.min(MAX_STANDARDS, Math.max(STEP, round1(next)));
+  // The stepper counts in the region's standard drinks; state is kept in stored 10 g standards.
+  function step(direction: 1 | -1) {
+    const shown = round1(toRegionStandards(standards, region)) + direction * STEP;
+    const value = Math.min(MAX_STANDARDS, Math.max(fromRegionStandards(STEP, region), fromRegionStandards(shown, region)));
     setStandards(value);
     if (details && details.source !== "manual") setDetails({ ...details, source: "edited" });
   }
@@ -114,7 +119,7 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
         <button
           type="button"
           onClick={onClose}
-          className="min-h-12 min-w-20 rounded-xl border border-line px-4 text-lg font-medium text-ink"
+          className="min-h-12 min-w-20 rounded-xl bg-surface-2 px-4 text-lg font-medium text-ink"
         >
           Close
         </button>
@@ -135,13 +140,13 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
               placeholder="e.g. 2 schooners of Great Northern"
               autoComplete="off"
               enterKeyHint="go"
-              className="min-h-14 min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 text-lg text-ink placeholder:text-ink-2"
+              className="min-h-14 min-w-0 flex-1 rounded-xl border-2 border-line bg-surface px-4 text-lg text-ink placeholder:text-ink-2 focus:border-amber focus:outline-none"
             />
             <button
               type="button"
               onClick={() => void readDrink()}
               disabled={!text.trim() || analyse.isPending}
-              className="min-h-14 shrink-0 rounded-xl border border-line bg-surface-2 px-4 text-lg font-semibold text-ink disabled:opacity-60"
+              className="min-h-14 shrink-0 rounded-xl bg-surface-2 px-4 text-lg font-semibold text-ink disabled:opacity-60"
             >
               {analyse.isPending ? "Reading…" : "Read it"}
             </button>
@@ -154,10 +159,10 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
                 .map((item, i) => (
                   <p key={i} className="flex justify-between gap-3">
                     <span>
-                      {describeItem(item)}
+                      {describeItem(item, region)}
                       {item.assumed.includes("volume") && <span className="text-ink-2"> (usual size)</span>}
                     </span>
-                    <span className="font-semibold whitespace-nowrap">{formatStandards(item.standards)} std</span>
+                    <span className="font-semibold whitespace-nowrap">{std(item.standards)} std</span>
                   </p>
                 ))}
               {result.items.some((i) => i.confidence < 0.7) && <p className="text-amber">Best guess. Check the number below.</p>}
@@ -175,18 +180,18 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
             Or pick one
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            {MANUAL_CHIPS.map((chip) => (
+            {chips.map((chip) => (
               <button
                 key={chip.label}
                 type="button"
                 aria-pressed={selectedChip === chip.label}
                 onClick={() => pickChip(chip)}
-                className={`min-h-16 rounded-xl border px-3 py-2 text-left text-ink ${
-                  selectedChip === chip.label ? "border-amber bg-surface-2 ring-2 ring-amber" : "border-line bg-surface-2"
+                className={`min-h-16 rounded-xl px-3 py-2 text-left text-ink ${
+                  selectedChip === chip.label ? "bg-surface-3 ring-3 ring-amber" : "bg-surface-2"
                 }`}
               >
                 <span className="block text-lg leading-snug font-semibold">{chip.label}</span>
-                <span className="block text-base text-ink-2">{formatStandards(chip.standards)} std</span>
+                <span className="block text-base text-ink-2 tabular-nums">{std(chip.standards)} std</span>
               </button>
             ))}
           </div>
@@ -199,20 +204,20 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => changeStandards(standards - STEP)}
+              onClick={() => step(-1)}
               aria-label="Half a standard drink less"
-              className="min-h-14 min-w-14 rounded-xl border border-line bg-surface-2 text-2xl font-semibold text-ink"
+              className="min-h-14 min-w-14 rounded-xl bg-surface-2 text-2xl font-semibold text-ink"
             >
               −
             </button>
             <output aria-live="polite" className="flex-1 text-center text-3xl font-bold tabular-nums text-ink">
-              {formatStandards(standards)}
+              {std(standards)}
             </output>
             <button
               type="button"
-              onClick={() => changeStandards(standards + STEP)}
+              onClick={() => step(1)}
               aria-label="Half a standard drink more"
-              className="min-h-14 min-w-14 rounded-xl border border-line bg-surface-2 text-2xl font-semibold text-ink"
+              className="min-h-14 min-w-14 rounded-xl bg-surface-2 text-2xl font-semibold text-ink"
             >
               +
             </button>
@@ -230,8 +235,8 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
                 type="button"
                 aria-pressed={minutesAgo === chip.minutesAgo}
                 onClick={() => setMinutesAgo(chip.minutesAgo)}
-                className={`min-h-14 rounded-xl border px-3 text-lg font-semibold text-ink ${
-                  minutesAgo === chip.minutesAgo ? "border-amber bg-surface-2 ring-2 ring-amber" : "border-line bg-surface-2"
+                className={`min-h-14 rounded-xl px-3 text-lg font-semibold text-ink ${
+                  minutesAgo === chip.minutesAgo ? "bg-surface-3 ring-3 ring-amber" : "bg-surface-2"
                 }`}
               >
                 {chip.label}
@@ -246,9 +251,9 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
           type="button"
           onClick={() => void submit()}
           disabled={saving}
-          className="min-h-[72px] w-full rounded-2xl bg-amber px-5 text-xl font-semibold text-bg disabled:opacity-60"
+          className="min-h-[72px] w-full rounded-3xl bg-amber px-5 text-xl font-bold text-bg active:bg-amber-press disabled:opacity-60"
         >
-          {saving ? "Adding…" : `Add ${details?.name ?? "drink"} · ${formatStandards(standards)} std`}
+          {saving ? "Adding…" : `Add ${details?.name ?? "drink"} · ${std(standards)} std`}
         </button>
       </footer>
     </div>

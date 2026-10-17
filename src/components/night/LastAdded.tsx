@@ -1,4 +1,5 @@
-import { drinkLabel, formatStandards, timeAgo } from "~/lib/estimate-display";
+import { useRegion } from "~/hooks/useRegion";
+import { drinkLabel, timeAgo } from "~/lib/estimate-display";
 import type { LoggedDrink } from "~/hooks/useNight";
 
 export type Notice =
@@ -15,30 +16,37 @@ interface LastAddedProps {
   onUndo: () => void;
 }
 
-/** Answers "did I log that?" at a glance, and makes the last action reversible. */
+/**
+ * Answers "did I log that?" at a glance, and makes the last action reversible. It sits below the
+ * add buttons so appearing never pushes them around.
+ */
 export function LastAdded({ lastDrink, notice, now, onUndo }: LastAddedProps) {
+  const { std } = useRegion();
   const undoable = notice && now.getTime() - notice.at < UNDO_WINDOW_MS ? notice : null;
   if (!lastDrink && !undoable) return null;
 
   return (
-    <section aria-live="polite" className="rounded-2xl border border-line bg-surface p-4">
-      {undoable?.kind === "removed" ? (
-        <p className="text-lg font-medium text-ink">Removed {drinkLabel(undoable.drink)}</p>
-      ) : (
-        lastDrink && (
-          <p className="text-lg text-ink">
-            <span className="font-semibold">Last added: {drinkLabel(lastDrink)}</span>
-            <span className="block text-ink-2">
-              {formatStandards(lastDrink.standards)} std · {timeAgo(lastDrink.finishedAt, now)}
-            </span>
-          </p>
-        )
-      )}
+    <section aria-live="polite" className="mt-3 flex items-center gap-4 rounded-2xl bg-surface p-4">
+      <div className="min-w-0 flex-1">
+        {undoable?.kind === "removed" ? (
+          <p className="text-lg font-semibold text-ink">Removed {drinkLabel(undoable.drink, std)}</p>
+        ) : (
+          lastDrink && (
+            <p className="text-lg text-ink">
+              <span className="block text-base font-medium text-ink-2">Last added</span>
+              <span className="block font-semibold">{drinkLabel(lastDrink, std)}</span>
+              <span className="block text-ink-2 tabular-nums">
+                {std(lastDrink.standards)} std · {timeAgo(lastDrink.finishedAt, now)}
+              </span>
+            </p>
+          )
+        )}
+      </div>
       {undoable && (
         <button
           type="button"
           onClick={onUndo}
-          className="mt-3 min-h-14 w-full rounded-xl border border-line bg-surface-2 px-4 text-lg font-semibold text-ink"
+          className="min-h-14 min-w-28 shrink-0 rounded-xl bg-surface-3 px-5 text-lg font-semibold text-ink active:bg-line"
         >
           Undo
         </button>

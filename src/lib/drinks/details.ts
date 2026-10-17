@@ -1,4 +1,4 @@
-import { computeStandards } from "./standards";
+import { formatVolume, REGIONS, servesFor, type Region } from "../region";
 import type { ParsedItem, ParseResult } from "./types";
 
 /** What gets stored on a Drink row alongside the standards the user confirmed. */
@@ -15,10 +15,10 @@ export interface DrinkDetails {
 const fmt = (n: number) => String(Math.round(n * 10) / 10);
 
 /** "2 × 425 ml · Victoria Bitter · 4.9%" */
-export function describeItem(item: ParsedItem) {
+export function describeItem(item: ParsedItem, region: Region = REGIONS.metric) {
   if (item.volumeMl <= 0) return item.name; // "same again" of a drink that was entered by hand
   const count = item.count === 1 ? "" : `${fmt(item.count)} × `;
-  return `${count}${fmt(item.volumeMl)} ml · ${item.name} · ${fmt(item.abv)}%`;
+  return `${count}${formatVolume(item.volumeMl, region)} · ${item.name} · ${fmt(item.abv)}%`;
 }
 
 /**
@@ -46,12 +46,5 @@ export function toDrinkDetails(result: ParseResult, rawText: string): DrinkDetai
   };
 }
 
-/** Manual-entry chips shown when the text could not be parsed. Values match the catalog generics. */
-export const MANUAL_CHIPS = [
-  { label: "Schooner of beer", volumeMl: 425, abv: 4.8 },
-  { label: "Pint of beer", volumeMl: 570, abv: 4.8 },
-  { label: "Can, stubby or premix", volumeMl: 375, abv: 4.8 },
-  { label: "Glass of wine", volumeMl: 150, abv: 13.5 },
-  { label: "Nip of spirits", volumeMl: 30, abv: 40 },
-  { label: "Cocktail", volumeMl: 150, abv: 15.8 },
-].map((c) => ({ ...c, standards: computeStandards(1, c.volumeMl, c.abv) }));
+/** Manual-entry chips for the default region; the add sheet picks them per region (see lib/region). */
+export const MANUAL_CHIPS = servesFor(REGIONS.metric);
