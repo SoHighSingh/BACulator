@@ -270,33 +270,96 @@ function arc(cx: number, cy: number, r: number, from: number, to: number) {
   return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
 }
 
-export function Dial({ bac, peakBac }: GaugeProps) {
+/** The lines that sit under a dial, outside the circle, so they never get clipped by it. */
+function UnderDial({ bac, peakBac }: { bac: number; peakBac: number }) {
+  const rising = peakBac > bac + 0.004;
+  return (
+    <div className="-mt-[14%] text-center">
+      <p className="text-lg font-semibold text-ink">
+        {bac > 0 ? `Likely ${formatBand(bac).replace("–", " to ")}` : "Nothing counted yet"}
+      </p>
+      {rising && <p className="mt-1 text-lg font-semibold text-ink-2">↑ Still rising: about {formatPoint(peakBac)} soon</p>}
+    </div>
+  );
+}
+
+function useDialArcs(bac: number, peakBac: number) {
   const shown = useSpring(bac, { stiffness: 110, damping: 11 });
   const ghost = useSpring(Math.max(bac, peakBac), { stiffness: 90, damping: 14 });
   const frac = (b: number) => Math.min(1, Math.max(0, b / FULL_AT));
+  const C = 150;
+  const R = 128;
   const valueDeg = START + SWEEP * frac(shown);
   const ghostDeg = START + SWEEP * frac(ghost);
-  const C = 150;
-  const R = 122;
-  const tip = [(C + R * Math.cos((valueDeg * Math.PI) / 180)), (C + R * Math.sin((valueDeg * Math.PI) / 180))];
+  const tip = [C + R * Math.cos((valueDeg * Math.PI) / 180), C + R * Math.sin((valueDeg * Math.PI) / 180)];
+  const svg = (
+    <svg aria-hidden="true" viewBox="0 0 300 300" className="absolute inset-0 size-full">
+      <path d={arc(C, C, R, START, START + SWEEP)} fill="none" stroke={COLORS.surface2} strokeWidth={16} strokeLinecap="round" />
+      {ghost > shown + 0.001 && (
+        <path d={arc(C, C, R, START, ghostDeg)} fill="none" stroke={COLORS.amberSoft} strokeWidth={16} strokeLinecap="round" />
+      )}
+      {shown > 0.0005 && (
+        <path d={arc(C, C, R, START, valueDeg)} fill="none" stroke={COLORS.amber} strokeWidth={16} strokeLinecap="round" />
+      )}
+      <circle cx={tip[0]} cy={tip[1]} r={12} fill={COLORS.bg} stroke={COLORS.ink} strokeWidth={4} />
+    </svg>
+  );
+  return { shown, svg };
+}
+
+export function Dial({ bac, peakBac }: GaugeProps) {
+  const { shown, svg } = useDialArcs(bac, peakBac);
+  return (
+    <div className="rounded-[36px] bg-surface p-5">
+      <div className="relative mx-auto aspect-square w-full max-w-[300px]">
+        {svg}
+        <div className="absolute inset-x-[20%] top-[26%] bottom-[22%] flex flex-col items-center justify-center text-center">
+          <p className="text-base font-semibold text-ink-2">Blood alcohol</p>
+          {shown > 0.0095 && <p className="text-xl leading-none font-semibold text-ink">about</p>}
+          <p className="text-[clamp(48px,15vw,68px)] leading-[0.95] font-bold tracking-[-0.04em] text-ink tabular-nums">
+            {formatPoint(Math.max(0, shown))}
+          </p>
+        </div>
+      </div>
+      <UnderDial bac={bac} peakBac={peakBac} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------------------------------- */
+/* 4. Dial + liquid number: the sprung arc around the outside, and inside it the number whose    */
+/*    digits fill with liquid. The arc reads at a glance; the digits pour when you add a drink.  */
+/* ------------------------------------------------------------------------------------------- */
+export function DialLiquid({ bac, peakBac, pourKey, tilt }: GaugeProps) {
+  const reduced = useReducedMotion();
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const { shown, svg } = useDialArcs(bac, peakBac);
+  const text = formatPoint(Math.max(0, bac));
+  const textRef = useRef(text);
+  textRef.current = text;
+
+  useFluidSim(canvas, {
+    level: toLevel(Math.max(bac, peakBac)),
+    nowLevel: toLevel(bac),
+    pourKey,
+    reduced,
+    tilt,
+    draw: (f) => canvas.current && drawLiquidText(canvas.current, f, textRef.current),
+  });
 
   return (
     <div className="rounded-[36px] bg-surface p-5">
-      <div className="relative mx-auto aspect-square w-full max-w-[320px]">
-        <svg aria-hidden="true" viewBox="0 0 300 300" className="absolute inset-0 size-full">
-          <path d={arc(C, C, R, START, START + SWEEP)} fill="none" stroke={COLORS.surface2} strokeWidth={18} strokeLinecap="round" />
-          {ghost > shown + 0.001 && (
-            <path d={arc(C, C, R, START, ghostDeg)} fill="none" stroke={COLORS.amberSoft} strokeWidth={18} strokeLinecap="round" />
-          )}
-          {shown > 0.0005 && (
-            <path d={arc(C, C, R, START, valueDeg)} fill="none" stroke={COLORS.amber} strokeWidth={18} strokeLinecap="round" />
-          )}
-          <circle cx={tip[0]} cy={tip[1]} r={13} fill={COLORS.bg} stroke={COLORS.ink} strokeWidth={4} />
-        </svg>
-        <div className="absolute inset-x-[18%] top-[24%] bottom-[14%] flex items-center justify-center">
-          <Readout bac={bac} shown={shown} peakBac={peakBac} align="center" compact />
+      <div className="relative mx-auto aspect-square w-full max-w-[300px]">
+        {svg}
+        <div className="absolute inset-x-[15%] top-[25%] bottom-[25%] flex flex-col items-center justify-center">
+          <p className="text-base font-semibold text-ink-2">
+            Blood alcohol{shown > 0.0095 ? ", about" : ""}
+          </p>
+          <canvas ref={canvas} aria-hidden="true" className="aspect-[2/1] w-full touch-none" />
         </div>
+        <p className="sr-only">About {formatPoint(bac)}</p>
       </div>
+      <UnderDial bac={bac} peakBac={peakBac} />
     </div>
   );
 }

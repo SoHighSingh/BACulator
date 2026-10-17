@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { Dial, LiquidNumber, LivingGlass, type GaugeProps } from "~/components/gauges/Gauges";
+import { Dial, DialLiquid, LiquidNumber, LivingGlass, type GaugeProps } from "~/components/gauges/Gauges";
 import { calculateBAC } from "~/lib/bac-calculator";
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
@@ -16,7 +16,7 @@ export function GaugeLab() {
   ]);
   const [pourKey, setPourKey] = useState(0);
   const [tilt, setTilt] = useState(false);
-  const [variant, setVariant] = useState<"all" | "glass" | "number" | "dial">("all");
+  const [variant, setVariant] = useState<"all" | "glass" | "number" | "dial" | "combo">("all");
 
   const result = useMemo(
     () => calculateBAC({ drinks, userWeight: 75, userSex: "female", currentTime: new Date() }),
@@ -45,7 +45,7 @@ export function GaugeLab() {
       <div className="mx-auto flex max-w-[480px] flex-col gap-5">
         <h1 className="text-2xl font-bold">Gauge lab</h1>
         <p className="text-lg text-ink-2">
-          Same night, three displays. Tap or drag the liquid to push it; turn on tilt on a phone and lean it.
+          Same night, four displays. Tap or drag the liquid to push it; turn on tilt on a phone and lean it.
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -66,7 +66,7 @@ export function GaugeLab() {
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
-          {(["all", "glass", "number", "dial"] as const).map((v) => (
+          {(["all", "combo", "glass", "number", "dial"] as const).map((v) => (
             <button
               key={v}
               type="button"
@@ -74,11 +74,17 @@ export function GaugeLab() {
               onClick={() => setVariant(v)}
               className={`${button} ${variant === v ? "!bg-ink !text-bg" : ""}`}
             >
-              {v === "all" ? "All" : v === "glass" ? "Living glass" : v === "number" ? "Liquid number" : "Dial"}
+              {{ all: "All", combo: "Dial + number", glass: "Living glass", number: "Liquid number", dial: "Dial" }[v]}
             </button>
           ))}
         </div>
 
+        {(variant === "all" || variant === "combo") && (
+          <section className="flex flex-col gap-2">
+            <h2 className="text-lg font-bold text-ink-2">Dial + liquid number</h2>
+            <DialLiquid {...props} />
+          </section>
+        )}
         {(variant === "all" || variant === "glass") && (
           <section className="flex flex-col gap-2">
             <h2 className="text-lg font-bold text-ink-2">1 · Living glass</h2>
