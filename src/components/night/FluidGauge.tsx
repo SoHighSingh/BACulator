@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { useReducedMotion } from "~/hooks/useReducedMotion";
 import { formatBand, formatPoint } from "~/lib/estimate-display";
@@ -47,8 +47,10 @@ export function FluidGauge({ bac, peak, status }: FluidGaugeProps) {
   const incomingPath = useRef<SVGPathElement>(null);
   const targetNow = bac;
   const targetIncoming = Math.max(bac, peak?.bac ?? 0);
-  const shown = useRef({ now: 0, incoming: 0, amplitude: 0, phase: 0 });
-  const [displayBac, setDisplayBac] = useState(0);
+  // Start at the real values: opening the app never shows a false "0.00" counting up.
+  const shown = useRef({ now: targetNow, incoming: targetIncoming, amplitude: 0, phase: 0 });
+  const [displayBac, setDisplayBac] = useState(targetNow);
+  const clipId = `glass-${useId().replace(/:/g, "")}`;
 
   useEffect(() => {
     const draw = () => {
@@ -90,20 +92,19 @@ export function FluidGauge({ bac, peak, status }: FluidGaugeProps) {
   }, [targetNow, targetIncoming, reduced]);
 
   const likely = bac > 0 ? `Likely ${formatBand(bac).replace("–", " to ")}` : "Nothing counted yet";
-  const heading =
-    peak && peak.bac > bac + 0.004 ? `Heading to about ${formatPoint(peak.bac)} by ${clock(peak.at)}` : null;
+  const heading = peak && peak.bac > bac + 0.004 ? `Still rising: about ${formatPoint(peak.bac)} by ${clock(peak.at)}` : null;
 
   return (
-    <div className="flex items-stretch gap-4 rounded-[36px] bg-surface p-5">
+    <div className="flex items-stretch gap-4 rounded-[36px] bg-surface p-5 max-[360px]:gap-3 max-[360px]:p-4">
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <p className="text-lg font-semibold text-ink-2">Estimated blood alcohol</p>
         {displayBac > 0.0095 && <p className="mt-1 text-2xl leading-none font-semibold text-ink">about</p>}
-        <p className="text-[clamp(64px,21vw,96px)] leading-[0.95] font-bold tracking-[-0.04em] text-ink tabular-nums">
+        <p className="text-[clamp(56px,18vw,96px)] leading-[0.95] font-bold tracking-[-0.04em] text-ink tabular-nums">
           {formatPoint(displayBac)}
         </p>
         <p className="mt-2 text-lg font-semibold text-ink">{likely}</p>
         {heading ? (
-          <p className="mt-1 text-lg leading-snug font-bold text-amber">↑ {heading}</p>
+          <p className="mt-1 text-lg leading-snug font-bold text-ink">↑ {heading}</p>
         ) : (
           status !== "none" && (
             <p className="mt-1 text-xl font-bold text-ink">{status === "rising" ? "↑ Still rising" : "↓ Falling"}</p>
@@ -116,14 +117,14 @@ export function FluidGauge({ bac, peak, status }: FluidGaugeProps) {
         aria-hidden="true"
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
-        className="h-[208px] w-[112px] shrink-0 self-center"
+        className="h-[208px] w-[112px] shrink-0 self-center max-[360px]:h-[176px] max-[360px]:w-[84px]"
       >
         <defs>
-          <clipPath id="glass-shape">
+          <clipPath id={clipId}>
             <path d={GLASS} />
           </clipPath>
         </defs>
-        <g clipPath="url(#glass-shape)">
+        <g clipPath={`url(#${clipId})`}>
           <rect width={W} height={H} className="fill-surface-2" />
           <path ref={incomingPath} className="fill-amber-soft" d={surface(0, 0, 0)} />
           <path ref={nowPath} className="fill-amber" d={surface(0, 0, 0)} />

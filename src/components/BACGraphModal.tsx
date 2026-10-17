@@ -1,105 +1,7 @@
-import React from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
-import { Button } from "./ui/button";
+import { simulateNight } from "~/lib/bac-calculator";
 import type { Drink } from "~/types/bac";
-import { generateAdvancedBACTimeline, type GraphDataPoint } from "~/lib/bac-graph";
-
-interface BacTooltipProps {
-  active?: boolean;
-  payload?: { value: number; payload: { clockTime: string } }[];
-  label?: string | number;
-}
-
-function CustomTooltip({ active, payload, label }: BacTooltipProps) {
-  if (active && payload?.length) {
-    const timeLabel = payload[0]?.payload?.clockTime ?? String(label ?? "");
-    
-    return (
-      <div className="rounded-xl bg-surface-3 px-4 py-2 text-base text-ink">
-        <div className="font-semibold">Time: {timeLabel}</div>
-        <div>About {((payload[0]?.value ?? 0)).toFixed(2)}</div>
-      </div>
-    );
-  }
-  return null;
-}
-
-// Helper function to calculate adaptive axis settings
-function calculateAxisSettings(data: GraphDataPoint[]): {
-  yDomain: [number, number];
-  yTicks: number[];
-  xDomain: [number, number];
-  xTickInterval: number;
-} {
-  if (!data || data.length === 0) {
-    return {
-      yDomain: [0, 0.10],
-      yTicks: [0, 0.02, 0.04, 0.06, 0.08, 0.10],
-      xDomain: [0, 8],
-      xTickInterval: 1
-    };
-  }
-
-  // Calculate Y-axis (BAC) settings
-  const maxBAC = Math.max(...data.map(d => d.bac ?? 0));
-  
-  // Round up to next nice increment (0.02, 0.04, 0.06, etc.)
-  const yIncrement = 0.02;
-  const yMax = Math.ceil(maxBAC / yIncrement) * yIncrement;
-  const adjustedYMax = Math.max(yMax, 0.04); // Minimum of 0.04 for readability
-  
-  // Generate even ticks
-  const yTicks = [];
-  for (let i = 0; i <= adjustedYMax; i += yIncrement) {
-    yTicks.push(Math.round(i * 100) / 100); // Round to avoid floating point issues
-  }
-
-  // Calculate X-axis (time) settings
-  const minHour = Math.min(...data.map(d => d.hour ?? 0));
-  const maxHour = Math.max(...data.map(d => d.hour ?? 0));
-  const timeRange = maxHour - minHour;
-  
-  // Choose appropriate interval based on time range
-  let xTickInterval: number;
-  if (timeRange <= 2) {
-    xTickInterval = 0.25; // 15-minute intervals
-  } else if (timeRange <= 4) {
-    xTickInterval = 0.5; // 30-minute intervals  
-  } else if (timeRange <= 8) {
-    xTickInterval = 1; // 1-hour intervals
-  } else if (timeRange <= 16) {
-    xTickInterval = 2; // 2-hour intervals
-  } else {
-    xTickInterval = 4; // 4-hour intervals
-  }
-  
-  // Add some padding to the time range
-  const padding = timeRange * 0.05; // 5% padding
-  const xMin = Math.max(0, minHour - padding);
-  const xMax = maxHour + padding;
-
-  return {
-    yDomain: [0, adjustedYMax],
-    yTicks,
-    xDomain: [xMin, xMax],
-    xTickInterval
-  };
-}
-
-// Helper function to generate x-axis ticks
-function generateXTicks(xMin: number, xMax: number, interval: number, _data: GraphDataPoint[]) {
-  const ticks = [];
-  const start = Math.floor(xMin / interval) * interval;
-  
-  for (let tick = start; tick <= xMax; tick += interval) {
-    if (tick >= xMin) {
-      ticks.push(tick);
-    }
-  }
-  
-  return ticks;
-}
+import { TimelineChart } from "./night/TimelineCard";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 
 interface BACGraphModalProps {
   open: boolean;
@@ -109,120 +11,39 @@ interface BACGraphModalProps {
   userSex: string | null;
 }
 
+/** The bigger curve: same chart as the main screen, with hour labels and the top value. */
 export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex }: BACGraphModalProps) {
-  // Advanced BAC timeline for graph
-  let advancedTimeline = null;
   const now = new Date();
-  if (userWeight && userSex && drinks.length > 0) {
-    advancedTimeline = generateAdvancedBACTimeline(
-      drinks,
-      userWeight,
-      userSex,
-      now,
-      { intervalMinutes: 5, preStartMinutes: 15, postCurrentHours: 8 }
-    );
-  }
-
-  // Calculate adaptive axis settings
-  const axisSettings = calculateAxisSettings(advancedTimeline?.data ?? []);
-  const xTicks = generateXTicks(
-    axisSettings.xDomain[0] ?? 0, 
-    axisSettings.xDomain[1] ?? 8, 
-    axisSettings.xTickInterval,
-    advancedTimeline?.data ?? []
-  );
+  const simulation = open && userWeight && userSex ? simulateNight(drinks, userWeight, userSex, now) : null;
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      onOpenChange(newOpen);
-      // Blur active element when dialog opens to prevent aria-hidden warning
-      if (newOpen && document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-    }}>
-      <DialogContent className="fixed left-1/2 top-1/2 z-[130] w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-0 bg-surface p-0 mx-auto">
-        <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-2xl font-semibold text-ink">Your timeline</DialogTitle>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (next && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      }}
+    >
+      <DialogContent className="fixed top-1/2 left-1/2 z-[130] mx-auto w-[94vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-0 bg-surface p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle className="text-2xl font-bold text-ink">Tonight&apos;s curve</DialogTitle>
           <DialogDescription className="text-lg text-ink-2">
-            Estimated blood alcohol since your first drink, and where it&apos;s heading. Estimate only.
+            Estimated blood alcohol since your first drink, and where it&apos;s heading. Drag across it to see any time.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 px-6 pb-6">
-          {/* Card Content (Chart) */}
-          <div className="h-80 rounded-2xl bg-bg p-1 pt-5">
-            <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart 
-                  data={advancedTimeline?.data ?? []} 
-                  margin={{ left: -20, right: 20, top: 10, bottom: 0 }}
-                >
-                <XAxis 
-                  dataKey="hour"
-                  type="number"
-                  scale="linear"
-                  domain={axisSettings.xDomain}
-                  ticks={xTicks}
-                  tickFormatter={(h) => {
-                    // Find the data point closest to this hour value to get the clock time
-                    if (advancedTimeline?.data) {
-                      const closest = advancedTimeline.data.reduce((prev, curr) => 
-                        Math.abs(curr.hour - (h as number)) < Math.abs(prev.hour - (h as number)) ? curr : prev
-                      );
-                      return closest.clockTime;
-                    }
-                    // Fallback formatting
-                    const hours = Math.floor(h as number);
-                    const minutes = Math.round(((h as number) - hours) * 60);
-                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-                  }}
-                  tick={{ fill: '#bdb8b0', fontSize: 13 }}
-                  axisLine={{ stroke: '#374151', strokeWidth: 1 }}
-                  tickLine={{ stroke: '#374151', strokeWidth: 1 }}
-                />
-                <YAxis 
-                  domain={axisSettings.yDomain}
-                  ticks={axisSettings.yTicks}
-                  tickFormatter={v => (v * 1).toFixed(2)} 
-                  tick={{ fill: '#bdb8b0', fontSize: 13 }}
-                  label={{position: 'insideLeft', style: { fill: '#e5e5e5' } }}
-                  axisLine={{ stroke: '#374151', strokeWidth: 1 }}
-                  tickLine={{ stroke: '#374151', strokeWidth: 1 }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="bac" 
-                  stroke="#f2b84b"
-                  strokeWidth={3}
-                  fillOpacity={0.3}
-                  fill="#f2b84b"
-                  name="Blood Alcohol Content"
-                  isAnimationActive={false}
-                  connectNulls={false}
-                />
-                {/* Current time marker */}
-                {(() => {
-                  const currentHour: number | undefined = advancedTimeline?.currentTimeHour;
-                  if (currentHour != undefined) {                    
-                    return (
-                      <ReferenceLine 
-                        x={currentHour}
-                        stroke="#edeae4"
-                        strokeWidth={2}
-                        label={{ value: "now", position: "top", fill: "#edeae4", fontSize: 15, fontWeight: 600 }}
-                      />
-                    );
-                  }
-                  return null;
-                })()}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <Button
-            className="press mt-2 min-h-14 w-full rounded-2xl bg-surface-3 text-lg font-bold text-ink hover:bg-surface-3"
+          {simulation && simulation.samples.length > 1 ? (
+            <TimelineChart simulation={simulation} now={now} height={300} axes />
+          ) : (
+            <p className="text-lg text-ink">Add your weight and a drink to see the curve.</p>
+          )}
+          <button
+            type="button"
+            className="press mt-2 min-h-14 w-full rounded-2xl bg-surface-3 text-lg font-bold text-ink active:bg-line"
             onClick={() => onOpenChange(false)}
           >
             Close
-          </Button>
+          </button>
         </div>
       </DialogContent>
     </Dialog>

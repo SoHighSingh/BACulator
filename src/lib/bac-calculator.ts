@@ -2,7 +2,7 @@
 import type { Drink, BACResult, BACCalculationInputs } from "~/types/bac";
 
 const CONFIG = {
-  GRAMS_PER_STANDARD: 10.0,  // 14g for US, 10g for AU/UK
+  GRAMS_PER_STANDARD: 10.0,  // storage unit; regions (e.g. US 14 g) only convert for display
   ABSORPTION_TIME_MINUTES: 30.0, // ~95% absorbed after this long (used for "absorbing" status)
   ELIMINATION_RATE: 0.015,  // %BAC per hour, zero-order, only while BAC > 0
   ABSORPTION_CURVE_FACTOR: 3.0,  // ka = factor / absorption time (0.1/min, absorption half-life ~7 min)
@@ -42,14 +42,25 @@ function absorbedFraction(minutes: number): number {
   return 1.0 - Math.exp(-ABSORPTION_RATE_PER_MINUTE * minutes);
 }
 
+/** Drinks with their times already in ms, so the per-minute loop never parses a date. */
+type Prepared = { t: number; grams: number }[];
+const prepared = new WeakMap<Drink[], Prepared>();
+function prepare(drinks: Drink[]): Prepared {
+  let p = prepared.get(drinks);
+  if (!p) {
+    p = drinks.map(d => ({ t: new Date(d.finishedAt).getTime(), grams: d.standards * CONFIG.GRAMS_PER_STANDARD }));
+    prepared.set(drinks, p);
+  }
+  return p;
+}
+
 /**
  * Total %BAC worth of alcohol absorbed from all drinks by time `t` (ms), ignoring elimination
  */
 function absorbedBACAt(drinks: Drink[], userWeight: number, userSex: string, t: number): number {
   let grams = 0.0;
-  for (const drink of drinks) {
-    const minutes = (t - new Date(drink.finishedAt).getTime()) / MS_PER_MINUTE;
-    grams += drink.standards * CONFIG.GRAMS_PER_STANDARD * absorbedFraction(minutes);
+  for (const drink of prepare(drinks)) {
+    grams += drink.grams * absorbedFraction((t - drink.t) / MS_PER_MINUTE);
   }
   return gramsToBAC(grams, userWeight, userSex);
 }
@@ -380,4 +391,45 @@ export function calculateBAC(inputs: BACCalculationInputs): BACResult | null {
     peakBAC: roundToPrecision(Math.max(0.0, peakBAC), 4),
     timeToPeak: roundToPrecision(timeToPeak, 2)
   };
+}
+
+export interface NightSimulation {
+  /** BAC every `stepMinutes` from the first drink until shortly after it's back to zero (or the horizon). */
+  samples: { t: number; bac: number }[];
+  /** When the model reaches zero for good (ms), or null if it's still above zero at the horizon. */
+  zeroAt: number | null;
+  peak: { bac: number; t: number };
+}
+
+/**
+ * One simulation of the whole night, for the screen and the curve: simulate once at one-minute
+ * resolution, then sample it. (The older per-point helpers re-simulated for every point.)
+ */
+export function simulateNight(
+  drinks: Drink[],
+  userWeight: number,
+  userSex: string,
+  currentTime: Date,
+  stepMinutes: number = 5
+): NightSimulation | null {
+  if (drinks.length === 0 || !userWeight || !userSex) return null;
+  const sex = userSex.toLowerCase();
+  const { startTime, timeline } = simulateTimeline(drinks, userWeight, sex, predictionEnd(drinks, currentTime));
+  const stepMs = CONFIG.STEP_MINUTES * MS_PER_MINUTE;
+
+  let lastAbove = -1;
+  let peakIndex = 0;
+  for (let i = 0; i < timeline.length; i++) {
+    if (timeline[i]! > MIN_BAC_THRESHOLD) lastAbove = i;
+    if (timeline[i]! > timeline[peakIndex]!) peakIndex = i;
+  }
+  const zeroAt = lastAbove === timeline.length - 1 ? null : startTime + (lastAbove + 1) * stepMs;
+  const end = Math.max(currentTime.getTime(), (zeroAt ?? startTime + (timeline.length - 1) * stepMs) + 30 * MS_PER_MINUTE);
+
+  const samples: { t: number; bac: number }[] = [];
+  const every = Math.max(1, Math.round(stepMinutes / CONFIG.STEP_MINUTES));
+  for (let i = 0; i < timeline.length && startTime + i * stepMs <= end; i += every) {
+    samples.push({ t: startTime + i * stepMs, bac: roundToPrecision(timeline[i]!, 4) });
+  }
+  return { samples, zeroAt, peak: { bac: roundToPrecision(timeline[peakIndex]!, 4), t: startTime + peakIndex * stepMs } };
 }

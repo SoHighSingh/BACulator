@@ -1,13 +1,10 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import type { PrismaClient } from "@prisma/client";
 
 import { analyseDrinkText } from "~/server/bartender";
 
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 const drinkDetailsSchema = z.object({
   name: z.string().max(200).optional(),
@@ -45,9 +42,20 @@ async function cleanupOldTabs(db: PrismaClient, userId: string) {
   }
 }
 
-const NIGHT_WINDOW_MS = 24 * 60 * 60 * 1000;
+// A very heavy night can take more than a day to clear, so the estimate looks back 48 hours.
+const NIGHT_WINDOW_MS = 48 * 60 * 60 * 1000;
 
-// Drinks that can still affect the estimate: everything finished in the last 24 hours,
+// A drink time must be real, not in the future (a little slack for clock skew), and inside the window.
+const drinkTime = z
+  .string()
+  .datetime()
+  .refine((iso) => {
+    const t = Date.parse(iso);
+    return t <= Date.now() + 5 * 60 * 1000 && t >= Date.now() - NIGHT_WINDOW_MS;
+  }, "Drink time must be within the last 48 hours");
+const drinkId = z.string().min(1).max(64);
+
+// Drinks that can still affect the estimate: everything finished in the window,
 // whatever session it was logged in, so stopping a session never hides alcohol still in the body.
 function nightDrinksWhere(userId: string) {
   return { tab: { userId }, finishedAt: { gte: new Date(Date.now() - NIGHT_WINDOW_MS) } };
@@ -62,18 +70,11 @@ async function findOrStartTab(db: PrismaClient, userId: string) {
 
 async function findOwnDrink(db: PrismaClient, userId: string, drinkId: string) {
   const drink = await db.drink.findFirst({ where: { id: drinkId, tab: { userId } } });
-  if (!drink) throw new Error("Drink not found");
+  if (!drink) throw new TRPCError({ code: "NOT_FOUND", message: "Drink not found" });
   return drink;
 }
 
 export const postRouter = createTRPCRouter({
-  hello: publicProcedure
-    .input(z.object({ text: z.string() }))
-    .query(({ input }) => {
-      return {
-        greeting: `Hello ${input.text}`,
-      };
-    }),
   analyseDrink: protectedProcedure
     .input(z.object({ drinkText: z.string().trim().min(1).max(200) }))
     .mutation(({ ctx, input }) => analyseDrinkText(ctx.db, ctx.session.user.id, input.drinkText)),
@@ -81,16 +82,19 @@ export const postRouter = createTRPCRouter({
   // doesn't depend on the database enforcing the schema's cascades.
   deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    await ctx.db.drink.deleteMany({ where: { tab: { userId } } });
-    await ctx.db.tab.deleteMany({ where: { userId } });
-    await ctx.db.session.deleteMany({ where: { userId } });
-    await ctx.db.account.deleteMany({ where: { userId } });
-    await ctx.db.user.delete({ where: { id: userId } });
+    // One batch, so a failure part-way never leaves some of someone's data behind.
+    await ctx.db.$transaction([
+      ctx.db.drink.deleteMany({ where: { tab: { userId } } }),
+      ctx.db.tab.deleteMany({ where: { userId } }),
+      ctx.db.session.deleteMany({ where: { userId } }),
+      ctx.db.account.deleteMany({ where: { userId } }),
+      ctx.db.user.delete({ where: { id: userId } }),
+    ]);
     return { deleted: true };
   }),
   updateUserInfo: protectedProcedure
     .input(z.object({
-      weight: z.number().positive().max(1000),
+      weight: z.number().min(30).max(300), // kg; the form enforces the same range
       sex: z.enum(["male", "female"]),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -112,69 +116,10 @@ export const postRouter = createTRPCRouter({
     });
     return user;
   }),
-  startTab: protectedProcedure.mutation(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    // Auto-close any existing open tabs before creating new one
-    const openTab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
-    if (openTab) {
-      await ctx.db.tab.update({ 
-        where: { id: openTab.id }, 
-        data: { finishedAt: new Date() } 
-      });
-    }
-    
-    // Clean up old tabs - keep only the 5 most recent tabs per user
-    await cleanupOldTabs(ctx.db, userId);
-    
-    // Create new tab
-    return ctx.db.tab.create({
-      data: { userId, name: `Session ${new Date().toLocaleString()}` },
-    });
-  }),
-  stopTab: protectedProcedure.mutation(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    const openTab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
-    if (!openTab) throw new Error("No open tab");
-    
-    // Clean up old tabs when stopping a tab
-    await cleanupOldTabs(ctx.db, userId);
-    
-    return ctx.db.tab.update({ where: { id: openTab.id }, data: { finishedAt: new Date() } });
-  }),
-  getCurrentTab: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    
-    // Check for auto-end based on 12-hour sobriety rule
-    const tab = await ctx.db.tab.findFirst({ 
-      where: { userId, finishedAt: null },
-      include: { drinks: true }
-    });
-    
-    if (tab && tab.drinks.length > 0) {
-      // Find the most recent drink
-      const lastDrink = tab.drinks.reduce((latest, drink) => 
-        new Date(drink.finishedAt) > new Date(latest.finishedAt) ? drink : latest
-      );
-      
-      // Calculate hours since last drink
-      const hoursSinceLastDrink = (new Date().getTime() - new Date(lastDrink.finishedAt).getTime()) / (1000 * 60 * 60);
-      
-      // If it's been 12+ hours since the last drink, auto-end the tab
-      if (hoursSinceLastDrink >= 12) {
-        await ctx.db.tab.update({
-          where: { id: tab.id },
-          data: { finishedAt: new Date() }
-        });
-        return null; // Return null to indicate no active tab
-      }
-    }
-    
-    return ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
-  }),
   addDrink: protectedProcedure
     .input(z.object({
       standards: z.number().positive().max(50),
-      finishedAt: z.string(), // ISO string
+      finishedAt: drinkTime,
       // What the bartender parsed, if the drink came from text (all optional for manual entry)
       details: drinkDetailsSchema.optional(),
     }))
@@ -192,9 +137,9 @@ export const postRouter = createTRPCRouter({
     }),
   updateDrink: protectedProcedure
     .input(z.object({
-      drinkId: z.string(),
+      drinkId,
       standards: z.number().positive().max(50),
-      finishedAt: z.string(), // ISO string
+      finishedAt: drinkTime,
     }))
     .mutation(async ({ ctx, input }) => {
       await findOwnDrink(ctx.db, ctx.session.user.id, input.drinkId);
@@ -207,24 +152,13 @@ export const postRouter = createTRPCRouter({
       });
     }),
   deleteDrink: protectedProcedure
-    .input(z.object({
-      drinkId: z.string(),
-    }))
+    .input(z.object({ drinkId }))
     .mutation(async ({ ctx, input }) => {
       await findOwnDrink(ctx.db, ctx.session.user.id, input.drinkId);
       return ctx.db.drink.delete({
         where: { id: input.drinkId },
       });
     }),
-  getDrinks: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    const tab = await ctx.db.tab.findFirst({ where: { userId, finishedAt: null } });
-    if (!tab) return [];
-    return ctx.db.drink.findMany({
-      where: { tabId: tab.id },
-      orderBy: { finishedAt: "asc" },
-    });
-  }),
   getNight: protectedProcedure.query(({ ctx }) =>
     ctx.db.drink.findMany({
       where: nightDrinksWhere(ctx.session.user.id),
@@ -249,9 +183,5 @@ export const postRouter = createTRPCRouter({
       if (recents.length === 4) break;
     }
     return recents;
-  }),
-  getTabs: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    return ctx.db.tab.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
   }),
 });

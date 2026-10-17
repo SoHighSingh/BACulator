@@ -107,7 +107,7 @@ export function LiveDocket() {
               <li key={line.key} className="docket-line flex items-baseline justify-between gap-4 py-1.5 text-lg">
                 <span className="min-w-0 font-semibold">
                   {line.label}
-                  <span className="ml-2 font-medium text-paper-ink-2 tabular-nums">{clock(line.finishedAt)}</span>
+                  <span className="ml-2 font-medium whitespace-nowrap text-paper-ink-2 tabular-nums">{clock(line.finishedAt)}</span>
                 </span>
                 <span className="shrink-0 font-semibold tabular-nums">{std(line.standards)}</span>
               </li>
@@ -127,7 +127,7 @@ export function LiveDocket() {
               key={estimate?.point ?? "none"}
               className="docket-roll flex items-baseline gap-2 tabular-nums"
             >
-              {estimate && estimate.point !== "0.00" && <span className="text-2xl font-semibold">about</span>}
+              {estimate && /^\d/.test(estimate.point) && estimate.point !== "0.00" && <span className="text-2xl font-semibold">about</span>}
               <span className="text-[clamp(56px,16vw,84px)] leading-[0.95] font-bold tracking-[-0.04em]">
                 {estimate?.point ?? "0.00"}
               </span>

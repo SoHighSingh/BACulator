@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeEstimate, drinkLabel, formatBackToZero, formatBand, formatPoint, timeAgo } from "./estimate-display";
+import { describeEstimate, describeNight, drinkLabel, formatBackToZero, formatBand, formatPoint, timeAgo } from "./estimate-display";
 
 const base = {
   currentBAC: 0,
@@ -22,8 +22,8 @@ describe("formatBand", () => {
   it.each([
     [0, "0.00"],
     [0.004, "under 0.01"],
-    [0.065, "0.05–0.08"],
-    [0.1, "0.08–0.12"],
+    [0.065, "0.04–0.10"],
+    [0.1, "0.07–0.14"],
     [0.012, "0.00–0.02"],
   ])("%s → %s", (bac, expected) => {
     expect(formatBand(bac)).toBe(expected);
@@ -44,7 +44,7 @@ describe("formatBackToZero", () => {
   });
 
   it("gives a quarter-hour window that starts before and ends after the point estimate", () => {
-    expect(formatBackToZero(4, now)).toBe("between 2:15 and 4:00 am");
+    expect(formatBackToZero(4, now)).toBe("between 2:00 and 5:30 am");
   });
 
   it("names both periods when the window crosses noon", () => {
@@ -86,12 +86,49 @@ describe("labels", () => {
 });
 
 describe("formatPoint", () => {
-  it("rounds to two places, and never shows a falsely precise third digit", () => {
+  it("rounds up to two places, so the headline never reads lower than the model", () => {
     expect(formatPoint(0)).toBe("0.00");
     expect(formatPoint(-0.01)).toBe("0.00");
     expect(formatPoint(0.004)).toBe("under 0.01");
-    expect(formatPoint(0.0749)).toBe("0.07");
-    expect(formatPoint(0.075)).toBe("0.08");
-    expect(formatPoint(0.1234)).toBe("0.12");
+    expect(formatPoint(0.0749)).toBe("0.08");
+    expect(formatPoint(0.0549)).toBe("0.06");
+    expect(formatPoint(0.07)).toBe("0.07");
+    expect(formatPoint(0.1234)).toBe("0.13");
+  });
+});
+
+describe("describeNight", () => {
+  const drink = (minutesAgo: number, standards = 1.6) => ({
+    id: String(minutesAgo),
+    standards,
+    finishedAt: new Date(now.getTime() - minutesAgo * 60000),
+  });
+
+  it("warns about driving even when there's no weight to estimate with", () => {
+    const m = describeNight([drink(30)], null, null, now);
+    expect(m.estimate).toBeNull();
+    expect(m.notSafeToDrive).toBe(true);
+  });
+
+  it("says nothing about driving with no drinks", () => {
+    expect(describeNight([], 75, "female", now).notSafeToDrive).toBe(false);
+  });
+
+  it("keeps the warning for a while after the model reaches zero", () => {
+    // Two standard drinks 3.5 hours ago: the model is back to zero (about 2.75 h), a slow eliminator may not be.
+    const m = describeNight([drink(210, 2)], 75, "male", now);
+    expect(m.bac).toBe(0);
+    expect(m.notSafeToDrive).toBe(true);
+  });
+
+  it("drops the warning once well past even the slow-eliminator window", () => {
+    const m = describeNight([drink(600, 1)], 75, "male", now);
+    expect(m.notSafeToDrive).toBe(false);
+  });
+
+  it("reports a peak still to come while a fresh drink absorbs", () => {
+    const m = describeNight([drink(2, 2)], 75, "female", now);
+    expect(m.peak).not.toBeNull();
+    expect(m.peak!.bac).toBeGreaterThan(m.bac!);
   });
 });

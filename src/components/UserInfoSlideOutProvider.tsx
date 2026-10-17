@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import { UserInfoIcon } from "./UserInfoIcon";
 import UserInfoSlideOut from "./UserInfoSlideOut";
 import { useSession } from "next-auth/react";
@@ -20,6 +20,8 @@ export const useUserInfo = () => {
 
 export default function UserInfoSlideOutProvider({ children }: { children: React.ReactNode }) {
   const [isUserInfoOpen, setIsUserInfoOpen] = useState(false);
+  // Stable, so the sheet's focus effect doesn't re-run (and reset "Saved") on every re-render.
+  const closeUserInfo = useCallback(() => setIsUserInfoOpen(false), []);
   const { data: session } = useSession();
 
   const openUserInfo = () => {
@@ -39,7 +41,7 @@ export default function UserInfoSlideOutProvider({ children }: { children: React
         {session && (
           <>
             <UserInfoIcon onClick={() => setIsUserInfoOpen(true)} />
-            <UserInfoSlideOut isOpen={isUserInfoOpen} onClose={() => setIsUserInfoOpen(false)} userName={session.user?.name ?? undefined} />
+            <UserInfoSlideOut isOpen={isUserInfoOpen} onClose={closeUserInfo} userName={session.user?.name ?? undefined} />
           </>
         )}
         {children}

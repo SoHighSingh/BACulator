@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useNight, type LoggedDrink, type NewDrink } from "~/hooks/useNight";
-import { calculateBAC } from "~/lib/bac-calculator";
-import { describeEstimate } from "~/lib/estimate-display";
+import { describeNight } from "~/lib/estimate-display";
+import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
 import { BACGraphModal } from "../BACGraphModal";
 import { AddSheet } from "./AddSheet";
 import type { Notice, QuickDrink } from "./AddDock";
@@ -36,7 +36,6 @@ const toQuick = (d: LoggedDrink | QuickDrink): QuickDrink => ({
   count: d.count,
 });
 
-const sameDrink = (a: QuickDrink, b: QuickDrink) => (a.name ?? "") === (b.name ?? "") && a.standards === b.standards;
 const buzz = () => {
   try {
     navigator.vibrate?.(12);
@@ -45,14 +44,8 @@ const buzz = () => {
   }
 };
 
-const DUPLICATE_WINDOW_MS = 4000;
-
-/** A drink shown before the server has it, so the glass fills the instant the button is pressed. */
-interface Pending {
-  tempId: string;
-  drink: LoggedDrink;
-  realId: string | null;
-}
+// Repeats of the same drink within this window collapse into one "Added … ×2" line.
+const STACK_MS = 15_000;
 
 /** The signed-in night-out screen. One job: record the drink you just got, and know it worked. */
 export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreenProps) {
@@ -61,99 +54,73 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
   const [addOpen, setAddOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [pending, setPending] = useState<Pending[]>([]);
   const lastTap = useRef<{ key: string; at: number } | null>(null);
 
-  // Drop optimistic drinks once the real one has arrived from the server.
-  const serverIds = useMemo(() => new Set(night.drinks.map((d) => d.id)), [night.drinks]);
-  const shownPending = pending.filter((p) => !(p.realId && serverIds.has(p.realId)));
-  const drinks = useMemo(
-    () => [...night.drinks, ...shownPending.map((p) => p.drink)],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [night.drinks, shownPending.length],
-  );
-
-  const result = useMemo(
-    () => calculateBAC({ drinks, userWeight, userSex, currentTime: now }),
-    [drinks, userWeight, userSex, now],
-  );
-  const estimate = result ? describeEstimate(result, drinks, now) : null;
+  const { drinks } = night;
+  const model = useMemo(() => describeNight(drinks, userWeight, userSex, now), [drinks, userWeight, userSex, now]);
 
   const lastDrink = useMemo(
     () => drinks.reduce<LoggedDrink | null>((latest, d) => (!latest || d.finishedAt > latest.finishedAt ? d : latest), null),
     [drinks],
   );
-
-  const repeat = lastDrink ? toQuick(lastDrink) : night.recents[0] ? toQuick(night.recents[0]) : null;
-  const recents = night.recents
-    .map(toQuick)
-    .filter((d) => !repeat || !sameDrink(d, repeat))
-    .slice(0, 4);
+  const { repeat, others } = pickRepeatAndRecents(lastDrink ? toQuick(lastDrink) : null, night.recents.map(toQuick), 4);
 
   const add = useCallback(
-    async (drink: NewDrink) => {
-      // A drunk double-tap logs one drink (useNight has the same 4 s rule); skip the optimistic fill too.
-      const key = `${drink.details?.name ?? ""}|${drink.standards}`;
-      if (lastTap.current?.key === key && Date.now() - lastTap.current.at < DUPLICATE_WINDOW_MS) return false;
-      lastTap.current = { key, at: Date.now() };
-      const tempId = `pending-${Date.now()}`;
-      const optimistic: LoggedDrink = {
-        id: tempId,
-        standards: drink.standards,
-        finishedAt: drink.finishedAt,
-        name: drink.details?.name ?? null,
-        volumeMl: drink.details?.volumeMl ?? null,
-        abv: drink.details?.abv ?? null,
-        count: drink.details?.count ?? null,
-      };
-      setPending((p) => [...p, { tempId, drink: optimistic, realId: null }]);
-      setNotice({ kind: "added", drink: optimistic, at: Date.now() });
+    (drink: NewDrink, fromTap: boolean) => {
+      const key = drinkKey({ name: drink.details?.name, standards: drink.standards });
+      const at = Date.now();
+      if (fromTap && isDoubleTap(lastTap.current, key, at)) return false;
+      lastTap.current = { key, at };
+      const shown = night.add(drink);
       buzz();
-
-      const created = await night.add(drink);
-      if (created) {
-        setPending((p) => p.map((x) => (x.tempId === tempId ? { ...x, realId: created.id } : x)));
-        setNotice((n) => (n?.drink.id === tempId ? { kind: "added", drink: created, at: n.at } : n));
-      } else {
-        // Saved nothing (duplicate tap or offline): take the optimistic drink back out.
-        lastTap.current = null;
-        setPending((p) => p.filter((x) => x.tempId !== tempId));
-        setNotice((n) => (n?.drink.id === tempId ? null : n));
-      }
-      return created !== null;
+      setNotice((n) =>
+        n?.kind === "added" && drinkKey(n.drink) === key && at - n.at < STACK_MS
+          ? { kind: "added", drink: shown, at, count: n.count + 1 }
+          : { kind: "added", drink: shown, at, count: 1 },
+      );
+      return true;
     },
     [night],
   );
 
   function quickAdd(drink: QuickDrink) {
-    void add({
-      standards: drink.standards,
-      finishedAt: new Date(),
-      details: {
-        name: drink.name ?? undefined,
-        volumeMl: drink.volumeMl ?? undefined,
-        abv: drink.abv ?? undefined,
-        count: drink.count ?? undefined,
-        source: "recent",
-        confidence: 1,
+    add(
+      {
+        standards: drink.standards,
+        finishedAt: new Date(),
+        details: {
+          name: drink.name ?? undefined,
+          volumeMl: drink.volumeMl ?? undefined,
+          abv: drink.abv ?? undefined,
+          count: drink.count ?? undefined,
+          source: "recent",
+          confidence: 1,
+        },
       },
-    });
+      true,
+    );
   }
 
   async function remove(drink: LoggedDrink) {
-    if (await night.remove(drink.id)) setNotice({ kind: "removed", drink, at: Date.now() });
+    setNotice({ kind: "removed", drink, at: Date.now(), count: 1 });
+    if (!(await night.remove(drink.id))) setNotice(null);
   }
 
-  // Undo and "Add back" mirror each other, so a wrong tap on either is always reversible.
-  async function undo() {
-    if (!notice || notice.drink.id.startsWith("pending-")) return;
+  // Undo removes the latest add; Add back restores the latest removal. Each mirrors the other,
+  // so a wrong tap on either is always reversible.
+  function undo() {
+    if (!notice) return;
+    const { drink } = notice;
     if (notice.kind === "added") {
-      const { drink } = notice;
-      if (await night.remove(drink.id)) setNotice({ kind: "removed", drink, at: Date.now() });
+      void night.remove(drink.id);
+      setNotice(
+        notice.count > 1
+          ? { ...notice, count: notice.count - 1, at: Date.now() }
+          : { kind: "removed", drink, at: Date.now(), count: 1 },
+      );
       return;
     }
-    const { drink } = notice;
-    const restored = await night.add({
+    const shown = night.add({
       standards: drink.standards,
       finishedAt: drink.finishedAt,
       details: {
@@ -164,42 +131,33 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         source: "recent",
       },
     });
-    if (restored) setNotice({ kind: "added", drink: restored, at: Date.now() });
+    setNotice({ kind: "added", drink: shown, at: Date.now(), count: 1 });
   }
 
   return (
     <>
       <NightView
-        estimate={estimate}
-        bac={result ? result.currentBAC : null}
-        peak={result && result.timeToPeak > 0 && result.peakBAC > result.currentBAC ? { bac: result.peakBAC, at: new Date(now.getTime() + result.timeToPeak * 3_600_000) } : null}
+        model={model}
         drinks={drinks}
         repeat={repeat}
-        recents={recents}
+        recents={others}
         lastDrink={lastDrink}
         notice={notice}
         now={now}
-        busy={false}
         error={night.error}
         userWeight={userWeight}
         userSex={userSex}
         onAdd={quickAdd}
         onOpenAdd={() => setAddOpen(true)}
-        onUndo={() => void undo()}
+        onUndo={undo}
         onRemove={(d) => void remove(d)}
         onAddDetails={onOpenUserInfo}
         onShowTimeline={() => setTimelineOpen(true)}
       />
 
-      <AddSheet open={addOpen} saving={night.isSaving} onClose={() => setAddOpen(false)} onAdd={add} />
+      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
 
-      <BACGraphModal
-        open={timelineOpen}
-        onOpenChange={setTimelineOpen}
-        drinks={drinks}
-        userWeight={userWeight}
-        userSex={userSex}
-      />
+      <BACGraphModal open={timelineOpen} onOpenChange={setTimelineOpen} drinks={drinks} userWeight={userWeight} userSex={userSex} />
     </>
   );
 }

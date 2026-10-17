@@ -12,6 +12,8 @@ export const createQueryClient = () =>
         // above 0 to avoid refetching immediately on the client
         staleTime: 30 * 1000,
       },
+      // Fail fast offline instead of pausing silently, so the screen can say a drink wasn't saved.
+      mutations: { networkMode: "always" },
       dehydrate: {
         serializeData: SuperJSON.serialize,
         shouldDehydrateQuery: (query) =>

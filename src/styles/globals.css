@@ -20,7 +20,7 @@
   --color-amber: #f2b84b;
   --color-amber-press: #d99e32;
   /* Alcohol still being absorbed: the pale layer in the glass. Shape only, never text. */
-  --color-amber-soft: #7d6230;
+  --color-amber-soft: #a07d38;
   /* The docket on the landing page: thermal-paper white with its own ink and stamp colour. */
   --color-paper: #f3eee4;
   --color-paper-2: #e4ddcf;
@@ -305,8 +305,53 @@
 
 /* App feel on the night screen: no rubber-band page, no grey tap flash, no text selection on controls. */
 .app-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "top" "main" "dock";
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+}
+.app-top {
+  grid-area: top;
+}
+.app-main {
+  grid-area: main;
+}
+.app-dock {
+  grid-area: dock;
+}
+/* While the app screen is up, a pull from the dock can't trigger the browser's pull-to-refresh. */
+html:has(.app-shell),
+html:has(.app-shell) body {
+  overscroll-behavior-y: none;
+}
+
+/* Short screens (iPhone SE, big text): fold the recents into one "New drink" button so the
+   estimate and the warning stay in view above the dock. */
+@media (max-height: 700px) {
+  .app-shell .dock-recents {
+    display: none;
+  }
+  .app-shell .dock-new-compact {
+    display: flex;
+  }
+  .app-shell .dock-primary {
+    min-height: 80px;
+  }
+}
+
+/* Landscape phones: estimate on the left, dock on the right. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "top dock" "main dock";
+  }
+  .app-dock {
+    overflow-y: auto;
+    align-self: end;
+  }
 }
 .app-shell button,
 .app-shell a {
@@ -319,6 +364,10 @@
   /* "Added …" slides up into the dock; it is a response to the tap, then it stays put. */
   .snack {
     animation: snack-in 260ms var(--ease-out) both;
+  }
+  /* The curve draws in left to right when it first appears. */
+  .curve-reveal {
+    animation: curve-reveal 900ms var(--ease-out) both;
   }
   /* Sheets rise from the bottom like a native sheet. */
   .sheet {
@@ -343,5 +392,14 @@
   to {
     transform: none;
     opacity: 1;
+  }
+}
+
+@keyframes curve-reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }

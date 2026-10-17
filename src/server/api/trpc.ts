@@ -96,7 +96,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next();
 
   const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  if (t._config.isDev) console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
 
   return result;
 });
@@ -121,7 +121,9 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
+    // Fail closed: a session without a real user id must never reach a query scoped by userId.
+    const id = ctx.session?.user?.id;
+    if (!ctx.session?.user || typeof id !== "string" || id.length === 0) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
     return next({

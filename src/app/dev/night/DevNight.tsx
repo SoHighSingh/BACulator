@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { BACGraphModal } from "~/components/BACGraphModal";
+import { AddSheet } from "~/components/night/AddSheet";
 import type { Notice, QuickDrink } from "~/components/night/AddDock";
 import { NightView } from "~/components/night/NightView";
-import type { LoggedDrink } from "~/hooks/useNight";
+import type { LoggedDrink, NewDrink } from "~/hooks/useNight";
 import { useRegion } from "~/hooks/useRegion";
-import { calculateBAC } from "~/lib/bac-calculator";
-import { describeEstimate } from "~/lib/estimate-display";
+import { describeNight } from "~/lib/estimate-display";
+import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
 import { REGION_IDS } from "~/lib/region";
 
 /**
- * Dev-only: the real NightView with sample drinks and no sign-in, for checking the design at phone
- * size. Only reachable outside production (see page.tsx). `?empty` starts with no drinks.
+ * Dev-only: the real NightView, AddSheet and curve with sample drinks and no sign-in, for checking
+ * the design at phone size. Only reachable outside production (see page.tsx).
+ * `?empty` starts with no drinks; `?noweight` hides the estimate.
  */
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 const SAMPLE: LoggedDrink[] = [
@@ -22,6 +25,7 @@ const SAMPLE: LoggedDrink[] = [
   { id: "d", standards: 1, finishedAt: minutesAgo(6), name: "Vodka soda", volumeMl: 30, abv: 40, count: 1 },
 ];
 const RECENTS: QuickDrink[] = [
+  { standards: 1, name: "Vodka soda", volumeMl: 30, abv: 40, count: 1 },
   { standards: 1.6, name: "Glass of red", volumeMl: 150, abv: 13.5, count: 1 },
   { standards: 1.6, name: "Schooner of lager", volumeMl: 425, abv: 4.8, count: 1 },
   { standards: 2.2, name: "Pint of cider", volumeMl: 570, abv: 4.8, count: 1 },
@@ -31,64 +35,85 @@ export function DevNight() {
   const [drinks, setDrinks] = useState<LoggedDrink[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [weight, setWeight] = useState<number | null>(75);
+  const [addOpen, setAddOpen] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(false);
+  const lastTap = useRef<{ key: string; at: number } | null>(null);
   const { region, setRegion } = useRegion();
 
   useEffect(() => {
-    if (!window.location.search.includes("empty")) setDrinks(SAMPLE);
+    const q = window.location.search;
+    if (!q.includes("empty")) setDrinks(SAMPLE);
+    if (q.includes("noweight")) setWeight(null);
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
 
-  const result = useMemo(
-    () => calculateBAC({ drinks, userWeight: 75, userSex: "female", currentTime: now }),
-    [drinks, now],
-  );
-  const estimate = result ? describeEstimate(result, drinks, now) : null;
+  const model = useMemo(() => describeNight(drinks, weight, "female", now), [drinks, weight, now]);
   const last = drinks.reduce<LoggedDrink | null>((l, d) => (!l || d.finishedAt > l.finishedAt ? d : l), null);
-  const repeat: QuickDrink | null = last ?? RECENTS[0] ?? null;
+  const { repeat, others } = pickRepeatAndRecents<QuickDrink>(last, RECENTS, 4);
 
-  function add(d: QuickDrink) {
-    const drink: LoggedDrink = { ...d, id: String(Date.now()), finishedAt: new Date() };
+  function add(d: NewDrink, fromTap: boolean) {
+    const key = drinkKey({ name: d.details?.name, standards: d.standards });
+    const at = Date.now();
+    if (fromTap && isDoubleTap(lastTap.current, key, at)) return false;
+    lastTap.current = { key, at };
+    const drink: LoggedDrink = {
+      id: `dev-${at}`,
+      standards: d.standards,
+      finishedAt: d.finishedAt,
+      name: d.details?.name ?? null,
+      volumeMl: d.details?.volumeMl ?? null,
+      abv: d.details?.abv ?? null,
+      count: d.details?.count ?? null,
+    };
     setNow(new Date());
     setDrinks((prev) => [...prev, drink]);
-    setNotice({ kind: "added", drink, at: Date.now() });
+    setNotice((n) =>
+      n?.kind === "added" && drinkKey(n.drink) === key && at - n.at < 15_000
+        ? { kind: "added", drink, at, count: n.count + 1 }
+        : { kind: "added", drink, at, count: 1 },
+    );
+    return true;
   }
 
   return (
     <>
       <NightView
-        estimate={estimate}
-        bac={result ? result.currentBAC : null}
-        peak={result && result.timeToPeak > 0 && result.peakBAC > result.currentBAC ? { bac: result.peakBAC, at: new Date(now.getTime() + result.timeToPeak * 3_600_000) } : null}
+        model={model}
         drinks={drinks}
         repeat={repeat}
-        recents={RECENTS.filter((r) => r.name !== repeat?.name)}
+        recents={others}
         lastDrink={last}
         notice={notice}
         now={now}
-        busy={false}
         error={null}
-        userWeight={75}
+        userWeight={weight}
         userSex="female"
-        onAdd={add}
-        onOpenAdd={() => undefined}
+        onAdd={(q) =>
+          add({ standards: q.standards, finishedAt: new Date(), details: { name: q.name ?? undefined, volumeMl: q.volumeMl ?? undefined, abv: q.abv ?? undefined } }, true)
+        }
+        onOpenAdd={() => setAddOpen(true)}
         onUndo={() => {
           if (!notice) return;
+          const { drink } = notice;
           if (notice.kind === "added") {
-            setDrinks((p) => p.filter((d) => d.id !== notice.drink.id));
-            setNotice({ kind: "removed", drink: notice.drink, at: Date.now() });
+            setDrinks((p) => p.filter((d) => d.id !== drink.id));
+            setNotice({ kind: "removed", drink, at: Date.now(), count: 1 });
           } else {
-            setDrinks((p) => [...p, notice.drink]);
-            setNotice({ kind: "added", drink: notice.drink, at: Date.now() });
+            setDrinks((p) => [...p, drink]);
+            setNotice({ kind: "added", drink, at: Date.now(), count: 1 });
           }
         }}
         onRemove={(d) => {
           setDrinks((p) => p.filter((x) => x.id !== d.id));
-          setNotice({ kind: "removed", drink: d, at: Date.now() });
+          setNotice({ kind: "removed", drink: d, at: Date.now(), count: 1 });
         }}
-        onAddDetails={() => undefined}
-        onShowTimeline={() => undefined}
+        onAddDetails={() => setWeight(75)}
+        onShowTimeline={() => setGraphOpen(true)}
       />
+      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
+      <BACGraphModal open={graphOpen} onOpenChange={setGraphOpen} drinks={drinks} userWeight={weight} userSex="female" />
       <button
         type="button"
         className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-50 min-h-12 rounded-full bg-surface-2 px-4 text-base font-semibold text-ink"

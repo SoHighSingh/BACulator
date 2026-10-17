@@ -57,7 +57,7 @@ function SameAgainFragment() {
     <div data-ui aria-hidden="true" className="flex w-full max-w-[400px] flex-col gap-3 rounded-[32px] bg-bg p-4">
       <div className="flex min-h-[120px] items-end justify-between gap-4 rounded-3xl bg-amber px-5 py-4 text-bg">
         <span>
-          <span className="block text-[26px] leading-tight font-bold">Same again</span>
+          <span className="block text-[26px] leading-tight font-bold">+ Add another</span>
           <span className="block text-lg font-semibold">Schooner of lager</span>
         </span>
         <span className="text-right">
@@ -145,16 +145,16 @@ export function Landing({ onStart }: LandingProps) {
       <section id="how" aria-labelledby="how-heading" className="reveal mx-auto grid max-w-[1240px] items-center gap-12 px-4 py-24 sm:px-8 lg:grid-cols-2 lg:py-40">
         <div className="flex flex-col gap-6">
           <h2 id="how-heading" className="text-[clamp(40px,6vw,88px)] leading-[0.95] font-bold tracking-[-0.04em]">
-            Same again is one tap.
+            Another round is one tap.
           </h2>
           <p className="max-w-[44ch] text-xl leading-relaxed">
-            Your last drink, at its real size, is the biggest thing on the screen. Your four most recent sit right under it.
+            Your last drink, at its real size, is the biggest thing on the screen. Your recent drinks sit right under it.
           </p>
           <p className="max-w-[44ch] text-xl leading-relaxed">
             Something new takes three taps at most. Type it the way you&apos;d say it, or just pick a serve.
           </p>
           <p className="max-w-[44ch] text-xl leading-relaxed">
-            Tapped the wrong thing? Undo stays right there for two minutes. Nothing pops up, nothing moves.
+            Tapped the wrong thing? Undo stays right there for two minutes. Nothing pops up, nothing nags.
           </p>
         </div>
         <div className="flex justify-center lg:justify-end">

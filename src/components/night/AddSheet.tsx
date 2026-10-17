@@ -18,9 +18,27 @@ const TIME_CHIPS = [
 
 interface AddSheetProps {
   open: boolean;
-  saving: boolean;
   onClose: () => void;
-  onAdd: (drink: NewDrink) => Promise<boolean>;
+  /** Adds optimistically and returns at once; false if it was swallowed as a double tap. */
+  onAdd: (drink: NewDrink) => boolean;
+}
+
+/** Keeps the bottom of a fixed sheet above the on-screen keyboard (iOS and Android don't resize it). */
+function useKeyboardInset(active: boolean) {
+  const [inset, setInset] = useState(0);
+  useEffect(() => {
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!active || !vv) return;
+    const update = () => setInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, [active]);
+  return inset;
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -29,7 +47,7 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
  * Anything that isn't a one-tap repeat. No animation, no time picker, no required typing:
  * pick a serve or type it, check the number, pick when, Add.
  */
-export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
+export function AddSheet({ open, onClose, onAdd }: AddSheetProps) {
   const [text, setText] = useState("");
   const [result, setResult] = useState<ParseResult | null>(null);
   const [standards, setStandards] = useState(1);
@@ -39,17 +57,22 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
   const analyse = api.post.analyseDrink.useMutation();
   const { region, std } = useRegion();
   const chips = servesFor(region);
+  const keyboard = useKeyboardInset(open);
+  // Each open gets a number, so a slow parse from a previous open can't fill a fresh sheet.
+  const generation = useRef(0);
 
   // Every open starts fresh at "Now", so a drink is never stamped with a stale time.
   useEffect(() => {
     if (!open) return;
+    generation.current += 1;
     setText("");
     setResult(null);
-    setStandards(1);
+    // One of the region's own standard drinks, so US steps are 1, 1.5, 2…
+    setStandards(fromRegionStandards(1, region));
     setDetails(undefined);
     setMinutesAgo(0);
     headingRef.current?.focus();
-  }, [open]);
+  }, [open, region]);
 
   useEffect(() => {
     if (!open) return;
@@ -63,16 +86,19 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
   async function readDrink() {
     const drinkText = text.trim();
     if (!drinkText || analyse.isPending) return;
+    const asked = generation.current;
     try {
       const parsed = await analyse.mutateAsync({ drinkText });
+      if (asked !== generation.current) return;
       setResult(parsed);
       if (parsed.totalStandards > 0) {
-        setStandards(Math.min(MAX_STANDARDS, round1(parsed.totalStandards)));
+        setStandards(Math.min(MAX_STANDARDS, Math.ceil(parsed.totalStandards * 10 - 1e-9) / 10)); // never round a drink down
         setDetails(toDrinkDetails(parsed, drinkText));
       } else {
         setDetails(undefined);
       }
     } catch {
+      if (asked !== generation.current) return;
       setResult({ status: "unavailable", items: [], totalStandards: 0, unparsed: [drinkText], layer: null });
     }
   }
@@ -98,9 +124,9 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
     if (details && details.source !== "manual") setDetails({ ...details, source: "edited" });
   }
 
-  async function submit() {
-    if (standards <= 0 || saving) return;
-    const added = await onAdd({
+  function submit() {
+    if (standards <= 0) return;
+    const added = onAdd({
       standards,
       finishedAt: new Date(Date.now() - minutesAgo * 60_000),
       details,
@@ -135,7 +161,14 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
               id="drink-text"
               type="text"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                // Edited after reading: the old parse no longer describes it.
+                if (result) {
+                  setResult(null);
+                  if (details && details.source !== "manual") setDetails(undefined);
+                }
+              }}
               onKeyDown={(e) => e.key === "Enter" && void readDrink()}
               placeholder="e.g. 2 schooners of Great Northern"
               autoComplete="off"
@@ -246,14 +279,16 @@ export function AddSheet({ open, saving, onClose, onAdd }: AddSheetProps) {
         </section>
       </div>
 
-      <footer className="mx-auto w-full max-w-[480px] px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <footer
+        className="mx-auto w-full max-w-[480px] px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
+        style={keyboard > 0 ? { paddingBottom: keyboard + 12 } : undefined}
+      >
         <button
           type="button"
-          onClick={() => void submit()}
-          disabled={saving}
+          onClick={submit}
           className="min-h-[72px] w-full rounded-3xl bg-amber px-5 text-xl font-bold text-bg active:bg-amber-press disabled:opacity-60"
         >
-          {saving ? "Adding…" : `Add ${details?.name ?? "drink"} · ${std(standards)} std`}
+          {`Add ${details?.name ?? "drink"} · ${std(standards)} std`}
         </button>
       </footer>
     </div>

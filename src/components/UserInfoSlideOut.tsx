@@ -19,6 +19,7 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
   const [weight, setWeight] = useState("");
   const [sex, setSex] = useState<"male" | "female" | "">("");
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const { region, setRegion } = useRegion();
   const [weightKg, setWeightKg] = useState<number | null>(null);
@@ -58,9 +59,14 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (sex === "" || !valid) return;
-    await updateUserInfo.mutateAsync({ weight: weightNumber, sex });
-    setWeightKg(weightNumber);
-    setSaved(true);
+    setSaveError(null);
+    try {
+      await updateUserInfo.mutateAsync({ weight: weightNumber, sex });
+      setWeightKg(weightNumber);
+      setSaved(true);
+    } catch {
+      setSaveError("Couldn't save. Check your connection and try again.");
+    }
   }
 
   return (
@@ -152,6 +158,11 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
           >
             {updateUserInfo.isPending ? "Saving…" : saved ? "Saved" : "Save details"}
           </button>
+          {saveError && (
+            <p role="alert" className="text-lg font-semibold text-alert">
+              {saveError}
+            </p>
+          )}
           {saved && (
             <p role="status" className="text-lg font-medium">
               Saved. Your estimate now uses these details.

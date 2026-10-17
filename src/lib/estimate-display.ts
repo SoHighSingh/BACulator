@@ -1,11 +1,15 @@
+import { calculateBAC, simulateNight, type NightSimulation } from "~/lib/bac-calculator";
 import type { BACResult, Drink } from "~/types/bac";
 
-// The model is an estimate: real BAC for the same drinks varies by roughly ±20% between people
-// and nights, so the screen shows a band rather than a falsely precise number.
-const BAND_LOW = 0.8;
-const BAND_HIGH = 1.2;
-const ZERO_EARLY = 0.8;
-const ZERO_LATE = 1.25;
+// The model is an estimate. Widmark predictions vary with a CV of about 20% between people and
+// nights (Gullberg 2007; Searle 2015), so a "likely" range is roughly 0.75× to 1.4× of the point,
+// skewed high because under-reading is the dangerous direction.
+const BAND_LOW = 0.75;
+const BAND_HIGH = 1.4;
+// Elimination runs about 0.010–0.025 g/dL/h around the model's 0.015 (Jones 2010), so a slow
+// eliminator reaches zero about 1.5× later than the model; body-water variance stretches that further.
+const ZERO_EARLY = 0.75;
+const ZERO_LATE = 1.6;
 const QUARTER_HOUR_MS = 15 * 60 * 1000;
 
 export interface EstimateDisplay {
@@ -23,11 +27,14 @@ export interface EstimateDisplay {
 const floor2 = (n: number) => Math.floor(n * 100) / 100;
 const ceil2 = (n: number) => Math.ceil(n * 100) / 100;
 
-/** One number, rounded to two places, for the headline. The band beside it carries the doubt. */
+/**
+ * One number for the headline, rounded UP to two places: 0.0549 shows 0.06, never 0.05, so the
+ * headline never reads lower than the model. The range under it carries the doubt.
+ */
 export function formatPoint(bac: number): string {
   if (bac <= 0) return "0.00";
   if (bac < 0.01) return "under 0.01";
-  return (Math.round(bac * 100) / 100).toFixed(2);
+  return ceil2(bac - 1e-9).toFixed(2);
 }
 
 export function formatBand(bac: number): string {
@@ -87,4 +94,55 @@ export function timeAgo(date: Date, now: Date): string {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   return rest ? `${hours} h ${rest} min ago` : `${hours} h ago`;
+}
+
+export interface NightModel {
+  /** Any drink counted in the window (finished, not in the future). */
+  hasDrinks: boolean;
+  /** Null when weight or sex is missing: drinks still count for the driving warning. */
+  estimate: EstimateDisplay | null;
+  bac: number | null;
+  /** Peak still to come from drinks being absorbed. */
+  peak: { bac: number; at: Date } | null;
+  /**
+   * Shown whenever any drink is counted and either there's no estimate, the model is above zero,
+   * or we're still inside the slow-eliminator tail after the model reaches zero.
+   */
+  notSafeToDrive: boolean;
+  simulation: NightSimulation | null;
+}
+
+/** Everything the night screen shows about the estimate, from one simulation. */
+export function describeNight(drinks: Drink[], userWeight: number | null, userSex: string | null, now: Date): NightModel {
+  const counted = drinks.filter((d) => new Date(d.finishedAt).getTime() <= now.getTime());
+  const hasDrinks = counted.length > 0;
+  const result = calculateBAC({ drinks, userWeight, userSex, currentTime: now });
+  const simulation = userWeight && userSex ? simulateNight(drinks, userWeight, userSex, now) : null;
+
+  if (!result) {
+    return { hasDrinks, estimate: null, bac: null, peak: null, notSafeToDrive: hasDrinks, simulation };
+  }
+
+  const estimate = describeEstimate(result, drinks, now);
+  const peak =
+    result.timeToPeak > 0 && result.peakBAC > result.currentBAC
+      ? { bac: result.peakBAC, at: new Date(now.getTime() + result.timeToPeak * 3_600_000) }
+      : null;
+
+  // After the model hits zero, keep the warning for the slow-eliminator tail of the night.
+  let inTail = false;
+  const first = counted.reduce((min, d) => Math.min(min, new Date(d.finishedAt).getTime()), Infinity);
+  if (simulation?.zeroAt && Number.isFinite(first) && now.getTime() >= simulation.zeroAt) {
+    const lateZero = first + (simulation.zeroAt - first) * ZERO_LATE;
+    inTail = now.getTime() < lateZero;
+  }
+
+  return {
+    hasDrinks,
+    estimate,
+    bac: result.currentBAC,
+    peak,
+    notSafeToDrive: hasDrinks && (estimate.notSafeToDrive || inTail),
+    simulation,
+  };
 }
