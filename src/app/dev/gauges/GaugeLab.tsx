@@ -25,6 +25,7 @@ export function GaugeLab() {
   const props: GaugeProps = {
     bac: result?.currentBAC ?? 0,
     peakBac: result && result.timeToPeak > 0 ? result.peakBAC : 0,
+    peakAt: result && result.timeToPeak > 0 ? new Date(Date.now() + result.timeToPeak * 3_600_000) : null,
     pourKey,
     tilt,
   };

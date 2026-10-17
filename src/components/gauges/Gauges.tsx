@@ -11,6 +11,8 @@ export interface GaugeProps {
   bac: number;
   /** Peak still to come from drinks being absorbed. */
   peakBac: number;
+  /** When the peak still to come is reached. */
+  peakAt?: Date | null;
   /** Increments each time a drink is added. */
   pourKey: number;
   tilt: boolean;
@@ -224,12 +226,22 @@ export function LiquidNumber({ bac, peakBac, pourKey, tilt }: GaugeProps) {
 function drawLiquidText(el: HTMLCanvasElement, f: FluidFrame, text: string) {
   const { ctx, w, h } = prepareCanvas(el);
   const family = getComputedStyle(el).fontFamily || "sans-serif";
-  const size = Math.min(h * 1.02, w / (text.length * 0.6));
+  // Fit the figures to the canvas: their height fills it, so the box hugs the glyphs and the
+  // layout around it controls the spacing (no hidden headroom above the number).
+  const tracking = -0.04; // em, display tracking
+  ctx.font = `700 100px ${family}`;
+  const probe = ctx.measureText(text);
+  const figureRatio = (probe.actualBoundingBoxAscent || 72) / 100;
+  const widthRatio = probe.width / 100 + tracking * (text.length - 1);
+  // Round figures (0, 9) overshoot the reported height a little: leave room so their tops aren't shaved.
+  const size = Math.min((h * 0.88) / figureRatio, (w * 0.96) / widthRatio);
   ctx.font = `700 ${size}px ${family}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  const baseline = h * 0.86;
-  const capTop = baseline - size * 0.72;
+  if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${tracking * size}px`;
+  const figureH = figureRatio * size;
+  const baseline = (h + figureH) / 2;
+  const capTop = baseline - figureH;
   const yAt = (level: number) => baseline - level * (baseline - capTop);
 
   ctx.fillStyle = COLORS.ink;
@@ -270,15 +282,29 @@ function arc(cx: number, cy: number, r: number, from: number, to: number) {
   return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
 }
 
-/** The lines that sit under a dial, outside the circle, so they never get clipped by it. */
-function UnderDial({ bac, peakBac }: { bac: number; peakBac: number }) {
+const clockTime = (d: Date) =>
+  d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase();
+
+/**
+ * The lines under a dial, tucked into the arc's open bottom and never inside the circle, so they
+ * can't be clipped. Same text size as "about"; the second line steps down in tone, not size.
+ */
+function UnderDial({ bac, peakBac, peakAt }: { bac: number; peakBac: number; peakAt?: Date | null }) {
   const rising = peakBac > bac + 0.004;
   return (
-    <div className="-mt-[14%] text-center">
-      <p className="text-lg font-semibold text-ink">
+    <div className="-mt-[12%] flex flex-col items-center gap-1 text-center text-lg leading-snug">
+      <p className="font-semibold text-ink tabular-nums">
         {bac > 0 ? `Likely ${formatBand(bac).replace("–", " to ")}` : "Nothing counted yet"}
       </p>
-      {rising && <p className="mt-1 text-lg font-semibold text-ink-2">↑ Still rising: about {formatPoint(peakBac)} soon</p>}
+      {rising && (
+        <p className="font-medium text-ink-2 tabular-nums">
+          <span className="block">↑ Still rising</span>
+          <span className="block">
+            about {formatPoint(peakBac)}
+            {peakAt ? ` by ${clockTime(peakAt)}` : " soon"}
+          </span>
+        </p>
+      )}
     </div>
   );
 }
@@ -307,21 +333,21 @@ function useDialArcs(bac: number, peakBac: number) {
   return { shown, svg };
 }
 
-export function Dial({ bac, peakBac }: GaugeProps) {
+export function Dial({ bac, peakBac, peakAt }: GaugeProps) {
   const { shown, svg } = useDialArcs(bac, peakBac);
   return (
     <div className="rounded-[36px] bg-surface p-5">
       <div className="relative mx-auto aspect-square w-full max-w-[300px]">
         {svg}
-        <div className="absolute inset-x-[20%] top-[26%] bottom-[22%] flex flex-col items-center justify-center text-center">
-          <p className="text-base font-semibold text-ink-2">Blood alcohol</p>
-          {shown > 0.0095 && <p className="text-xl leading-none font-semibold text-ink">about</p>}
-          <p className="text-[clamp(48px,15vw,68px)] leading-[0.95] font-bold tracking-[-0.04em] text-ink tabular-nums">
+        <div className="absolute inset-x-[18%] inset-y-[22%] flex flex-col items-center justify-center text-center">
+          <p className="text-base font-medium text-ink-2">Blood alcohol</p>
+          <p className={`mt-2 text-lg leading-none font-semibold text-ink ${shown > 0.0095 ? "" : "invisible"}`}>about</p>
+          <p className="mt-1 text-[clamp(52px,16vw,72px)] leading-[0.9] font-bold tracking-[-0.04em] text-ink tabular-nums">
             {formatPoint(Math.max(0, shown))}
           </p>
         </div>
       </div>
-      <UnderDial bac={bac} peakBac={peakBac} />
+      <UnderDial bac={bac} peakBac={peakBac} peakAt={peakAt} />
     </div>
   );
 }
@@ -330,7 +356,7 @@ export function Dial({ bac, peakBac }: GaugeProps) {
 /* 4. Dial + liquid number: the sprung arc around the outside, and inside it the number whose    */
 /*    digits fill with liquid. The arc reads at a glance; the digits pour when you add a drink.  */
 /* ------------------------------------------------------------------------------------------- */
-export function DialLiquid({ bac, peakBac, pourKey, tilt }: GaugeProps) {
+export function DialLiquid({ bac, peakBac, peakAt, pourKey, tilt }: GaugeProps) {
   const reduced = useReducedMotion();
   const canvas = useRef<HTMLCanvasElement>(null);
   const { shown, svg } = useDialArcs(bac, peakBac);
@@ -351,15 +377,15 @@ export function DialLiquid({ bac, peakBac, pourKey, tilt }: GaugeProps) {
     <div className="rounded-[36px] bg-surface p-5">
       <div className="relative mx-auto aspect-square w-full max-w-[300px]">
         {svg}
-        <div className="absolute inset-x-[15%] top-[25%] bottom-[25%] flex flex-col items-center justify-center">
-          <p className="text-base font-semibold text-ink-2">
-            Blood alcohol{shown > 0.0095 ? ", about" : ""}
-          </p>
-          <canvas ref={canvas} aria-hidden="true" className="aspect-[2/1] w-full touch-none" />
+        {/* label · about · number, one tight group centred on the dial's centre */}
+        <div className="absolute inset-x-[16%] inset-y-[22%] flex flex-col items-center justify-center text-center">
+          <p className="text-base font-medium text-ink-2">Blood alcohol</p>
+          <p className={`mt-2 text-lg leading-none font-semibold text-ink ${shown > 0.0095 ? "" : "invisible"}`}>about</p>
+          <canvas ref={canvas} aria-hidden="true" className="mt-2 h-[clamp(52px,17vw,76px)] w-full touch-none" />
         </div>
         <p className="sr-only">About {formatPoint(bac)}</p>
       </div>
-      <UnderDial bac={bac} peakBac={peakBac} />
+      <UnderDial bac={bac} peakBac={peakBac} peakAt={peakAt} />
     </div>
   );
 }
