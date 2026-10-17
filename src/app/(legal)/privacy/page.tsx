@@ -22,8 +22,9 @@ export default function PrivacyPage() {
       <ul>
         <li>
           <strong>Your Google account basics.</strong> When you sign in with Google we
-          receive your name, email address and profile picture, plus the sign-in tokens
-          Google issues. We use these only to sign you in and show your name and picture.
+          receive your name, email address and profile picture. We use these only to sign
+          you in and show your name and picture. We don&apos;t keep the access tokens
+          Google issues, so we can&apos;t use your Google account for anything else.
         </li>
         <li>
           <strong>Your body details.</strong> The weight and sex you enter, which the BAC
@@ -42,8 +43,18 @@ export default function PrivacyPage() {
         When you type a drink, we first match it against our own drink list. If that
         doesn&apos;t work, the text you typed is sent to an AI model run by Cloudflare
         (Workers AI) to work out the drink and its size. We send only the drink text,
-        not your name, email or other details. We keep anonymous copies of these
-        results, not linked to you, so the same phrase is faster next time.
+        not your name, email or other details.
+      </p>
+      <p>
+        For short drink phrases (like &ldquo;a tumbler of chicha&rdquo;) we keep the
+        result for up to 30 days, not linked to you, so the same phrase is faster for
+        everyone next time. Longer descriptions, or ones containing long numbers, are
+        never kept.
+      </p>
+      <p>
+        To keep the free AI available for everyone, we count how many times your account
+        used it in the current hour and day. These counts hold no drink text and are
+        deleted after two days.
       </p>
 
       <h2>Where it&apos;s stored</h2>
