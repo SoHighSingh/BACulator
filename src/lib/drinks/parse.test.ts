@@ -34,6 +34,11 @@ describe("catalog parser", () => {
     expect(total("half a bottle of wine")).toBe(computeStandards(0.5, 750, 13.5));
   });
 
+  it("only accepts typos that keep the first letter", () => {
+    expect(parseWithCatalog("vodak", index).items[0]?.name).toBe("Vodka");
+    expect(parseWithCatalog("a hot toddy", index).items[0]?.name).toBe("Hot toddy");
+  });
+
   it("assumes full strength for unknown beer", () => {
     expect(parseWithCatalog("a beer", index).items[0]?.abv).toBe(4.8);
   });

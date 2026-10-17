@@ -154,6 +154,7 @@ const COCKTAILS: CatalogEntry[] = [
   c("Paloma", 250, 20, ["paloma"]), // 50 tequila
   c("Mudslide", 250, 22, ["mudslide"]), // 30 vodka + 30 Kahlúa + 30 Baileys
   c("Irish coffee", 250, 16, ["irish coffee"]), // 40 Irish whiskey
+  c("Hot toddy", 250, 18, ["hot toddy", "toddy"]), // 45 whisky
   c("Gin fizz", 200, 18, ["gin fizz", "tom collins", "collins"]), // 45 gin
   c("Hugo spritz", 200, 12, ["hugo", "hugo spritz"]), // prosecco + elderflower
   c("Lychee martini", 120, 20, ["lychee martini", "lychee tini"]),

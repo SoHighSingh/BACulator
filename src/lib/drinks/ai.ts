@@ -11,10 +11,15 @@ import { CATEGORIES, type Category, type ParsedItem } from "./types";
  * - The model never does arithmetic: code computes standards from count × ml × abv.
  */
 
-// Small, cheap models either lost JSON-schema support (@cf/meta/llama-3.1-8b-instruct-fp8 returns
-// error 5025) or were retired (@cf/meta/llama-3.1-8b-instruct, 2026-05-30). Llama 3.3 70B fp8-fast
-// supports json_schema and costs roughly 30 neurons per parse, so the free 10k neurons/day covers
-// ~300 uncached parses. https://developers.cloudflare.com/workers-ai/features/json-mode/
+// Model choice (tested 2026-10-17 on 9 phrases the catalog doesn't know):
+//  - @cf/meta/llama-3.1-8b-instruct-fp8-fast: ~3 neurons/parse (~3,000 free/day), 0/9 within ±0.2,
+//    6/9 under-estimated by more than 0.3 standards.
+//  - @cf/meta/llama-3.3-70b-instruct-fp8-fast: ~30 neurons/parse (~300 free/day), 2/9 within ±0.2,
+//    3/9 under-estimated.
+// The AI only sees text the catalog, cache and recents could not handle, so we pay for fewer
+// under-counts. Swap the constant to trade accuracy for quota. (llama-3.1-8b-instruct was retired
+// 2026-05-30; llama-3.1-8b-instruct-fp8 rejects json_schema.)
+// https://developers.cloudflare.com/workers-ai/features/json-mode/
 export const AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const TIMEOUT_MS = 8000;
 const MAX_ITEMS = 10;

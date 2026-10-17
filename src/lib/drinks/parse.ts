@@ -175,7 +175,8 @@ function findFuzzy(tokens: string[], used: boolean[], phrases: Phrase[], out: Ma
         if (used[i + k] || STOPWORDS.has(t) || /^\d/.test(t)) {
           ok = false;
         } else if (t !== p) {
-          const allowance = p.length < minLength ? 0 : typoAllowance(p.length);
+          // Typos keep the first letter: "vodak" -> vodka, but "toddy" must not become "voddy".
+          const allowance = p.length < minLength || !t.startsWith(p.charAt(0)) ? 0 : typoAllowance(p.length);
           const d = allowance === 0 ? 1 : editDistance(t, p, allowance);
           if (d > allowance) ok = false;
           else typos += d;
