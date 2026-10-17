@@ -9,30 +9,53 @@ import "./src/env.js";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 
-/** @type {import("next").NextConfig} */
-const config = {
-  // Keep Prisma out of the Next bundle so OpenNext can wire up its Workers (wasm) build.
-  serverExternalPackages: ["@prisma/client", ".prisma/client"],
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [
-          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
-        ],
-      },
-    ];
-  },
-};
+/**
+ * Content Security Policy. Everything the app loads is same-origin (next/font self-hosts Geist,
+ * there are no third-party scripts or images). Scripts still need 'unsafe-inline': the App
+ * Router streams its payload in inline <script> tags, and a nonce would make every page dynamic.
+ * The policy still stops scripts, frames and requests to other origins. The JSON-LD block needs no
+ * hash: it is a data block, which browsers never execute, so script-src does not apply to it.
+ * Dev adds 'unsafe-eval' for React Refresh.
+ * @param {boolean} dev
+ */
+const contentSecurityPolicy = (dev) =>
+  [
+    "default-src 'self'",
+    `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    // Sign-in posts to /api/auth, which redirects to Google.
+    "form-action 'self' https://accounts.google.com",
+    "frame-ancestors 'none'",
+    ...(dev ? [] : ["upgrade-insecure-requests"]),
+  ].join("; ");
+
+/** @param {boolean} dev */
+const securityHeaders = (dev) => [
+  { key: "Content-Security-Policy", value: contentSecurityPolicy(dev) },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+];
 
 /** @param {string} phase */
 export default function nextConfig(phase) {
   // Exposes Cloudflare bindings (local D1 via Miniflare) to `next dev` through getCloudflareContext().
   // Dev only: the remote AI binding needs a Cloudflare login, which CI builds don't have.
-  if (phase === PHASE_DEVELOPMENT_SERVER) void initOpenNextCloudflareForDev();
-  return config;
+  const dev = phase === PHASE_DEVELOPMENT_SERVER;
+  if (dev) void initOpenNextCloudflareForDev();
+  /** @type {import("next").NextConfig} */
+  return {
+    // Keep Prisma out of the Next bundle so OpenNext can wire up its Workers (wasm) build.
+    serverExternalPackages: ["@prisma/client", ".prisma/client"],
+    async headers() {
+      return [{ source: "/:path*", headers: securityHeaders(dev) }];
+    },
+  };
 }
