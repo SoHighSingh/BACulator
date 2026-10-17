@@ -17,7 +17,7 @@ export const SERVE_SIZES: ServeSize[] = [
   { id: "pot", name: "Pot / middy", kind: "measure", volumeMl: 285, impliesCategory: "beer",
     aliases: ["pot", "middy", "middie", "half pint", "handle"], sourceUrl: GLASSES },
   { id: "schooner", name: "Schooner", kind: "measure", volumeMl: 425, impliesCategory: "beer",
-    aliases: ["schooner", "schooey", "schooie", "schoonie", "schoon"], sourceUrl: GLASSES },
+    aliases: ["schooner", "schooey", "schooie", "schooy", "schoonie", "schoon"], sourceUrl: GLASSES },
   { id: "pint", name: "Pint", kind: "measure", volumeMl: 570, impliesCategory: "beer",
     aliases: ["pint", "pinty", "imperial pint"], sourceUrl: GLASSES },
   { id: "pony", name: "Pony", kind: "measure", volumeMl: 140, impliesCategory: "beer", aliases: ["pony"], sourceUrl: GLASSES },

@@ -11,6 +11,7 @@ export function normaliseText(text: string) {
       .replace(/½/g, " half ")
       .replace(/¼/g, " quarter ")
       .replace(/[’'`]/g, "") // jack daniel's -> jack daniels
+      .replace(/([a-wyz]){2,}/g, "$1$1") // "spritzzz" -> "spritzz" (x is left alone for XXXX)
       .replace(/&/g, " and ")
       .replace(/\+/g, " , ")
       // keep decimal points and percent signs, everything else that is not a letter/digit/comma

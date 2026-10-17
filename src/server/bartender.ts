@@ -63,6 +63,27 @@ async function loadIndex(db: PrismaClient): Promise<CatalogIndex> {
   return index;
 }
 
+/** The user's most recently logged drink ("same again"). */
+async function findLastDrink(db: PrismaClient, userId: string): Promise<ParsedItem[] | null> {
+  const last = await db.drink.findFirst({ where: { tab: { userId } }, orderBy: { finishedAt: "desc" } });
+  if (!last) return null;
+  return [
+    {
+      name: last.name ?? "Same as last drink",
+      category: last.abv === 0 ? "non_alcoholic" : null,
+      brand: null,
+      volumeMl: last.volumeMl ?? 0,
+      abv: last.abv ?? 0,
+      count: last.count ?? 1,
+      standards: last.standards,
+      confidence: 0.95,
+      source: "recent",
+      catalogId: null,
+      assumed: [],
+    },
+  ];
+}
+
 /** The user's most recent drink logged from the same text, with the standards they confirmed. */
 async function findRecent(db: PrismaClient, userId: string, normText: string): Promise<ParsedItem[] | null> {
   const recent = await db.drink.findMany({
@@ -102,6 +123,7 @@ export async function analyseDrinkText(db: PrismaClient, userId: string, text: s
   const index = await loadIndex(db);
   return parseDrinks(text, {
     index,
+    lastDrink: () => findLastDrink(db, userId),
     findRecent: (norm) => findRecent(db, userId, norm),
     cacheGet: async (key) => {
       const row = await db.parseCache.findUnique({ where: { key } });

@@ -16,6 +16,7 @@ const fmt = (n: number) => String(Math.round(n * 10) / 10);
 
 /** "2 × 425 ml · Victoria Bitter · 4.9%" */
 export function describeItem(item: ParsedItem) {
+  if (item.volumeMl <= 0) return item.name; // "same again" of a drink that was entered by hand
   const count = item.count === 1 ? "" : `${fmt(item.count)} × `;
   return `${count}${fmt(item.volumeMl)} ml · ${item.name} · ${fmt(item.abv)}%`;
 }

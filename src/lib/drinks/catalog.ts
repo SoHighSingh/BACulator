@@ -145,7 +145,7 @@ const COCKTAILS: CatalogEntry[] = [
   c("Tequila sunrise", 250, 18, ["tequila sunrise"]), // 45 tequila
   c("Bloody Mary", 250, 18, ["bloody mary", "bloody marys", "caesar"]), // 45 vodka
   c("Caipirinha", 150, 20, ["caipirinha", "caipiroska"]), // 50 cachaça
-  c("Pornstar martini", 180, 26, ["pornstar martini", "passionfruit martini", "porn star martini"]), // 45 vanilla vodka + 15 Passoa + 60 prosecco
+  c("Pornstar martini", 180, 26, ["pornstar martini", "passionfruit martini", "porn star martini", "pornstar", "porn star", "pornstar tini"]), // 45 vanilla vodka + 15 Passoa + 60 prosecco
   c("White Russian", 150, 23.2, ["white russian", "black russian"]), // 50 vodka + 20 coffee liqueur
   c("Dirty Shirley", 300, 18, ["dirty shirley", "dirty shirley temple"]), // 45 cherry vodka
   c("Mai tai", 200, 30, ["mai tai"]), // 60 rum + 15 curaçao
@@ -414,7 +414,7 @@ const LIQUEURS: CatalogEntry[] = [
   b("Suntory", "Midori", "liqueur", 20, 30, ["midori", "midori and lemonade"]),
   b("Rémy Cointreau", "Cointreau", "liqueur", 40, 30, ["cointreau"]),
   b("Campari", "Grand Marnier", "liqueur", 40, 30, ["grand marnier"]),
-  b("Campari", "Aperol", "liqueur", 11, 30, ["shot of aperol"]),
+  b("Campari", "Aperol (neat)", "liqueur", 11, 30, ["shot of aperol", "aperol shot", "aperol neat"]),
   b("Campari", "Campari", "liqueur", 25, 30, ["campari", "campari and soda", "campari soda"]),
   b("Mast-Jägermeister", "Jägermeister", "liqueur", 35, 30, ["jagermeister", "jager", "jaeger", "jagermiester", "jagger", "jaegermeister"]),
   b("Sazerac", "Fireball Cinnamon Whisky", "liqueur", 33, 30, ["fireball", "fire ball"]),

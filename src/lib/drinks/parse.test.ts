@@ -68,6 +68,24 @@ describe("pipeline", () => {
     expect(r.items).toHaveLength(1);
   });
 
+  it("treats 'same again' as the last drink", async () => {
+    const last = { name: "VB", category: null, brand: null, volumeMl: 425, abv: 4.9, count: 1, standards: 1.7, confidence: 0.95, source: "recent" as const, catalogId: null, assumed: [] };
+    const r = await parseDrinks("Same again!!", { index, lastDrink: async () => [last] });
+    expect(r.layer).toBe("recent");
+    expect(r.totalStandards).toBe(1.7);
+  });
+
+  it("asks rather than reporting 0 when the AI finds no drink in vague text", async () => {
+    const ai: AiRunner = { run: async () => ({ response: { items: [] } }) };
+    expect((await parseDrinks("idk like 3 drinks", { index, ai })).status).toBe("unavailable");
+  });
+
+  it("reads stretched words and slang", () => {
+    expect(parseWithCatalog("aperol spritzzz", index).items[0]?.name).toBe("Aperol spritz");
+    expect(parseWithCatalog("2 schooies", index).items[0]?.volumeMl).toBe(425);
+    expect(parseWithCatalog("xxxx gold", index).items[0]?.name).toBe("XXXX Gold");
+  });
+
   it("prefers recents, then the cache", async () => {
     const recent = await parseDrinks("my usual", {
       index,
