@@ -5,7 +5,20 @@ Read this, then `PRODUCT.md` (who it's for, non-negotiables) and `DESIGN.md` (cu
 ## Where things are
 - **Repo:** `C:\Users\agams\BACulator`, GitHub `SoHighSingh/BACulator`. Work happens on branch `cloudflare-d1-migration`; `main` on GitHub is at `7816ae6` (migration + formula fix + tests + CI) and is **behind** the branch.
 - **Stack:** Next.js 15 / React 19 / Tailwind 4 / tRPC / Prisma on **Cloudflare Workers (OpenNext) + D1**. Auth: NextAuth Google. CI: `.github/workflows/ci.yml` (lint, typecheck, vitest, OpenNext build). Vercel auto-deploys are off (`vercel.json`).
-- **Checks:** `npm run lint`, `npm run typecheck`, `npm test` (546 tests), `SKIP_ENV_VALIDATION=1 npx opennextjs-cloudflare build`. Local dev: `npm run dev` (local D1 via wrangler; `npm run db:migrate:local` first).
+- **Checks:** `npm run lint`, `npm run typecheck`, `npm test` (588 tests), `SKIP_ENV_VALIDATION=1 npm run build:worker`. Local dev: `npm run dev` (local D1 via wrangler; `npm run db:migrate:local` first). Lint and dev need `.dev.vars` (or `SKIP_ENV_VALIDATION=1`).
+
+## Secrets and env (read before building or deploying)
+- **Local values live in `.dev.vars`** (gitignored; template `.dev.vars.example`). `wrangler dev` reads it, and `next dev` gets it through `scripts/load-dev-vars.js` (dev only; Next sets NODE_ENV=production before a build, so builds never read it).
+- **Never create `.env`, `.env.local` or any `.env*` file.** OpenNext copies every `.env*` file into `.open-next/cloudflare/next-env.mjs`, and the Worker uses those values for any variable without a Worker secret (`process.env[key] ??=`), so a forgotten `wrangler secret put` silently ships the dev value.
+- `npm run build:worker` (used by `deploy`, `preview` and CI) refuses to start while a `.env*` file exists and fails afterwards if `next-env.mjs` holds any values (it prints key names only).
+- Production values are Worker secrets: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (`npx wrangler secret put <NAME>`). Use a different AUTH_SECRET locally. If a secret is missing the Worker now fails loudly at env validation instead of falling back.
+
+## Security (audit 17 Oct 2026)
+- Fixed: IDOR scoping, fail-closed `protectedProcedure`, zod validation, atomic account deletion, security headers + CSP (`next.config.js`), dev-only request logging, secrets out of the bundle, next-auth/@auth/tRPC/glob/postcss advisories (`npm audit --omit=dev` = 0; overrides in package.json).
+- **AI bartender limits** (`src/lib/drinks/ai-quota.ts`): Workers AI calls take a slot from atomic D1 counters (`AiUsage`): 20/user/hour, 50/user/day, 250/day globally; a quota error from Cloudflare fills the day's global budget; a per-isolate breaker skips the AI for 5 min after 3 failures. A limit reads as "AI unavailable" so the add sheet offers manual entry. `ParseCache` only stores short phrases (<= 48 chars, 8 words, no 5+ digit runs, confidence >= 0.5) and expires rows after 30 days; `src/server/bartender.ts` prunes hourly.
+- **Auth:** Google tokens are no longer stored (`src/server/auth/account.ts`, migration 0005 clears old ones); `/api/auth/session` returns only `expires` and the user's id/name/email/image (it used to include the httpOnly session token).
+- **Migrations 0004 (AiUsage, ParseCache index/cleanup) and 0005 (clear OAuth tokens) are not applied remotely yet**: `npm run db:migrate:remote` before deploying this code, or `analyseDrink` will fall back to manual entry (the AiUsage table is missing, so the limiter fails closed).
+- CSP keeps `script-src 'unsafe-inline'` (App Router inline payload scripts; a nonce would make every page dynamic). If Cloudflare Web Analytics or other injected scripts are turned on, add their origin to the CSP.
 
 ## Done
 - BAC engine rewritten as a minute-step simulation (old model "banked" sober time and under-read by up to 0.13). `src/lib/bac-calculator.ts`, 50-scenario test suite.
@@ -33,6 +46,7 @@ Read this, then `PRODUCT.md` (who it's for, non-negotiables) and `DESIGN.md` (cu
 `designing-for-impaired-users` (our own), `impeccable` (instructions only — no scripts/hooks), `taste-skill`, `redesign-skill`, `remotion-*` (12), `seo*` from claude-seo (26, no scripts/hooks; 19 agents in `~/.claude/agents`), `psychologist-analyst` (weak fit). React Bits: use via shadcn registry (`"@react-bits": "https://reactbits.dev/r/{name}.json"` in `components.json`, `-TS-TW` variants; MIT + Commons Clause) — components aren't frame-driven, so port them to `useCurrentFrame` for Remotion.
 
 ## Gotchas
+- Building inside `.claude/worktrees/*`: Next warns about multiple lockfiles and picks the main checkout as the workspace root. Harmless: OpenNext still read env files only from the worktree (the bundle check found `next-env.mjs` empty).
 - Windows checkout: some files have CRLF; scripted string edits need `sed -i 's/\r$//'` first.
 - The dev-time Google sign-in won't work until the consent screen is published or the user is added as a test user.
 - `getDrinks`, `getCurrentTab`, `startTab`, `stopTab` tRPC procedures are now unused by the UI; safe to delete once nothing else depends on them.
