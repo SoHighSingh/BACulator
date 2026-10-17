@@ -5,12 +5,14 @@ import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, Drawer
 import { DrinksList } from "./DrinksList";
 import { AddDrinkForm } from "./AddDrinkForm";
 import type { api } from "~/trpc/react";
+import type { DrinkDetails } from "~/lib/drinks/details";
 
 interface AddDrinkDrawerProps {
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
   newStandards: number;
   setNewStandards: (standards: number) => void;
+  setNewDetails: (details: DrinkDetails | undefined) => void;
   newTime: string;
   setNewTime: (time: string) => void;
   selectedTime: string;
@@ -41,6 +43,7 @@ export function AddDrinkDrawer({
   setDrawerOpen,
   newStandards,
   setNewStandards,
+  setNewDetails,
   newTime: _newTime,
   setNewTime: _setNewTime,
   selectedTime,
@@ -148,6 +151,7 @@ export function AddDrinkDrawer({
                 <AddDrinkForm
                   standards={newStandards}
                   setStandards={setNewStandards}
+                  onDetailsChange={setNewDetails}
                   selectedTime={selectedTime}
                   convertTo24Hour={convertTo24Hour}
                   handleTimeChange={handleTimeChange}

@@ -18,6 +18,12 @@
 			"service": "baculator"
 		}
 	],
+	// Workers AI: last-resort drink parser (free daily allocation). See src/lib/drinks/ai.ts
+	"ai": {
+		"binding": "AI",
+		// Workers AI always runs remotely, also under `next dev`
+		"remote": true
+	},
 	"d1_databases": [
 		{
 			"binding": "DB",

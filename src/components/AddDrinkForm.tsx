@@ -3,6 +3,8 @@ import { api } from "~/trpc/react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedCounter } from "./ui/AnimatedCounter";
+import { describeItem, MANUAL_CHIPS, toDrinkDetails, type DrinkDetails } from "~/lib/drinks/details";
+import type { ParseResult } from "~/lib/drinks/types";
 
 interface AddDrinkFormProps {
   standards: number;
@@ -11,7 +13,11 @@ interface AddDrinkFormProps {
   convertTo24Hour: (time12h: string) => string;
   handleTimeChange: (timeString: string) => void;
   roundToOneDecimal: (num: number) => number;
+  /** Receives what the bartender parsed, so it can be stored with the drink. */
+  onDetailsChange?: (details: DrinkDetails | undefined) => void;
 }
+
+const MAX_STANDARDS = 50;
 
 export function AddDrinkForm({
   standards,
@@ -20,6 +26,7 @@ export function AddDrinkForm({
   convertTo24Hour,
   handleTimeChange,
   roundToOneDecimal,
+  onDetailsChange,
 }: AddDrinkFormProps) {
   const [drinkText, setDrinkText] = useState("");
   const [isAnalysing, setisAnalysing] = useState(false);
@@ -29,6 +36,19 @@ export function AddDrinkForm({
   const [typedText, setTypedText] = useState("");
   const [isAiUpdated, setIsAiUpdated] = useState(false);
   const [previousStandards, setPreviousStandards] = useState(standards);
+  const [result, setResult] = useState<ParseResult | null>(null);
+  const [details, setDetails] = useState<DrinkDetails | undefined>(undefined);
+
+  function updateDetails(next: DrinkDetails | undefined) {
+    setDetails(next);
+    onDetailsChange?.(next);
+  }
+
+  // A hand-edited number is still worth keeping with what was parsed, flagged as edited.
+  function setStandardsByHand(value: number) {
+    setStandards(value);
+    if (details && details.source !== "manual" && details.source !== "edited") updateDetails({ ...details, source: "edited" });
+  }
 
   const placeholders = [
     "e.g. 3 vodka red bulls", "e.g. half bottle of soju", "e.g. 2 iced coffees with baileys", "e.g. 1 shot of pink whitney",
@@ -113,29 +133,44 @@ export function AddDrinkForm({
   const analyseDrink = api.post.analyseDrink.useMutation();
 
   async function handleAnalyseDrink() {
-    if (!drinkText.trim()) return;
+    const text = drinkText.trim();
+    if (!text) return;
     
     setisAnalysing(true);
     
     try {
       // Add a minimum delay to let the typing animation show
       const [analysis] = await Promise.all([
-        analyseDrink.mutateAsync({ drinkText: drinkText.trim() }),
-        new Promise(resolve => setTimeout(resolve, 2000)) // 2 second minimum delay
+        analyseDrink.mutateAsync({ drinkText: text }),
+        new Promise(resolve => setTimeout(resolve, 600))
       ]);
+      setResult(analysis);
       
-      if (analysis.standardDrinks > 0) {
+      if (analysis.totalStandards > 0) {
         setPreviousStandards(standards); // Store current value before changing
-        const aiValue = roundToOneDecimal(analysis.standardDrinks);
-        setStandards(aiValue);
+        setStandards(Math.min(MAX_STANDARDS, roundToOneDecimal(analysis.totalStandards)));
+        updateDetails(toDrinkDetails(analysis, text));
         setDrinkText(""); // Clear input after successful analysis
         setIsAiUpdated(true); // Trigger blue gradient animation
+      } else {
+        updateDetails(undefined);
       }
     } catch (error) {
       console.error("Error analyzing drink:", error);
+      setResult({ status: "unavailable", items: [], totalStandards: 0, unparsed: [text], layer: null });
     } finally {
       setisAnalysing(false);
     }
+  }
+
+  function pickChip(chip: (typeof MANUAL_CHIPS)[number]) {
+    setPreviousStandards(standards);
+    setStandards(chip.standards);
+    updateDetails({
+      name: chip.label, volumeMl: chip.volumeMl, abv: chip.abv, count: 1, source: "manual", confidence: 1,
+      rawText: (result?.unparsed[0] ?? drinkText).slice(0, 200),
+    });
+    setResult(null);
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -215,6 +250,46 @@ export function AddDrinkForm({
         </div>
       </div>
 
+      {/* What the bartender understood: shown so the user can check the assumptions */}
+      {result && (
+        <div aria-live="polite" className="flex flex-col gap-1 text-[15px] text-[#e6e6e6]">
+          {result.items.filter((i) => i.standards > 0 || result.status === "none").map((item, i) => (
+            <div key={i} className="flex justify-between gap-3">
+              <span>
+                {describeItem(item)}
+                {item.assumed.includes("volume") && <span className="text-white/60"> (usual size)</span>}
+              </span>
+              <span className="whitespace-nowrap font-medium">{item.standards.toFixed(1)} std</span>
+            </div>
+          ))}
+          {result.items.some((i) => i.confidence < 0.7) && (
+            <p className="text-[#ffd27a]">Best guess. Check the number below.</p>
+          )}
+          {result.status === "none" && <p>No alcohol found. Nothing added.</p>}
+          {result.status === "partial" && result.unparsed.length > 0 && (
+            <p className="text-white/70">Not counted: {result.unparsed.map((u) => `"${u}"`).join(", ")}</p>
+          )}
+          {result.status === "unavailable" && (
+            <div className="flex flex-col gap-2">
+              <p>Couldn&apos;t read that. Pick the closest:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {MANUAL_CHIPS.map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => pickChip(chip)}
+                    className="min-h-12 rounded-md border border-white/30 bg-white/10 px-3 py-2 text-left text-[15px] font-medium text-white hover:bg-white/20 cursor-pointer"
+                  >
+                    {chip.label}
+                    <span className="block text-sm font-normal text-white/70">{chip.standards.toFixed(1)} std</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Soft divider */}
       <div className="w-full h-px bg-white/10"></div>
 
@@ -223,7 +298,7 @@ export function AddDrinkForm({
         <label className="w-56 text-sm">Standards</label>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setStandards(Math.max(0, standards - 0.5))}
+            onClick={() => setStandardsByHand(Math.max(0, standards - 0.5))}
             className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
           >
             −
@@ -271,19 +346,19 @@ export function AddDrinkForm({
             <input
               type="number"
               min="0.1"
-              max="20"
+              max={MAX_STANDARDS}
               step="0.1"
               value={standards ? standards.toFixed(1) : ""}
               onChange={e => {
                 const value = e.target.value;
                 if (value === "") {
-                  setStandards(0);
+                  setStandardsByHand(0);
                   setIsAiUpdated(false); // Clear animation if user manually changes
                   return;
                 }
                 const numValue = Number(value);
                 if (!isNaN(numValue) && numValue >= 0) {
-                  setStandards(numValue);
+                  setStandardsByHand(numValue);
                   setIsAiUpdated(false); // Clear animation if user manually changes
                 }
               }}
@@ -310,7 +385,7 @@ export function AddDrinkForm({
             )}
           </motion.div>
           <button
-            onClick={() => setStandards(Math.min(20, Math.round((standards + 0.5) * 10) / 10))}
+            onClick={() => setStandardsByHand(Math.min(MAX_STANDARDS, Math.round((standards + 0.5) * 10) / 10))}
             className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg flex items-center justify-center transition-colors active:scale-95 cursor-pointer"
           >
             +

@@ -1,7 +1,7 @@
 # 🍻 BACulator
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Google_Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini AI" />
+  <img src="https://img.shields.io/badge/Cloudflare_Workers_AI-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare Workers AI" />
   <img src="https://img.shields.io/badge/Next.js-15.4.1-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/tRPC-10.0-398ccb?style=for-the-badge&logo=trpc&logoColor=white" alt="tRPC" />
@@ -66,12 +66,12 @@ Experience the difference that scientific accuracy makes in BAC calculation.
 - **Gender-Specific Distribution**: Male (0.68) vs Female (0.55) body water ratios
 - **Timeline Reconstruction**: Adaptive time-step algorithm for precise BAC tracking
 
-### 🤖 **AI-Powered Drink Recognition**
-- **Smart Drink Analysis**: Advanced AI that understands natural drink descriptions
-- **Automatic Standard Calculation**: Instantly converts "3 vodka red bulls" to accurate standard drinks
-- **Context-Aware Processing**: Recognizes drink sizes, alcohol content, and regional variations
-- **Confidence Scoring**: AI provides accuracy estimates for each drink analysis
-- **Fallback Safety**: Multiple validation layers ensure reliable calculations
+### 🤖 **Drink Recognition (the "bartender")**
+- **Mostly deterministic, free to run**: text is matched against your recent drinks, a parse cache, then a curated Australian catalog (~250 brands plus generic beers, wines, spirits, RTDs and cocktails) with Australian serve sizes (pot 285 ml, schooner 425, pint 570, SA pint 425, can 375, longneck 750, wine glass 150, nip 30) and typo tolerance
+- **Code does the maths**: standards = count × ml × ABV × 0.789 / 10, rounded up to the next 0.1, never down; unknown strength is assumed full strength
+- **AI only as a last resort**: text the catalog can't read goes to Cloudflare Workers AI with a JSON schema, treated as data (prompt-injection resistant), validated and clamped, and cached
+- **Never a silent zero**: if the AI is unavailable you get size chips for manual entry
+- **Shows its working**: the confirm step lists the assumed volume, ABV and count
 
 ### 📊 **Intelligent Tracking & Predictions**
 - **Real-Time BAC Monitoring**: Live updates with minute-by-minute precision
@@ -166,7 +166,7 @@ Understanding what different BAC levels mean for your body:
 - **🔐 NextAuth.js**: Production-ready authentication with Google OAuth
 - **🎨 Tailwind CSS**: Utility-first styling with shadcn/ui components
 - **🐘 PostgreSQL**: Robust relational database for complex data relationships
-- **🤖 Google Gemini AI**: Advanced natural language processing for drink recognition
+- **🤖 Cloudflare Workers AI**: Last-resort parsing for drinks the catalog doesn't know (src/lib/drinks)
 
 ### **Core Algorithm Implementation**
 
@@ -187,12 +187,12 @@ function calculateBACWithProperElimination(
 
 #### **AI Drink Analysis Engine**
 ```typescript
-async function analyseDrinkDetailed(drinkInput: string): Promise<DrinkAnalysis> {
-  // Google Gemini AI integration for natural language processing
-  // Conservative estimation with confidence scoring
-  // Fallback validation layers for reliability
-  // JSON parsing with error handling
+async function parseDrinks(text: string, deps: BartenderDeps): Promise<ParseResult> {
+  // recents (D1) -> parse cache (D1) -> catalog + serve sizes -> Workers AI (leftover text only)
+  // standards computed in code, rounded up; "unavailable" instead of a silent 0
 }
+// Catalog: src/lib/drinks/catalog.ts -> `npm run db:catalog-sql` -> migrations/0003_seed_catalog.sql
+// Accuracy: `npm run eval:drinks` runs scripts/drinks.eval.json
 ```
 
 #### **Peak Detection System**
