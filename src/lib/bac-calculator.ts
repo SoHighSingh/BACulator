@@ -291,8 +291,16 @@ function sampleTimeline(
   const stepMs = CONFIG.STEP_MINUTES * MS_PER_MINUTE;
   const dataPoints: Array<{ hour: number; bac: number }> = [];
   for (let minutes = 0; minutes <= hoursToShow * 60; minutes += intervalMinutes) {
-    const index = Math.round((currentTime + minutes * MS_PER_MINUTE - startTime) / stepMs);
-    const bac = index < 0 ? 0.0 : (timeline[Math.min(index, timeline.length - 1)] ?? 0.0);
+    // Linear interpolation between simulated steps so points between whole minutes are exact enough
+    const position = (currentTime + minutes * MS_PER_MINUTE - startTime) / stepMs;
+    let bac = 0.0;
+    if (position >= timeline.length - 1) {
+      bac = timeline[timeline.length - 1] ?? 0.0;
+    } else if (position > 0) {
+      const lower = Math.floor(position);
+      const fraction = position - lower;
+      bac = timeline[lower]! * (1 - fraction) + timeline[lower + 1]! * fraction;
+    }
     dataPoints.push({
       hour: roundToPrecision(minutes / 60.0, 2),
       bac: roundToPrecision(bac, 4)
