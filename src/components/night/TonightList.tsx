@@ -43,6 +43,7 @@ export function TonightList({ drinks, onRemove }: TonightListProps) {
               <p className="text-base text-ink-2 tabular-nums">
                 {clock(drink.finishedAt)} · {std(drink.standards)} std
               </p>
+              {drink.unsynced && <p className="text-base font-medium text-ink-2">Saved on this phone, will sync</p>}
             </div>
             <button
               type="button"

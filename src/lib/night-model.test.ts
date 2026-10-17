@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { isDoubleTap, mergeNight, pickRepeatAndRecents, prunePending, type NightDrink, type PendingDrink } from "./night-model";
+import {
+  isDoubleTap,
+  mergeNight,
+  outboxView,
+  pickRepeatAndRecents,
+  prunePending,
+  syncFailure,
+  type NightDrink,
+  type OutboxEntry,
+  type PendingDrink,
+} from "./night-model";
 
 const drink = (id: string, name = "Schooner", standards = 1.6): NightDrink => ({
   id,
@@ -43,6 +53,78 @@ describe("mergeNight", () => {
     expect(mergeNight([drink("a")], [pending("t1", null, true)]).map((d) => d.id)).toEqual(["a"]);
     // Saved before the undo landed: the server copy is hidden too until its delete goes through.
     expect(mergeNight([drink("a"), drink("r1")], [pending("t1", "r1", true)]).map((d) => d.id)).toEqual(["a"]);
+  });
+});
+
+describe("offline adds (client ids)", () => {
+  const withClient = (id: string, clientId: string): NightDrink => ({ ...drink(id), clientId });
+  const add = (clientId: string, createdAt = 1): OutboxEntry => ({
+    clientId,
+    op: "add",
+    payload: { clientId, standards: 1.6, finishedAt: new Date(2026, 9, 17, 21, 0).toISOString(), details: { name: "Schooner" } },
+    createdAt,
+    userId: "u1",
+  });
+  const del = (payload: { drinkId: string } | { clientId: string }, createdAt = 2): OutboxEntry => ({
+    clientId: "drinkId" in payload ? `del-${payload.drinkId}` : payload.clientId,
+    op: "delete",
+    payload,
+    createdAt,
+    userId: "u1",
+  });
+
+  it("shows a queued drink, marked as only on this phone", () => {
+    const { pending, removals } = outboxView([add("c1")]);
+    const shown = mergeNight([drink("a")], pending, removals);
+    expect(shown.map((d) => d.id)).toEqual(["a", "c1"]);
+    expect(shown[1]).toMatchObject({ unsynced: true, clientId: "c1", name: "Schooner", standards: 1.6 });
+  });
+
+  it("shows a synced drink once when only the client id ties it to the queue (reply was lost)", () => {
+    const { pending, removals } = outboxView([add("c1")]);
+    const server = [drink("a"), withClient("r1", "c1")];
+    expect(mergeNight(server, pending, removals).map((d) => d.id)).toEqual(["a", "r1"]);
+    expect(prunePending(server, pending)).toEqual([]);
+  });
+
+  it("keeps a queued drink until the server list has it", () => {
+    const { pending } = outboxView([add("c1")]);
+    expect(prunePending([drink("a")], pending)).toBe(pending);
+  });
+
+  it("hides a drink whose removal is still queued, by server id or client id", () => {
+    const server = [drink("a"), withClient("r1", "c1"), drink("b")];
+    const { pending, removals } = outboxView([del({ drinkId: "b" }), del({ clientId: "c1" })]);
+    expect(mergeNight(server, pending, removals).map((d) => d.id)).toEqual(["a"]);
+  });
+
+  it("hides a queued add that was undone while it was being sent", () => {
+    const { pending, removals } = outboxView([add("c1"), del({ clientId: "c1" })]);
+    expect(mergeNight([drink("a")], pending, removals).map((d) => d.id)).toEqual(["a"]);
+    // The add landed before the delete: the server copy stays hidden too.
+    expect(mergeNight([drink("a"), withClient("r1", "c1")], pending, removals).map((d) => d.id)).toEqual(["a"]);
+  });
+
+  it("counts every queued drink once, however many there are", () => {
+    const { pending, removals } = outboxView([add("c1"), add("c2"), add("c3")]);
+    const server = [withClient("r1", "c1")];
+    expect(mergeNight(server, pending, removals).map((d) => d.id)).toEqual(["r1", "c2", "c3"]);
+  });
+});
+
+describe("syncFailure", () => {
+  it("retries when there was no reply or the server hiccupped", () => {
+    expect(syncFailure(undefined, "add")).toBe("retry");
+    expect(syncFailure("INTERNAL_SERVER_ERROR", "add")).toBe("retry");
+    expect(syncFailure("TOO_MANY_REQUESTS", "delete")).toBe("retry");
+  });
+  it("stops for a sign-in, and treats an already-removed drink as removed", () => {
+    expect(syncFailure("UNAUTHORIZED", "add")).toBe("signedOut");
+    expect(syncFailure("NOT_FOUND", "delete")).toBe("done");
+  });
+  it("gives up on a change the server will never accept", () => {
+    expect(syncFailure("BAD_REQUEST", "add")).toBe("drop");
+    expect(syncFailure("CONFLICT", "add")).toBe("drop");
   });
 });
 

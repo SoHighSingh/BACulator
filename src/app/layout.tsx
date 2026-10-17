@@ -18,7 +18,6 @@ export const metadata: Metadata = {
   applicationName: "BACulator",
   appleWebApp: { capable: true, title: "BACulator", statusBarStyle: "black-translucent" },
   alternates: { canonical: "/" },
-  icons: [{ rel: "icon", url: "/BACULATROR.png" }],
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
@@ -68,6 +67,11 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geist.variable} bg-bg`}>
+      <head>
+        {/* Next streams metadata into <body> on dynamic renders, but Chrome only reads the manifest from
+            <head>; without this the app isn't installable. */}
+        <link rel="manifest" href="/manifest.webmanifest" />
+      </head>
       <body className="bg-bg text-ink antialiased">
         <script
           type="application/ld+json"

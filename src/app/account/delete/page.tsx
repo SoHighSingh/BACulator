@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
+import { clearOutbox } from "~/lib/outbox";
+import { clearOfflineCache } from "~/trpc/offline-cache";
 import { api } from "~/trpc/react";
 
 const CONFIRM_WORD = "DELETE";
@@ -12,7 +14,12 @@ export default function DeleteAccountPage() {
   const { data: session, status } = useSession();
   const [confirmText, setConfirmText] = useState("");
   const deleteAccount = api.post.deleteAccount.useMutation({
-    onSuccess: () => signOut({ callbackUrl: "/" }),
+    onSuccess: async () => {
+      // The account is gone; so is anything of it kept on this phone.
+      clearOfflineCache();
+      if (session?.user?.id) await clearOutbox(session.user.id);
+      await signOut({ callbackUrl: "/" });
+    },
   });
 
   return (

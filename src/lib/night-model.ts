@@ -12,11 +12,17 @@ export interface NightDrink {
   volumeMl: number | null;
   abv: number | null;
   count: number | null;
+  /** The id this device gave the drink when it was added (null for drinks from before offline adds). */
+  clientId?: string | null;
+  /** Saved on this device only so far: it syncs when there's signal. */
+  unsynced?: boolean;
 }
 
 /** A drink added on this device that the server hasn't confirmed (or that was undone mid-save). */
 export interface PendingDrink {
   tempId: string;
+  /** Matches the server copy even when the save's reply was lost (offline, app closed). */
+  clientId?: string | null;
   drink: NightDrink;
   /** The server's id once the save returns. */
   realId: string | null;
@@ -24,16 +30,40 @@ export interface PendingDrink {
   cancelled: boolean;
 }
 
+/** A removal waiting to reach the server, by server id or by the id this device gave the drink. */
+export type Removal = { drinkId: string } | { clientId: string };
+
 /**
  * What to show: everything the server has, plus pending drinks that are neither undone nor already
- * in the server list. A confirmed drink is never shown twice, and an undone one never comes back.
+ * in the server list, minus removals still on their way. A confirmed drink is never shown twice
+ * (matched by server id or client id), and an undone one never comes back.
  */
-export function mergeNight(server: NightDrink[], pending: PendingDrink[]): NightDrink[] {
-  const serverIds = new Set(server.map((d) => d.id));
+export function mergeNight(server: NightDrink[], pending: PendingDrink[], removals: Removal[] = []): NightDrink[] {
+  const goneIds = new Set<string>();
+  const goneClientIds = new Set<string>();
+  for (const r of removals) {
+    if ("drinkId" in r) goneIds.add(r.drinkId);
+    else goneClientIds.add(r.clientId);
+  }
   // Undone mid-save: hide the server copy too until its delete lands.
-  const undone = new Set(pending.filter((p) => p.cancelled && p.realId).map((p) => p.realId));
-  const extra = pending.filter((p) => !p.cancelled && !(p.realId && serverIds.has(p.realId))).map((p) => p.drink);
-  return [...server.filter((d) => !undone.has(d.id)), ...extra];
+  for (const p of pending) {
+    if (!p.cancelled) continue;
+    if (p.realId) goneIds.add(p.realId);
+    if (p.clientId) goneClientIds.add(p.clientId);
+  }
+  const isGone = (id: string | null | undefined, clientId: string | null | undefined) =>
+    (!!id && goneIds.has(id)) || (!!clientId && goneClientIds.has(clientId));
+
+  const covered = coveredBy(server);
+  const extra = pending.filter((p) => !p.cancelled && !covered(p) && !isGone(p.realId, p.clientId)).map((p) => p.drink);
+  return [...server.filter((d) => !isGone(d.id, d.clientId)), ...extra];
+}
+
+/** Whether the server list already has this pending drink, by server id or client id. */
+function coveredBy(server: NightDrink[]) {
+  const ids = new Set(server.map((d) => d.id));
+  const clientIds = new Set(server.flatMap((d) => (d.clientId ? [d.clientId] : [])));
+  return (p: PendingDrink) => (!!p.realId && ids.has(p.realId)) || (!!p.clientId && clientIds.has(p.clientId));
 }
 
 /**
@@ -41,9 +71,76 @@ export function mergeNight(server: NightDrink[], pending: PendingDrink[]): Night
  * once the delete has gone through, so they stay here (hiding the drink) until then.
  */
 export function prunePending(server: NightDrink[], pending: PendingDrink[]): PendingDrink[] {
-  const serverIds = new Set(server.map((d) => d.id));
-  const next = pending.filter((p) => p.cancelled || !(p.realId && serverIds.has(p.realId)));
+  const covered = coveredBy(server);
+  const next = pending.filter((p) => p.cancelled || !covered(p));
   return next.length === pending.length ? pending : next;
+}
+
+/** What an add sends to the server; also what the outbox keeps until it's sent. */
+export interface AddPayload {
+  standards: number;
+  /** ISO time */
+  finishedAt: string;
+  clientId: string;
+  details?: {
+    name?: string;
+    volumeMl?: number;
+    abv?: number;
+    count?: number;
+    source?: "recent" | "cache" | "catalog" | "ai" | "manual" | "edited";
+    confidence?: number;
+    rawText?: string;
+  };
+}
+
+/**
+ * One change saved on this device and not yet confirmed by the server, oldest first. Kept in
+ * IndexedDB (lib/outbox) so it survives a reload or a closed app with no signal.
+ */
+export type OutboxEntry =
+  | { clientId: string; op: "add"; payload: AddPayload; createdAt: number; userId: string }
+  | { clientId: string; op: "delete"; payload: Removal; createdAt: number; userId: string };
+
+/** The drink as shown while it's only on this device. */
+export function drinkFromPayload(payload: AddPayload, unsynced: boolean): NightDrink {
+  return {
+    id: payload.clientId,
+    clientId: payload.clientId,
+    standards: payload.standards,
+    finishedAt: new Date(payload.finishedAt),
+    name: payload.details?.name ?? null,
+    volumeMl: payload.details?.volumeMl ?? null,
+    abv: payload.details?.abv ?? null,
+    count: payload.details?.count ?? null,
+    unsynced,
+  };
+}
+
+/** The queue as the screen sees it: drinks waiting to be added, and removals waiting to land. */
+export function outboxView(entries: OutboxEntry[]): { pending: PendingDrink[]; removals: Removal[] } {
+  const pending: PendingDrink[] = [];
+  const removals: Removal[] = [];
+  for (const e of entries) {
+    if (e.op === "add") {
+      pending.push({ tempId: e.clientId, clientId: e.clientId, drink: drinkFromPayload(e.payload, true), realId: null, cancelled: false });
+    } else {
+      removals.push(e.payload);
+    }
+  }
+  return { pending, removals };
+}
+
+/**
+ * What to do when sending a queued change fails, from the tRPC error code (undefined = no reply:
+ * offline, dropped connection). "retry" keeps it for the next flush; "drop" gives up on it because
+ * sending it again can never work; "signedOut" keeps it and stops until the person signs back in.
+ */
+export function syncFailure(code: string | undefined, op: OutboxEntry["op"]): "retry" | "drop" | "done" | "signedOut" {
+  if (code === "UNAUTHORIZED") return "signedOut";
+  // Already gone (Undo on two phones, a double tap): that's what was wanted.
+  if (code === "NOT_FOUND" && op === "delete") return "done";
+  if (code === "BAD_REQUEST" || code === "CONFLICT" || code === "FORBIDDEN" || code === "NOT_FOUND" || code === "PARSE_ERROR") return "drop";
+  return "retry";
 }
 
 /** Same drink, same size: the identity used for repeat buttons and the double-tap guard. */

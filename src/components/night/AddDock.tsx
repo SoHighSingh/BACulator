@@ -25,6 +25,8 @@ interface AddDockProps {
   lastDrink: LoggedDrink | null;
   notice: Notice | null;
   now: Date;
+  /** Drinks saved on this phone that haven't reached the account (no signal). */
+  unsynced: number;
   onAdd: (drink: QuickDrink) => void;
   onOpenAdd: () => void;
   onUndo: () => void;
@@ -36,7 +38,7 @@ interface AddDockProps {
  * screens the recents row folds into a single "New drink" button (see globals.css) so the
  * estimate stays in view.
  */
-export function AddDock({ repeat, recents, lastDrink, notice, now, onAdd, onOpenAdd, onUndo }: AddDockProps) {
+export function AddDock({ repeat, recents, lastDrink, notice, now, unsynced, onAdd, onOpenAdd, onUndo }: AddDockProps) {
   const { std } = useRegion();
   const live = notice && now.getTime() - notice.at < UNDO_WINDOW_MS ? notice : null;
   const shortcuts = recents.slice(0, 2);
@@ -65,10 +67,15 @@ export function AddDock({ repeat, recents, lastDrink, notice, now, onAdd, onOpen
     <div className="mx-auto flex w-full max-w-[480px] flex-col gap-3 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className={`flex min-h-16 items-center gap-3 rounded-2xl px-4 ${live ? "bg-surface-3" : "bg-surface"}`}>
         {/* One persistent live region: screen readers announce text changes, not remounts. */}
-        <p aria-live="polite" className="min-w-0 flex-1 truncate text-lg text-ink">
-          <span key={live?.at ?? "idle"} className="snack inline">
+        <p aria-live="polite" className="min-w-0 flex-1 py-2 text-lg text-ink">
+          <span key={live?.at ?? "idle"} className="snack block truncate">
             {status}
           </span>
+          {unsynced > 0 && (
+            <span className="block truncate text-base font-medium text-ink-2">
+              {unsynced === 1 ? "Saved on this phone, will sync" : `${unsynced} saved on this phone, will sync`}
+            </span>
+          )}
         </p>
         {live && (
           <button

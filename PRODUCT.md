@@ -31,5 +31,4 @@ Secondary users: a sober friend holding the phone (needs emergency info fast); a
 web (mobile-first; must also work on desktop). Pinch-zoom must stay enabled.
 
 ## Open decisions
-- Offline-first logging (IndexedDB queue + idempotent sync) — planned, not built.
 - Public no-sign-in calculator at `/` and evergreen SEO pages — planned (see SEO audit P0/P1).

@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { signOut } from "next-auth/react";
 
 import { useRegion } from "~/hooks/useRegion";
 import { kgToRegionWeight, REGION_IDS, REGIONS, regionWeightToKg } from "~/lib/region";
+import { clearOfflineCache } from "~/trpc/offline-cache";
 import { api } from "~/trpc/react";
 
 interface UserInfoSlideOutProps {
@@ -25,6 +27,7 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
   const [weightKg, setWeightKg] = useState<number | null>(null);
 
   const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const updateUserInfo = api.post.updateUserInfo.useMutation({
     onSuccess: () => void utils.post.userInfo.invalidate(),
   });
@@ -176,7 +179,12 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
           </h3>
           <button
             type="button"
-            onClick={() => void signOut()}
+            onClick={() => {
+              // Nothing of tonight stays on the phone for whoever signs in next.
+              queryClient.clear();
+              clearOfflineCache();
+              void signOut();
+            }}
             className="min-h-14 rounded-xl border border-line px-4 text-lg font-semibold"
           >
             Sign out
