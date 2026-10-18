@@ -8,26 +8,21 @@
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-/* "Last orders" palette — see DESIGN.md. Contrast ratios are against --color-bg. */
+/* "Glass" palette — see DESIGN.md. Contrast ratios are against --color-bg unless noted. */
 @theme {
-  --color-bg: #121110;
-  --color-surface: #1c1b19;
-  --color-surface-2: #262421;
-  --color-surface-3: #34312c;
-  --color-line: #6e6a64;
-  --color-ink: #edeae4;
-  --color-ink-2: #bdb8b0;
-  --color-amber: #f2b84b;
-  --color-amber-press: #d99e32;
-  /* Alcohol still being absorbed: the pale layer in the glass. Shape only, never text. */
-  --color-amber-soft: #a07d38;
-  /* The docket on the landing page: thermal-paper white with its own ink and stamp colour. */
-  --color-paper: #f3eee4;
-  --color-paper-2: #e4ddcf;
-  --color-paper-ink: #1a1816;
-  --color-paper-ink-2: #4f4a43;
-  --color-stamp: #861c0f;
-  --color-alert: #ff9a8a;
+  --color-bg: #09090b;
+  --color-surface: #0f0f12;
+  --color-surface-2: #16161a;
+  --color-surface-3: #1f1f24;
+  /* 1px card borders and row dividers: part of the material, never the only carrier of meaning. */
+  --color-edge: #27272a;
+  /* Control boundaries (inputs, outline buttons): 3.1:1. */
+  --color-line: #52525b;
+  --color-ink: #fafafa; /* 19.1:1 */
+  --color-ink-2: #a1a1aa; /* 7.8:1; 6.9:1 on surface-2 */
+  /* The estimate's range band, the curve, focus, the light field. */
+  --color-signal: #7cb4ff; /* 9.0:1 */
+  --color-alert: #ffa494; /* 10.0:1 */
 }
 
 @theme inline {
@@ -163,195 +158,131 @@
   }
 }
 
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-bg);
+}
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 3px;
+}
+
 /* ---------------------------------------------------------------------------------------------
-   Motion. The logging screen has none beyond instant press feedback. The landing page moves, but
-   only with transform and opacity, and only for people who haven't asked for less motion.
+   Glass material (DESIGN.md). Cards hold everything you read; glass is only for chrome that
+   floats over content (top bar, warning pill, dock, sheets).
    --------------------------------------------------------------------------------------------- */
 :root {
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --glass: rgb(24 24 28 / 0.62);
+  --glass-strong: rgb(18 18 22 / 0.78);
+}
+
+/* A still field of light behind the estimate. It never moves. */
+.glass-field {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 560px;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 55% at 50% 18%, rgb(70 120 255 / 0.22), transparent 70%),
+    radial-gradient(40% 40% at 80% 0%, rgb(124 180 255 / 0.12), transparent 70%);
+}
+
+/* No position here: glass chrome is sticky or fixed, and either one anchors the ::before rim. */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 0 0 1px rgb(255 255 255 / 0.07),
+    0 10px 40px -10px rgb(0 0 0 / 0.7);
+}
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.32), rgb(255 255 255 / 0.04) 40%, rgb(255 255 255 / 0.02) 70%, rgb(255 255 255 / 0.12));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.glass-strong {
+  background: var(--glass-strong);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--color-surface-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .glass {
+    background: #000;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: inset 0 0 0 2px var(--color-ink-2);
+  }
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-edge);
+  border-radius: 14px;
+}
+
+/* The white key: the one filled action colour. */
+.key-glow {
+  box-shadow: 0 8px 30px -8px rgb(124 180 255 / 0.6);
+}
+
+/* Pointer light: a soft highlight follows the finger, only while touched or hovered. */
+.lit {
+  --mx: 50%;
+  --my: 50%;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.lit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  background: radial-gradient(160px circle at var(--mx) var(--my), rgb(255 255 255 / 0.12), transparent 70%);
+  transition: opacity 200ms var(--ease-out);
+}
+.lit:hover::after,
+.lit:active::after {
+  opacity: 1;
 }
 
 /* Press feedback: answers the thumb immediately, never drifts on its own. */
 .press {
   transition:
-    transform 120ms var(--ease-out),
-    background-color 120ms linear;
+    transform 160ms var(--ease-out),
+    background-color 160ms linear;
 }
 .press:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-/* The docket: thermal paper with a torn bottom edge. */
-.docket {
-  --tooth: 14px;
-  position: relative;
-  padding-bottom: var(--tooth);
-  clip-path: polygon(
-    0 0, 100% 0, 100% calc(100% - var(--tooth)),
-    95% 100%, 90% calc(100% - var(--tooth)), 85% 100%, 80% calc(100% - var(--tooth)), 75% 100%,
-    70% calc(100% - var(--tooth)), 65% 100%, 60% calc(100% - var(--tooth)), 55% 100%,
-    50% calc(100% - var(--tooth)), 45% 100%, 40% calc(100% - var(--tooth)), 35% 100%,
-    30% calc(100% - var(--tooth)), 25% 100%, 20% calc(100% - var(--tooth)), 15% 100%,
-    10% calc(100% - var(--tooth)), 5% 100%, 0 calc(100% - var(--tooth))
-  );
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .docket-print {
-    animation: docket-print 900ms var(--ease-out) both;
-  }
-  .docket-tear {
-    animation: docket-tear 520ms cubic-bezier(0.55, 0, 0.75, 0.2) forwards;
-    transform-origin: 0% 0%;
-  }
-  .docket-line {
-    animation: docket-line 420ms var(--ease-out) both;
-  }
-  .docket-roll {
-    display: inline-block;
-    animation: docket-roll 380ms var(--ease-out) both;
-  }
-  .docket-stamp {
-    animation: docket-stamp 420ms var(--ease-spring) both;
-  }
-  .landing .rise {
-    animation: rise 900ms var(--ease-out) both;
-    animation-delay: var(--d, 0ms);
-  }
-  .faq-mark {
-    transition: transform 240ms var(--ease-out);
-  }
-  .faq[open] .faq-mark {
-    transform: rotate(45deg);
-  }
-  .faq[open] > p {
-    animation: rise 360ms var(--ease-out) both;
-  }
-
-  @supports (animation-timeline: view()) {
-    .reveal > * {
-      animation: rise linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 45%;
-    }
-    .reveal > *:nth-child(2) {
-      animation-range: entry 8% entry 55%;
-    }
-  }
-}
-
-/* The stamp sits slightly askew, the way a rubber stamp lands. Static, so it holds with less motion too. */
-.docket-stamp {
-  rotate: -2deg;
-}
-
-@keyframes docket-print {
-  from {
-    transform: translateY(-40px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-@keyframes docket-tear {
-  to {
-    transform: translateY(70%) rotate(7deg);
-    opacity: 0;
-  }
-}
-@keyframes docket-line {
-  from {
-    clip-path: inset(0 0 100% 0);
-    transform: translateY(-8px);
-  }
-  to {
-    clip-path: inset(0);
-    transform: none;
-  }
-}
-@keyframes docket-roll {
-  from {
-    transform: translateY(35%);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-@keyframes docket-stamp {
-  from {
-    transform: scale(1.7);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-@keyframes rise {
-  from {
-    transform: translateY(28px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
+  transform: scale(0.975);
 }
 
 /* App feel on the night screen: no rubber-band page, no grey tap flash, no text selection on controls. */
 .app-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  grid-template-areas: "top" "main" "dock";
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
 }
-.app-top {
-  grid-area: top;
-}
-.app-main {
-  grid-area: main;
-}
-.app-dock {
-  grid-area: dock;
-}
-/* While the app screen is up, a pull from the dock can't trigger the browser's pull-to-refresh. */
 html:has(.app-shell),
 html:has(.app-shell) body {
   overscroll-behavior-y: none;
-}
-
-/* Short screens (iPhone SE, big text): fold the recents into one "New drink" button so the
-   estimate and the warning stay in view above the dock. */
-@media (max-height: 700px) {
-  .app-shell .dock-recents {
-    display: none;
-  }
-  .app-shell .dock-new-compact {
-    display: flex;
-  }
-  .app-shell .dock-primary {
-    min-height: 80px;
-  }
-}
-
-/* Landscape phones: estimate on the left, dock on the right. */
-@media (orientation: landscape) and (max-height: 540px) {
-  .app-shell {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-    grid-template-rows: auto minmax(0, 1fr);
-    grid-template-areas: "top dock" "main dock";
-  }
-  .app-dock {
-    overflow-y: auto;
-    align-self: end;
-  }
 }
 .app-shell button,
 .app-shell a {
@@ -361,7 +292,7 @@ html:has(.app-shell) body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* "Added …" slides up into the dock; it is a response to the tap, then it stays put. */
+  /* "Added …" slides into the dock; it answers the tap, then stays put. */
   .snack {
     animation: snack-in 260ms var(--ease-out) both;
   }
@@ -369,32 +300,48 @@ html:has(.app-shell) body {
   .curve-reveal {
     animation: curve-reveal 900ms var(--ease-out) both;
   }
-  /* Sheets rise from the bottom like a native sheet. */
+  /* Sheets rise like a native sheet; the composer opens with a short rise. */
   .sheet {
     animation: sheet-up 340ms var(--ease-out) both;
   }
+  .compose-in {
+    animation: rise-in 280ms var(--ease-out) both;
+  }
+  /* The number settles from a soft blur when it changes (never on first paint). */
+  .num-in[data-changed] {
+    animation: num-in 520ms var(--ease-out) both;
+  }
+  .band-ease {
+    transition:
+      left 520ms var(--ease-out),
+      width 520ms var(--ease-out);
+  }
+  /* While the microphone is on, and only then, a ring breathes on the mic key. */
+  .mic-live::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgb(124 180 255 / 0.7);
+    animation: mic 1.4s var(--ease-out) infinite;
+  }
+  .landing .rise {
+    animation: rise-in 900ms var(--ease-out) both;
+    animation-delay: var(--d, 0ms);
+  }
 }
+.listening {
+  box-shadow:
+    inset 0 0 0 1.5px var(--color-signal),
+    0 0 24px -6px rgb(124 180 255 / 0.6);
+}
+
 @keyframes snack-in {
   from {
     transform: translateY(10px);
     opacity: 0.4;
   }
-  to {
-    transform: none;
-    opacity: 1;
-  }
 }
-@keyframes sheet-up {
-  from {
-    transform: translateY(24%);
-    opacity: 0.6;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-
 @keyframes curve-reveal {
   from {
     clip-path: inset(0 100% 0 0);
@@ -403,8 +350,107 @@ html:has(.app-shell) body {
     clip-path: inset(0 0 0 0);
   }
 }
+@keyframes sheet-up {
+  from {
+    transform: translateY(24%);
+    opacity: 0.6;
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes num-in {
+  from {
+    filter: blur(10px);
+    opacity: 0.2;
+    transform: translateY(10px);
+  }
+}
+@keyframes mic {
+  from {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
 
-/* Content scrolls out under the dock with a short fade instead of a hard cut. */
-.app-main {
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+/* Range input in the time control: a 48px hit area, a white thumb, a signal track. */
+.time-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 48px;
+  background: transparent;
+  touch-action: pan-y;
+}
+.time-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--color-signal) var(--fill, 0%), rgb(255 255 255 / 0.12) var(--fill, 0%));
+}
+.time-range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.12);
+}
+.time-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -13px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.5);
+}
+.time-range::-moz-range-thumb {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-ink);
+}
+
+/* Night screen on desktop: content in two columns, the dock floats at the bottom right. */
+@media (min-width: 1024px) {
+  .night-cols {
+    max-width: 1440px !important;
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 20px !important;
+    align-items: start;
+    padding-left: 32px !important;
+    padding-right: 472px !important;
+    padding-bottom: 32px !important;
+  }
+  .night-span {
+    grid-column: 1 / -1;
+  }
+  .night-dock {
+    left: auto !important;
+    right: 24px !important;
+    width: 420px;
+  }
+}
+
+/* The composer's field shows focus as a ring on the whole pill (focus-within), not a box inside it. */
+.compose-bar input:focus-visible {
+  outline: none;
+}
+
+/* Short screens (iPhone SE, big text): a slimmer dock and less air above the number, so the
+   estimate and its bar stay in view. The primary stays at least 64px. */
+@media (max-height: 700px) {
+  .app-shell .dock-pill {
+    min-height: 64px;
+  }
+  .app-shell #estimate-heading {
+    margin-top: -12px;
+  }
 }

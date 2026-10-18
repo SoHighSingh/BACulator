@@ -1,6 +1,5 @@
 "use client";
 import { createContext, useCallback, useContext, useState } from "react";
-import { UserInfoIcon } from "./UserInfoIcon";
 import UserInfoSlideOut from "./UserInfoSlideOut";
 import { useSession } from "next-auth/react";
 
@@ -24,25 +23,15 @@ export default function UserInfoSlideOutProvider({ children }: { children: React
   const closeUserInfo = useCallback(() => setIsUserInfoOpen(false), []);
   const { data: session } = useSession();
 
-  const openUserInfo = () => {
-    // Blur any active element first
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    // Small delay to ensure focus is cleared
-    setTimeout(() => {
-      setIsUserInfoOpen(true);
-    }, 50);
-  };
+  // Radix moves focus into the sheet and back to the You button on close.
+  const openUserInfo = useCallback(() => setIsUserInfoOpen(true), []);
 
   return (
     <UserInfoContext.Provider value={{ openUserInfo }}>
       <div className="relative min-h-screen">
         {session && (
-          <>
-            <UserInfoIcon onClick={() => setIsUserInfoOpen(true)} />
-            <UserInfoSlideOut isOpen={isUserInfoOpen} onClose={closeUserInfo} userName={session.user?.name ?? undefined} />
-          </>
+          // Opened from the night screen's You button; there is no floating profile button any more.
+          <UserInfoSlideOut isOpen={isUserInfoOpen} onClose={closeUserInfo} userName={session.user?.name ?? undefined} />
         )}
         {children}
       </div>

@@ -70,7 +70,7 @@ export function TermsAndDisclaimerDialog({
             </li>
             <li>
               We store your drinks, weight and sex to estimate your blood alcohol.{" "}
-              <Link href="/privacy" target="_blank" className="text-amber underline underline-offset-4">
+              <Link href="/privacy" target="_blank" className="text-ink underline underline-offset-4">
                 Privacy
               </Link>
             </li>
@@ -85,7 +85,7 @@ export function TermsAndDisclaimerDialog({
               type="checkbox"
               checked={ageConfirmed}
               onChange={(e) => setAgeConfirmed(e.target.checked)}
-              className="size-7 flex-shrink-0 cursor-pointer accent-amber"
+              className="size-7 flex-shrink-0 cursor-pointer accent-[var(--color-signal)]"
             />
             <span className="font-semibold">I&apos;m {age} or older</span>
           </label>
@@ -95,7 +95,7 @@ export function TermsAndDisclaimerDialog({
             <button
               type="button"
               onClick={() => setRegion(region.id === "us" ? "metric" : "us")}
-              className="min-h-12 cursor-pointer text-amber underline underline-offset-4"
+              className="min-h-12 cursor-pointer text-ink underline underline-offset-4"
             >
               {region.id === "us" ? "Switch to 18+" : "Switch to US (21+)"}
             </button>
@@ -103,7 +103,7 @@ export function TermsAndDisclaimerDialog({
 
           <p className="text-base text-ink-2">
             By continuing you agree to the{" "}
-            <Link href="/terms" target="_blank" className="text-amber underline underline-offset-4">
+            <Link href="/terms" target="_blank" className="text-ink underline underline-offset-4">
               Terms
             </Link>
             .
@@ -126,7 +126,7 @@ export function TermsAndDisclaimerDialog({
           <Button
             onClick={onAgree}
             disabled={!ageConfirmed || busy}
-            className="min-h-14 flex-1 rounded-xl bg-amber text-lg font-semibold text-bg hover:bg-amber disabled:opacity-40"
+            className="min-h-14 flex-1 rounded-full bg-ink text-lg font-medium text-bg disabled:opacity-40"
           >
             {agreeLabel}
           </Button>

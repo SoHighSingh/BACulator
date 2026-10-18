@@ -1,86 +1,76 @@
-# BACulator — design system: "The tab"
+# BACulator — design system: "Glass"
 
-The app keeps your bar tab. Every surface is built from that one idea: drinks print onto a tab, and where a bar puts the price, BACulator puts the standard drinks, an estimate band and a back-to-zero window, with a rubber-stamped **Not safe to drive** whenever it's above zero.
+Chosen 18 Oct 2026 from five built directions (Result, Night dial, Forecast, Health card, Glass); prototypes live under `/dev/directions` (dev only). The register is Vercel / shadcn / Claude desktop: dark zinc, light caught on 1px edges, solid cards for anything you read, and liquid glass only for the chrome that floats over content. Premium comes from material, restraint and motion that answers the finger, never from loud fills or big buttons.
 
-Two modes share one palette:
+Two modes share one system:
 
-- **Night screen (Operate, app-like):** a fixed top bar, one scrolling column, and a fixed bottom dock, laid out like a native app, not a page. The estimate is a pint glass filling with amber beside one big number ("about 0.08", likely range under it). Motion only answers a change: the glass pours, sloshes once and settles still within 2 s; the number counts to its new value. Nothing moves at rest.
-- **Landing page (Persuade):** the same world, louder. A live paper docket is the hero; whole fields of colour change section by section; motion uses transform and opacity only, and switches off for `prefers-reduced-motion`.
+- **Night screen (Operate):** a still field of blue light behind one number, solid cards below it, and three pieces of glass chrome: the top bar, the "Not safe to drive" pill and the dock. Content scrolls under the glass.
+- **Landing (Persuade):** the same world, centred like a product page: a two-line headline, a white pill action, and the real night screen floating in a glass frame on the light field, driven by try-it chips.
 
-Retired and not coming back: WebGL veil, glass blur, gradients, hairline separators, looping waves, the band-only estimate ("0.06–0.11" was too wide to act on).
+Retired: the pint-glass FluidGauge and every liquid effect, the paper docket and stamp, amber as the action colour, flat slab buttons, hairline-free "tone step only" rule (1px edges are now part of the material).
 
-## Tokens (`src/styles/globals.css`, `@theme` → Tailwind utilities)
+## Tokens (`src/styles/globals.css`, `@theme`)
 | Token | Value | Use | Contrast |
 |---|---|---|---|
-| `bg` | `#121110` | page | — |
-| `surface` | `#1C1B19` | sections, Last added, the tab | — |
-| `surface-2` | `#262421` | chips, secondary buttons, Getting home | ink 12.9:1, ink-2 7.9:1 |
-| `surface-3` | `#34312C` | buttons inside a surface (Undo, Remove), pressed chips | ink 10.8:1 |
-| `line` | `#6E6A64` | text-field borders, pressed state of surface-3 | 3.6:1 on bg |
-| `ink` | `#EDEAE4` | primary text, estimate | 15.6:1 on bg |
-| `ink-2` | `#BDB8B0` | secondary text | 9.6:1 on bg |
-| `amber` | `#F2B84B` | primary action fill (text `bg` on it, 10.5:1) | 10.3:1 on bg |
-| `amber-press` | `#D99E32` | amber pressed/hover (text `bg`, 8.0:1) | — |
-| `amber-soft` | `#A07D38` | the "still absorbing" layer in the glass (shape only, never text) | — |
-| `alert` | `#FF9A8A` | "Not safe to drive" on dark only | 9.2:1 on bg |
-| `paper` | `#F3EEE4` | the docket, the "range" section | — |
-| `paper-2` | `#E4DDCF` | tone step on paper (totals row) | — |
-| `paper-ink` | `#1A1816` | text on paper | 15.3:1 |
-| `paper-ink-2` | `#4F4A43` | secondary text on paper | 7.6:1 |
-| `stamp` | `#861C0F` | "Not safe to drive" stamp on paper, 3px border | ≥ 7:1 on paper |
+| `bg` | `#09090b` | page ground | — |
+| `surface` | `#0f0f12` | cards | — |
+| `surface-2` | `#16161a` | raised rows, inputs, sheets | — |
+| `surface-3` | `#1f1f24` | pressed states, small buttons on cards | — |
+| `edge` | `#27272a` | 1px card borders and row dividers (material, not meaning) | — |
+| `line` | `#52525b` | control boundaries (inputs, Remove, outline buttons) | 3.1:1 on bg, 3.0:1 on surface |
+| `ink` | `#fafafa` | text, the number, the white pill and keys | 19.1:1 on bg, 18.4:1 on surface |
+| `ink-2` | `#a1a1aa` | secondary text | 7.8:1 on bg, 7.4:1 on surface, 6.9:1 on surface-2 |
+| `signal` | `#7cb4ff` | the estimate's range band, the curve, focus rings, the light field | 9.0:1 on bg |
+| `alert` | `#ffa494` | the warning icon, "Call 000", errors | 10.0:1 on bg, 8.9:1 on surface-2 |
 
-No green, no red/green status, no colour-only meaning. Status is word + icon + colour (warning triangle at a 2.5px stroke).
+Text on the white pill and keys is `bg` (19.1:1). Glass chrome is `rgb(18 18 22 / 0.78)` with blur, so text on it measures at least 15:1 whatever scrolls behind; under `prefers-reduced-transparency` and `prefers-contrast: more` it becomes solid `surface-2` / black with a 2px edge.
 
-Surfaces are separated by a step in tone, never by a hairline or a shadow. Selected chips use `surface-3` + a 3px amber ring.
+No green anywhere, no red/green status, no colour-only meaning: status is icon + word + colour.
 
-## Type (Geist, one family)
-- Night estimate: "about" 24px / 600 above the point number `clamp(64px, 21vw, 96px)` / 700, tracking −0.04em, tabular.
-- "+ Add another": 26px / 700; drink name · std 18px / 600.
-- Section headings on the night screen: 22px / 700. Body and list rows: 18px / 500–600. Never below 16px on the logging screen.
-- Landing hero: `clamp(56px, 11vw, 104px)` (7vw from `lg`), leading 0.9, tracking −0.045em, **two lines at every width** ("Your night, / on one tab."). Section headings `clamp(40px, 6vw, 88px)`. Body 20px, ≤ 52ch.
-- No eyebrows, no tracked uppercase labels, no monospace.
+## Material
+- **Light field:** two radial blue glows behind the estimate (`.glass-field`). Static: it never moves.
+- **Glass (`.glass`):** `backdrop-filter: blur(22px) saturate(180%)`, a lit top edge (inset 1px white at 14%), a faint inner rim, a soft drop shadow, and a specular rim drawn by `::before` (a 160° gradient border, bright top-left). Only for chrome that floats: top bar, warning pill, dock, sheets, the landing's device frame.
+- **Cards (`.card`):** `surface` with a 1px `edge` border, 14px corners; rows inside are split by 1px `edge` dividers. Everything you read sits on a card or on the field, never on glass alone.
+- **White key:** the primary action is white (`ink`) with `bg` text: a full-width pill on the dock, a disc for compact keys, a soft blue under-glow. No other filled colour buttons.
+- Corners: cards 14px, rows and inputs 16px, pills and keys fully round, sheets 32px top.
 
-## Targets and layout (night screen)
-- App shell: `fixed inset-0` column. Top bar (BACulator · Get home · Profile), scrolling middle, fixed dock. No rubber-band overscroll, no tap flash, no text selection on controls.
-- Scroll order: Not safe to drive banner (sticky, so it never scrolls away) → glass gauge → back-to-zero line → Tonight's curve → Getting home → Your tab. "Get home" in the top bar scrolls to the card.
-- Shell is a CSS grid (`minmax(0,1fr)` column). Under 700px tall the recents fold into one "+ New drink" button and the primary drops to 80px. Landscape phones (≤540px tall) put the estimate left and the dock right.
-- Dock, top to bottom: status line ("Added Vodka soda ×2 [Undo one]", "Removed … [Add back]", or "Last: … · 6 min ago"), primary **+ Add another** (96px, full width, Lucide drink icon, name · std; "+ Add" when nothing is logged tonight), then two recents (72px, `surface-3`, 18px names) and **+ New drink**.
-- A second tap on the same drink within 600ms is a double tap and is ignored; taps further apart are real drinks and stack as ×2, ×3.
-- Undo and Add back mirror each other, so a wrong tap on either is reversible.
-- Every target ≥ 48px, primary row gaps ≥ 12px. Remove lives only in tab rows.
-- Max-width 480px, 16px gutter, safe-area padding.
+## Type (Geist, one family; Geist Mono never)
+- Number: `clamp(88px, 27vw, 116px)`, weight 500, tracking −0.055em, line-height 0.88. "about" 24px / 500 beside it.
+- Range line "Likely 0.07 to 0.14": 20px / 500. Section titles 18px / 600. Body and rows 18px / 400–500. Secondary 18px in `ink-2`. Nothing on the night screen under 18px except chart axis labels (16px).
+- The add pill: 20px / 500, sentence case, normal tracking ("Add another vodka soda"). No oversized drink names.
+- Landing headline `clamp(44px, 7.2vw, 92px)` / 600, tracking −0.055em, two lines at every width ("Blood alcohol, / with error bars.").
+- Figures: proportional lining for the number and prose; `tabular-nums` only where figures stack (tab rows, axis).
+- No eyebrows, no tracked uppercase labels.
 
-## The glass (FluidGauge)
-- Pint silhouette (112 × 208), outline `ink-2` 3px. Full at 0.20 and no markings: the level shows more or less, never a limit.
-- Solid `amber` = estimate now. `amber-soft` above it = alcohol from drinks still being absorbed (the projected peak). Adding a drink raises the soft layer at once, so the tap always visibly lands, with "↑ Still rising: about 0.13 by 10:00 pm" in ink (never amber, which reads as encouragement).
-- Opens at the real values: no count-up from 0.00.
-- Number: "about" + point (2 decimals, `clamp(64px,21vw,96px)`), "Likely 0.07 to 0.12" below. A screen-reader live line carries the final values; the animated text is hidden from it.
+## Night screen layout
+Top to bottom, phone (max-width 480, 16px gutter, safe-area aware):
+1. **Top bar** (glass, sticky): BACulator · Get home · You (person icon + "You", opens Your details).
+2. **Not safe to drive** (glass pill, sticky under the bar, separate from it): coral triangle, white words, "about 0.10" in `ink-2`. Shown whenever drinks are counted and the model is above zero, with no weight, and through the slow-eliminator tail.
+3. **Estimate** on the light field: "Estimated blood alcohol", about + number, "Likely 0.07 to 0.14", a 4px range strip (signal band with a soft glow, a 2px ink tick at the point, only zero implied, no other marks), and "Still rising: about 0.11 by 11:20 pm" or "Falling".
+4. **Tonight** card: the scrubbable curve (past solid with a glow and a fading fill, future dashed, a now line and dot), "Now · about 0.10" header that reads the scrubbed time, hour labels.
+5. **Numbers** card: Back to zero (range of clock times), Peak, Counted; "Estimate only. Bodies and pours vary."
+6. **Getting home** card: the emergency instruction first, then rows for Call 000 (alert), Text a mate, Find a ride; Terms and Privacy.
+7. **Your tab** card: newest first; each row opens Edit (time and size) and has its own Remove.
+8. **Dock** (glass, fixed bottom, 28px corners): status line ("Added: Vodka soda ×2 [Undo one]", "Removed … [Add back]", "Last: … · 6 min ago", "Saved on this phone, will sync"), the white **Add another vodka soda** pill (72px), and the composer: "Type or say a drink" with a mic key. Focusing the composer hides the pill and shows recents as suggestion chips; typing parses on the device (catalog) and shows a confirmation card with time and "Add · 1.9 std"; the bartender (Workers AI) is only asked when the catalog can't read it.
+Desktop (≥1024): two content columns; the dock floats as a 420px glass panel at the bottom right.
 
-## Tonight's curve (TimelineCard / TimelineChart)
-- Hand-drawn SVG from one `simulateNight` run (no chart library). One continuous line, split at "now" by clipping: solid with a 32% fill before, dashed with a 10% fill after, so there is never a gap. A white "now" line and dot.
-- Scrub: drag a thumb across it (touch-action pan-y, so vertical scroll still works) and the row above reads "10:40 pm · about 0.09"; release snaps back to "Now".
-- No horizontal grid or reference lines. Draws in left to right once (900ms clip reveal). "Bigger" opens the same chart at 300px with hour labels and the top value.
+## Time of a drink
+Default now. Chips: Now / 15 min ago / 30 min ago / 1 hour ago, then **Earlier…** which opens a slider (5-minute steps, back to the start of the 48 h window) with −15 / +15 minute buttons either side and a live read-out "9:40 pm · 1 h 20 min ago". Dragging is never the only way. The same control edits a logged drink's time.
 
-## Motion
-- **Night screen:** only in answer to a change. Glass pour 900ms ease-out (quartic) with a slosh that decays to still within 2000ms of wall-clock time; number counts in step; "Added …" slides up 260ms; sheets rise 340ms; buttons squeeze to 0.97 in 120ms. Haptic tick (12ms) on add where supported. Optimistic adds: the glass fills on tap, before the server answers.
-- **Landing:** docket prints in (900ms), lines print (420ms), numbers roll (380ms), stamp lands with overshoot (420ms), Start over tears the docket (520ms), hero rises with 90ms stagger, sections rise on scroll (CSS scroll-driven, progressive).
-- Everything is off under `prefers-reduced-motion` (JS checks `useReducedMotion`; CSS sits in `no-preference` blocks).
-- Swift port: pour = `.easeOut(duration: 0.9)`; slosh = damped sine, τ ≈ 0.45 s, stop at 2 s; stamp ≈ `.spring(response: 0.42, dampingFraction: 0.72)`; sheets = system sheet.
+## Motion (all off under `prefers-reduced-motion`)
+- Nothing moves at rest. The only loop is the mic ring while the microphone is live.
+- Number change: 520ms blur-in (blur 10px → 0, rise 10px). Range band: 520ms width/position ease.
+- Composer open: 280ms rise. Sheets: 340ms rise. Status line: 260ms slide-in. Press: scale 0.975 in 160ms. Pointer light on dock and rows follows the finger (radial highlight), only while touched.
+- Curve draws in once (900ms clip). Easing everywhere: `cubic-bezier(0.16, 1, 0.3, 1)`.
+- Swift port: blur-in ≈ `.blurReplace` + `.spring(response: 0.5, dampingFraction: 0.9)`; glass = `.glassEffect()` / `.ultraThinMaterial`; sheets = system sheet.
 
 ## Components
-- **NightView** (presentational, shared by the real screen and `/dev/night`), **NightScreen** (data, optimistic adds, undo/add back).
-- **FluidGauge**, **TimelineCard**, **AddDock**, **DrinkIcon** (beer, wine, shot, can, cocktail, drink; guessed from name, then size and strength).
-- **TonightList → "Your tab"**, **GetHome** (Text a mate, Call {region number}, poisoning signs), **AddSheet** (rises as a sheet).
-- **Landing / LiveDocket**: paper docket, region serve chips, real engine, demo person stated on it.
+- `NightView` (presentational) / `NightScreen` (data, optimistic adds, undo/add back, edit).
+- `Estimate`, `TimelineCard` (curve), `NightNumbers`, `GetHome`, `TonightList`, `AddDock` + `Composer`, `TimeControl`, `AddSheet` and `EditDrinkSheet` (Radix Dialog), `Onboarding` (weight and sex, once, before the first night), `DrinkIcon`, `WarningMark`.
+- Landing: `Landing` (glass hero with the live night screen, how the estimate works).
 
-## Region (`src/lib/region.ts`, `useRegion`)
-Storage and the BAC engine always use 10 g standards. Region only changes display and entry: 10 g / kg / ml / 000, or US 14 g / lb / oz / 911. Serve chips per region. Chosen per device (localStorage), guessed from the browser language, editable in Your details and on the landing page. Copy never names a country other than "US".
-
-## Gauge lab (`/dev/gauges`, dev only)
-Three candidate displays on the same sample night, for choosing the next main gauge:
-1. **Living glass**: canvas pint glass on a height-field liquid model (`src/lib/fluid/surface.ts`: spring-coupled columns, volume-conserving, wall reflections). Pours fall in as drops that ripple where they land; touch or drag pushes the liquid; optional phone tilt leans it. Sleeps when still.
-2. **Liquid number**: the digits are the glass; liquid fills the glyphs from below (canvas `source-atop`).
-3. **Minimal dial**: 260° arc with a sprung value, ghost arc for "still rising". No ticks, zones or red line.
+## Targets and the impaired-user floors
+Primary add 72px tall and full width; every target ≥ 48px; ≥ 8px between targets and ≥ 12px around the primary. Status words ≥ 7:1, everything else ≥ 4.5:1, control edges ≥ 3:1. Repeat drink = 1 tap; a new drink ≤ 3 taps (type, size, Add); typing and voice are optional. Undo instead of confirm. The microphone is only requested when the mic key is tapped.
 
 ## Dev preview
-`/dev/night` renders the night screen with sample drinks and no sign-in (404 in production). Use it for phone-size checks.
+`/dev/night` renders the real night screen with sample drinks (`?empty`, `?noweight`, `?us`, `?metric`, `?offline`). `/dev/directions/*` holds the direction prototypes and labs.

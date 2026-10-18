@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { BACGraphModal } from "~/components/BACGraphModal";
 import { AddSheet } from "~/components/night/AddSheet";
+import { EditDrinkSheet } from "~/components/night/EditDrinkSheet";
+import { Sheet } from "~/components/night/Sheet";
 import type { Notice, QuickDrink } from "~/components/night/AddDock";
 import { NightView } from "~/components/night/NightView";
-import type { LoggedDrink, NewDrink } from "~/hooks/useNight";
+import { SIGNED_OUT, type LoggedDrink, type NewDrink } from "~/hooks/useNight";
 import { useRegion } from "~/hooks/useRegion";
 import { describeNight } from "~/lib/estimate-display";
 import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
@@ -15,7 +17,7 @@ import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
  * Dev-only: the real NightView, AddSheet and curve with sample drinks and no sign-in, for checking
  * the design at phone size. Only reachable outside production (see page.tsx).
  * `?empty` starts with no drinks; `?noweight` hides the estimate; `?us` / `?metric` set the region;
- * `?offline` shows the latest drink as saved on this phone only.
+ * `?offline` shows the latest drink as saved on this phone only; `?signedout` shows the signed-out state.
  */
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 const SAMPLE: LoggedDrink[] = [
@@ -37,6 +39,9 @@ export function DevNight() {
   const [now, setNow] = useState(() => new Date());
   const [weight, setWeight] = useState<number | null>(75);
   const [offline, setOffline] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
+  const [editing, setEditing] = useState<LoggedDrink | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
   const lastTap = useRef<{ key: string; at: number } | null>(null);
@@ -49,6 +54,7 @@ export function DevNight() {
     if (q.includes("us")) setRegion("us");
     else if (q.includes("metric")) setRegion("metric");
     if (q.includes("offline")) setOffline(true);
+    if (q.includes("signedout")) setSignedOut(true);
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, [setRegion]);
@@ -93,10 +99,12 @@ export function DevNight() {
         lastDrink={last}
         notice={notice}
         now={now}
-        error={null}
+        error={signedOut ? SIGNED_OUT : null}
         unsyncedCount={offline && drinks.length > 0 ? 1 : 0}
-        userWeight={weight}
-        userSex="female"
+        onAddNew={(d) => add(d, false)}
+        onEdit={setEditing}
+        onOpenProfile={() => setProfileOpen(true)}
+        onSignIn={signedOut ? () => setSignedOut(false) : undefined}
         onAdd={(q) =>
           add({ standards: q.standards, finishedAt: new Date(), details: { name: q.name ?? undefined, volumeMl: q.volumeMl ?? undefined, abv: q.abv ?? undefined } }, true)
         }
@@ -119,7 +127,19 @@ export function DevNight() {
         onAddDetails={() => setWeight(75)}
         onShowTimeline={() => setGraphOpen(true)}
       />
-      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
+      <AddSheet open={addOpen} now={now} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
+      <EditDrinkSheet
+        drink={editing}
+        now={now}
+        onClose={() => setEditing(null)}
+        onSave={(d, change) => {
+          setEditing(null);
+          setDrinks((p) => p.map((x) => (x.id === d.id ? { ...x, ...change } : x)));
+        }}
+      />
+      <Sheet open={profileOpen} onOpenChange={setProfileOpen} title="You">
+        <p className="text-lg text-ink-2">Your details and settings open here in the real app.</p>
+      </Sheet>
       <BACGraphModal open={graphOpen} onOpenChange={setGraphOpen} drinks={drinks} userWeight={weight} userSex="female" />
     </>
   );

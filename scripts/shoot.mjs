@@ -7,7 +7,8 @@
 // Example:
 //   npm run shoot -- .shots/night http://localhost:3000/dev/night 375 812 //     '--actions=[{"click":"+ New drink","exact":true},{"wait":500,"shot":1}]'
 //
-// Actions run in order: {click: text, exact?}, {scroll: px (scrolls .app-main or the page)},
+// Actions run in order: {click: text, exact?}, {press: button name (role)}, {focus: selector},
+// {type: text}, {scroll: px (scrolls .app-main or the page)},
 // {wait: ms}, {shot: 1, full?: true}. Prints overflow, canvas pixel coverage and console errors.
 // Uses the system Chrome (set CHROME_PATH to override).
 import { chromium } from "playwright-core";
@@ -44,6 +45,9 @@ await page.screenshot({ path: `${base}-0.png` });
 let i = 1;
 for (const a of actions) {
   if (a.click) await page.getByText(a.click, { exact: a.exact ?? false }).first().click();
+  if (a.press) await page.getByRole("button", { name: a.press, exact: a.exact ?? false }).first().click();
+  if (a.focus) await page.locator(a.focus).first().focus();
+  if (a.type) await page.keyboard.type(a.type, { delay: 20 });
   if (a.scroll) await page.evaluate((y) => (document.querySelector(".app-main") ?? document.scrollingElement).scrollBy(0, y), a.scroll);
   if (a.wait) await page.waitForTimeout(a.wait);
   if (a.shot) await page.screenshot({ path: `${base}-${i++}.png`, fullPage: !!a.full });

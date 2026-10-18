@@ -7,7 +7,7 @@ const compat = new FlatCompat({
 
 export default tseslint.config(
   {
-    ignores: [".next", "public/sw.js", "public/swe-worker-*.js"],
+    ignores: [".next", "public/sw.js", "public/swe-worker-*.js", "motion"],
   },
   ...compat.extends("next/core-web-vitals"),
   {

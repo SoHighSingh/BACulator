@@ -1,0 +1,115 @@
+/* Forecast: editorial data journalism. Every selector is scoped under .dir-forecast.
+   Contrast (WCAG) measured against --color-bg unless stated:
+   ink #F2F1EC 16.7:1 · ink-2 #B3B9C2 9.6:1 (8.0 on surface-2) · alert #FF9A8A 9.2:1 (8.5 on surface)
+   highlight #FFE45C with #0E1116 text 14.9:1 · line #7C8492 5.0:1 (4.2 on surface-2).
+   Light ground: ink #0E1116 on #F3F4F6 17.2:1 · ink-2 #4A515C 7.3:1 · line #6E7580 4.2:1. */
+.dir-forecast {
+  --color-bg: #0e1116;
+  --color-surface: #161a21;
+  --color-surface-2: #1e232c;
+  --color-surface-3: #29303b;
+  --color-line: #7c8492;
+  --color-ink: #f2f1ec;
+  --color-ink-2: #b3b9c2;
+  --color-alert: #ff9a8a;
+  --fx-hl: #ffe45c;
+  --fx-hl-press: #f0d23e;
+  --fx-on-hl: #0e1116;
+  /* Chart: the known past in ink, the forecast as a blue fan. Shape only, never text. */
+  --fx-ink: var(--color-ink);
+  --fx-ink-2: var(--color-ink-2);
+  --fx-fan: #5b8def;
+  --fx-halo: var(--color-bg);
+  --fx-dot-ring: var(--color-bg);
+
+  font-family: var(--font-forecast), ui-sans-serif, system-ui, sans-serif;
+  /* Proportional lining figures: Schibsted's tabular point is a full figure wide ("0 . 08").
+     Tabular figures only where numbers stack in a column (.fx-tnum). */
+  font-variant-numeric: lining-nums proportional-nums;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+/* The landing page is for a sober daytime visitor: a neutral cool white, not cream. */
+.dir-forecast .fx-light {
+  --color-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #e7e9ed;
+  --color-surface-3: #dcdfe4;
+  --color-line: #6e7580;
+  --color-ink: #0e1116;
+  --color-ink-2: #4a515c;
+  --color-alert: #9f1f14;
+  /* Re-declared here: a var() inherits the value it resolved to on .dir-forecast. */
+  --fx-ink: #0e1116;
+  --fx-ink-2: #4a515c;
+  --fx-fan: #3b6fd8;
+  --fx-halo: #ffffff;
+  --fx-dot-ring: #0e1116;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.dir-forecast .fx-tnum {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.dir-forecast .fx-head {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.dir-forecast .fx-chart text {
+  font-family: var(--font-forecast), ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: lining-nums proportional-nums;
+  paint-order: stroke;
+  stroke: var(--fx-halo);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+
+/* Desktop: the chart is the page, the dock becomes a ticket on the right, like a trading screen. */
+@media (min-width: 1024px) {
+  .dir-forecast .fx-shell {
+    grid-template-columns: minmax(0, 1fr) 440px;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "top top" "main dock";
+  }
+  .dir-forecast .fx-shell .app-dock {
+    background: var(--color-surface);
+    align-self: stretch;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 16px;
+  }
+  .dir-forecast .fx-shell .app-main {
+    mask-image: none;
+  }
+}
+
+/* The headline sentence: each line holds together, so it is never more than two lines. */
+.dir-forecast .fx-poster {
+  font-size: clamp(32px, 11.5vw, 150px);
+  line-height: 0.98;
+}
+.dir-forecast .fx-poster > span {
+  display: block;
+  white-space: nowrap;
+}
+.dir-forecast .fx-inline-chart {
+  display: inline-block;
+  width: 2.5em;
+  height: 0.78em;
+  vertical-align: baseline;
+  margin: 0 0.06em 0 0.1em;
+}
+
+.dir-forecast .fx-btn-hl {
+  background: var(--fx-hl);
+  color: var(--fx-on-hl);
+}
+.dir-forecast .fx-btn-hl:active {
+  background: var(--fx-hl-press);
+}

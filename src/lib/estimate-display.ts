@@ -1,11 +1,12 @@
+import { formatClock } from "./format-clock";
 import { calculateBAC, simulateNight, type NightSimulation } from "~/lib/bac-calculator";
 import type { BACResult, Drink } from "~/types/bac";
 
 // The model is an estimate. Widmark predictions vary with a CV of about 20% between people and
 // nights (Gullberg 2007; Searle 2015), so a "likely" range is roughly 0.75× to 1.4× of the point,
 // skewed high because under-reading is the dangerous direction.
-const BAND_LOW = 0.75;
-const BAND_HIGH = 1.4;
+export const BAND_LOW = 0.75;
+export const BAND_HIGH = 1.4;
 // Elimination runs about 0.010–0.025 g/dL/h around the model's 0.015 (Jones 2010), so a slow
 // eliminator reaches zero about 1.5× later than the model; body-water variance stretches that further.
 const ZERO_EARLY = 0.75;
@@ -37,6 +38,15 @@ export function formatPoint(bac: number): string {
   return ceil2(bac - 1e-9).toFixed(2);
 }
 
+/**
+ * The headline split for display: ["about", "0.08"], or [null, "under 0.01"] / [null, "0.00"] where
+ * "about" would read wrongly ("about under 0.01").
+ */
+export function aboutPoint(bac: number): [string | null, string] {
+  const point = formatPoint(bac);
+  return [bac >= 0.01 ? "about" : null, point];
+}
+
 export function formatBand(bac: number): string {
   if (bac <= 0) return "0.00";
   if (bac < 0.01) return "under 0.01";
@@ -49,10 +59,7 @@ function roundToQuarterHour(ms: number) {
   return new Date(Math.round(ms / QUARTER_HOUR_MS) * QUARTER_HOUR_MS);
 }
 
-function clockTime(date: Date, withPeriod: boolean) {
-  const text = date.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true });
-  return withPeriod ? text.replace(/\s?([ap])\.?m\.?/i, " $1m").toLowerCase() : text.replace(/\s?[ap]\.?m\.?/i, "");
-}
+const clockTime = (date: Date, withPeriod: boolean) => formatClock(date, { period: withPeriod });
 
 export function formatBackToZero(hoursToZero: number, now: Date): string | null {
   if (hoursToZero <= 0) return null;

@@ -2,6 +2,18 @@
 
 Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decisions) and `DESIGN.md` (what's built now). This file covers: where the code is, what the seven-agent audit found and what's still open, the three side branches waiting to merge, and the brief for the next visual direction.
 
+## 18 Oct 2026: merges and the Glass rebuild (read first)
+- **Merged locally** into `cloudflare-d1-migration` (nothing pushed): security (`15e4841`), offline (`f37a16c`), consent (`0444855`). All checks and the OpenNext build passed after each.
+- **Migrations renumbered** so they apply in order: `0004_ai_limits`, `0005_drop_oauth_tokens`, `0006_offline_adds` (was the offline branch's 0004), `0007_consent` (was the consent branch's 0004). None has been applied remotely. **Tell the migration session before go-live** (it wasn't reachable from the design session).
+- **`.env` and `.env.local` still exist in the main checkout.** `npm run build:worker` refuses to run while they do (by design). The user should move the values into `.dev.vars`, rotate the secrets, and delete those files. Until then, build in a throwaway worktree.
+- **Visual direction: "Glass"** (see DESIGN.md), chosen from five built directions under `/dev/directions` (dev only; also `/dev/directions/type`, `/dock`, `/glass/lab`, `/logo`, `/fonts`, `/assets`). The night screen and landing are rebuilt on it; FluidGauge, the gauge lab, `lib/fluid` and the paper docket are deleted.
+- **New on the night screen:** icon-only top bar (logo mark, Get home, You); the warning as its own glass pill; the estimate bar draws direction (dashed track to the peak while rising, a fading trail while falling) and shows the range's numbers on tap; a dock with a white "Add another …" pill and a type-or-say composer (on-device catalog parse first, the bartender only when the catalog can't read it; folds to one-line rows while the keyboard is up and rides on top of it); time chips Now/10/20/30 min/1 h plus an Earlier slider in 5-minute steps with ±5 buttons.
+- **Audit items closed here:** B2 (signed-out now has a Sign in button), profile button is an icon labelled "You" and opens a Radix sheet (the floating Profile button is gone), onboarding asks weight and sex once before the first night (skippable), editing a drink's time or size (a replace through the offline outbox, so it works with no signal), one `formatClock()` (`src/lib/format-clock.ts`, tested), Radix Dialog for the add, edit and You sheets.
+- **Still open from that list:** none. Other ⏳ items below are unchanged; the engine items are proposed as their own session ("BAC engine accuracy fixes").
+- **Logo:** five candidates at `/dev/directions/logo`; the shipped `BrandMark` is a placeholder until the user picks (the current one reads as a plus sign at 40px).
+- **Motion study:** `motion/` is a separate Remotion project (`npx remotion studio`); its landscape loop ships at `public/media/add-flow-loop.mp4` on the landing page.
+- **Voice entry** uses the browser's speech recognition (audio goes to Google or Apple's servers); `Permissions-Policy` now allows `microphone=(self)` and the mic is only requested when its key is tapped.
+
 ## Where things are
 - **Repo:** `C:\Users\agams\BACulator`, GitHub `SoHighSingh/BACulator`. Work branch **`cloudflare-d1-migration`** (local, not pushed since `6788199`). `main` on GitHub is older still. Don't push `main` without checking with the migration session (`local_57f76079…`), which owns go-live.
 - **Stack:** Next.js 15 / React 19 / Tailwind 4 / tRPC / Prisma on **Cloudflare Workers (OpenNext) + D1**. Auth: NextAuth Google. CI: `.github/workflows/ci.yml` (lint, typecheck, vitest, OpenNext build). Vercel auto-deploys are off (`vercel.json`).
@@ -49,12 +61,12 @@ Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decision
 - **Landing:** "The tab" (a live paper docket). It works, but the user now finds the overall look not premium enough; see the brief below.
 - **Gauge lab** (`/dev/gauges`): living glass (height-field fluid sim in `src/lib/fluid/surface.ts`), liquid number, minimal dial, and dial plus liquid number. **The user's verdict: drop the fluid, "nothing exciting yet".** The night screen still uses the pint-glass `FluidGauge`, which needs replacing in the new direction.
 
-## Side branches waiting to merge (none merged, pushed or deployed)
+## Side branches (all three merged locally on 18 Oct; none pushed or deployed)
 | Branch | What | Before merging |
 |---|---|---|
 | `claude/stoic-sinoussi-8f07b2` (6 commits) | Security: secrets moved out of the Worker bundle (`.dev.vars`); next-auth/Auth.js/tRPC upgraded past the advisories; AI bartender rate limits plus a global budget and circuit breaker; a safer parse cache; Google tokens no longer stored; a CSP | It also edits HANDOFF.md, so expect a conflict here. The user must rotate secrets by hand (see that branch's HANDOFF notes). |
 | `claude/charming-chatterjee-4a4833` (1 commit) | Consent step with an age gate (18+, 21+ in the US), a draft health-data privacy policy, "Download my data" | Wording needs the user's review. Adds User columns, so a D1 migration is needed. |
-| `claude/recursing-montalcini-1fd82d` (1 commit) | Offline-first: IndexedDB outbox, `Drink.clientId` with idempotent adds, a service worker, proper PWA icons | Remote D1 migration 0004 must run before deploy. It touches `useNight`/`night-model`, so re-run the tests after merging. |
+| `claude/recursing-montalcini-1fd82d` (1 commit) | Offline-first: IndexedDB outbox, `Drink.clientId` with idempotent adds, a service worker, proper PWA icons | Merged 18 Oct; its migration is now 0006. It touches `useNight`/`night-model`, so re-run the tests after merging. |
 
 Suggested merge order: security → offline → consent. Re-run all checks after each merge. **Merge only when the user says so.**
 

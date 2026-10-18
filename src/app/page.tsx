@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Landing } from "~/components/landing/Landing";
 import { NightScreen } from "~/components/night/NightScreen";
+import { Onboarding, onboardingSkipped } from "~/components/Onboarding";
 import { TermsAndDisclaimerDialog } from "~/components/TermsAndDisclaimerDialog";
 import { useUserInfo } from "~/components/UserInfoSlideOutProvider";
 import { useUserInfoData } from "~/hooks/useUserInfoData";
@@ -36,7 +37,12 @@ export default function Home() {
   const { data: session, status } = useSession();
   const authenticated = status === "authenticated";
   const { openUserInfo } = useUserInfo();
-  const { userWeight, userSex } = useUserInfoData(authenticated);
+  const { userWeight, userSex, userInfoQuery } = useUserInfoData(authenticated);
+  // First run: ask weight and sex once, sober, before the first night (unless skipped).
+  const [setupDone, setSetupDone] = useState(false);
+  useEffect(() => {
+    if (onboardingSkipped()) setSetupDone(true);
+  }, []);
   const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
 
   const utils = api.useUtils();
@@ -97,6 +103,9 @@ export default function Home() {
       </main>
     );
   }
+
+  const needsSetup = userInfoQuery.isSuccess && (!userWeight || !userSex) && !setupDone;
+  if (needsSetup) return <Onboarding onDone={() => setSetupDone(true)} />;
 
   return (
     <main className="min-h-dvh bg-bg text-ink">

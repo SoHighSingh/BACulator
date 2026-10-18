@@ -1,0 +1,145 @@
+/* "Health card": native-premium tokens. Ratios measured (WCAG 2.x):
+   ink #F2F2F7 on bg 17.7, card 15.3, card-2 12.5 · ink-2 #AEAEB2 on card 7.7, card-2 6.3, card-3 5.1
+   amber #F5B946 on card 9.7 · alert #FFA494 on bg 10.4, card 8.9, card-2 7.3
+   primary label #0A0A0B on amber 11.2 · edge #7C7C80 on bg 4.8, card 4.1, card-2 3.4 */
+.dir-native {
+  --bg: #0a0a0b;
+  --card: #1c1c1e;
+  --card-2: #2c2c2e;
+  --card-3: #3a3a3c;
+  --ink: #f2f2f7;
+  --ink-2: #aeaeb2;
+  --amber: #f5b946;
+  --amber-press: #dda43a;
+  --alert: #ffa494;
+  --edge: #7c7c80;
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--card);
+  --color-surface-2: var(--card-2);
+  --color-surface-3: var(--card-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-amber: var(--amber);
+  --color-alert: var(--alert);
+  --color-line: var(--edge);
+
+  font-family: var(--font-native), ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: lining-nums proportional-nums;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+/* Onest's tabular "1" carries wide sidebearings, so figures are lining + proportional by default
+   and tabular only where they stack in a column (the tab's times, the axis). */
+.dir-native * {
+  font-variant-numeric: lining-nums proportional-nums;
+}
+.dir-native .ns-tnum {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Range capsules. Future ones are a 35% fill held by a full-strength outline (9.7:1 on card). */
+.dir-native .ns-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: min(14px, 62%);
+  min-height: 8px;
+  border-radius: 999px;
+  transform-origin: 50% 100%;
+}
+.dir-native .ns-cap[data-when="past"] {
+  background: var(--amber);
+}
+.dir-native .ns-cap[data-when="future"] {
+  background: color-mix(in srgb, var(--amber) 35%, transparent);
+  border: 1.5px solid var(--amber);
+}
+.dir-native .ns-cap[data-when="zero"] {
+  background: var(--edge);
+}
+.dir-native .ns-cap[data-picked] {
+  background: var(--amber);
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.dir-native .ns-scrubbing .ns-cap:not([data-picked]) {
+  opacity: 0.55;
+}
+
+/* Wide screens: an iPad-style split. The night on the left, adding in an inspector column. */
+@media (min-width: 1024px) {
+  .dir-native .ns-wide {
+    grid-template-columns: minmax(0, 1fr) 400px;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "top top" "main dock";
+    column-gap: 40px;
+    padding-inline: max(32px, calc((100vw - 1240px) / 2));
+  }
+  .dir-native .ns-wide .ns-top,
+  .dir-native .ns-wide .ns-content {
+    max-width: none;
+    padding-inline: 0;
+  }
+  .dir-native .ns-wide .ns-content > .ns-sticky {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+  .dir-native .ns-wide .ns-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .dir-native .ns-wide .ns-pair-est {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .dir-native .ns-wide .app-dock {
+    align-self: start;
+    margin-top: 57px;
+    border-radius: 22px;
+    background: var(--card);
+  }
+  .dir-native .ns-wide .ns-dock-inner {
+    max-width: none;
+    padding: 20px;
+  }
+  .dir-native .ns-wide .ns-status-idle {
+    background: var(--card-2);
+  }
+  .dir-native .ns-wide .ns-on-dock {
+    background: var(--card-2);
+  }
+
+  .dir-native .ns-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    grid-template-areas: "copy phone" "how phone";
+    grid-template-rows: auto 1fr;
+  }
+  .dir-native .ns-hero-copy {
+    grid-area: copy;
+  }
+  .dir-native .ns-hero-how {
+    grid-area: how;
+  }
+  .dir-native .ns-hero-phone {
+    grid-area: phone;
+    align-self: start;
+    position: sticky;
+    top: 0;
+    height: 100svh;
+  }
+}
+
+/* The landing's phone uses the short-screen dock so the chart has room. */
+.dir-native .ns-framed .dock-recents {
+  display: none;
+}
+.dir-native .ns-framed .dock-new-compact {
+  display: flex;
+}

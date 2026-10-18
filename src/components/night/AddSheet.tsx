@@ -1,296 +1,121 @@
-import { useEffect, useRef, useState } from "react";
+import { Minus, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { describeItem, toDrinkDetails, type DrinkDetails } from "~/lib/drinks/details";
-import type { ParseResult } from "~/lib/drinks/types";
 import type { NewDrink } from "~/hooks/useNight";
 import { useRegion } from "~/hooks/useRegion";
-import { fromRegionStandards, servesFor, toRegionStandards } from "~/lib/region";
-import { api } from "~/trpc/react";
-
-const MAX_STANDARDS = 50;
-const STEP = 0.5;
-const TIME_CHIPS = [
-  { minutesAgo: 0, label: "Now" },
-  { minutesAgo: 15, label: "15 min ago" },
-  { minutesAgo: 30, label: "30 min ago" },
-  { minutesAgo: 60, label: "1 hour ago" },
-] as const;
+import { servesFor } from "~/lib/region";
+import { DrinkIcon, drinkKind } from "./DrinkIcon";
+import { Sheet } from "./Sheet";
+import { TimeControl } from "./TimeControl";
 
 interface AddSheetProps {
   open: boolean;
   onClose: () => void;
+  now: Date;
   /** Adds optimistically and returns at once; false if it was swallowed as a double tap. */
   onAdd: (drink: NewDrink) => boolean;
 }
 
-/** Keeps the bottom of a fixed sheet above the on-screen keyboard (iOS and Android don't resize it). */
-function useKeyboardInset(active: boolean) {
-  const [inset, setInset] = useState(0);
-  useEffect(() => {
-    const vv = typeof window !== "undefined" ? window.visualViewport : null;
-    if (!active || !vv) return;
-    const update = () => setInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
-    update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-    };
-  }, [active]);
-  return inset;
-}
-
-const round1 = (n: number) => Math.round(n * 10) / 10;
+const MAX_COUNT = 6;
 
 /**
- * Anything that isn't a one-tap repeat. No animation, no time picker, no required typing:
- * pick a serve or type it, check the number, pick when, Add.
+ * Choose a drink from the region's serves: tap one, optionally how many and when, Add. Two taps
+ * for the usual case, never any typing (typing and voice live in the dock's composer).
  */
-export function AddSheet({ open, onClose, onAdd }: AddSheetProps) {
-  const [text, setText] = useState("");
-  const [result, setResult] = useState<ParseResult | null>(null);
-  const [standards, setStandards] = useState(1);
-  const [details, setDetails] = useState<DrinkDetails | undefined>(undefined);
-  const [minutesAgo, setMinutesAgo] = useState(0);
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const analyse = api.post.analyseDrink.useMutation();
+export function AddSheet({ open, onClose, now, onAdd }: AddSheetProps) {
   const { region, std } = useRegion();
-  const chips = servesFor(region);
-  const keyboard = useKeyboardInset(open);
-  // Each open gets a number, so a slow parse from a previous open can't fill a fresh sheet.
-  const generation = useRef(0);
+  const serves = servesFor(region);
+  const [picked, setPicked] = useState(0);
+  const [count, setCount] = useState(1);
+  const [minutesAgo, setMinutesAgo] = useState(0);
 
   // Every open starts fresh at "Now", so a drink is never stamped with a stale time.
   useEffect(() => {
     if (!open) return;
-    generation.current += 1;
-    setText("");
-    setResult(null);
-    // One of the region's own standard drinks, so US steps are 1, 1.5, 2…
-    setStandards(fromRegionStandards(1, region));
-    setDetails(undefined);
+    setPicked(0);
+    setCount(1);
     setMinutesAgo(0);
-    headingRef.current?.focus();
-  }, [open, region]);
+  }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  async function readDrink() {
-    const drinkText = text.trim();
-    if (!drinkText || analyse.isPending) return;
-    const asked = generation.current;
-    try {
-      const parsed = await analyse.mutateAsync({ drinkText });
-      if (asked !== generation.current) return;
-      setResult(parsed);
-      if (parsed.totalStandards > 0) {
-        setStandards(Math.min(MAX_STANDARDS, Math.ceil(parsed.totalStandards * 10 - 1e-9) / 10)); // never round a drink down
-        setDetails(toDrinkDetails(parsed, drinkText));
-      } else {
-        setDetails(undefined);
-      }
-    } catch {
-      if (asked !== generation.current) return;
-      setResult({ status: "unavailable", items: [], totalStandards: 0, unparsed: [drinkText], layer: null });
-    }
-  }
-
-  function pickChip(chip: (typeof chips)[number]) {
-    setStandards(chip.standards);
-    setDetails({
-      name: chip.label,
-      volumeMl: chip.volumeMl,
-      abv: chip.abv,
-      count: 1,
-      source: "manual",
-      confidence: 1,
-      rawText: text.trim().slice(0, 200),
-    });
-  }
-
-  // The stepper counts in the region's standard drinks; state is kept in stored 10 g standards.
-  function step(direction: 1 | -1) {
-    const shown = round1(toRegionStandards(standards, region)) + direction * STEP;
-    const value = Math.min(MAX_STANDARDS, Math.max(fromRegionStandards(STEP, region), fromRegionStandards(shown, region)));
-    setStandards(value);
-    if (details && details.source !== "manual") setDetails({ ...details, source: "edited" });
-  }
+  const serve = serves[Math.min(picked, serves.length - 1)]!;
+  const standards = Math.ceil(serve.standards * count * 10 - 1e-9) / 10; // never round a drink down
 
   function submit() {
-    if (standards <= 0) return;
     const added = onAdd({
       standards,
       finishedAt: new Date(Date.now() - minutesAgo * 60_000),
-      details,
+      details: {
+        name: count > 1 ? `${count} × ${serve.label}` : serve.label,
+        volumeMl: serve.volumeMl,
+        abv: serve.abv,
+        count,
+        source: "manual",
+        confidence: 1,
+        rawText: "",
+      },
     });
     if (added) onClose();
   }
 
-  const selectedChip = details?.source === "manual" ? details.name : null;
-
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="add-heading" className="sheet app-shell fixed inset-0 z-50 flex flex-col bg-bg">
-      <header className="mx-auto flex w-full max-w-[480px] items-center justify-between gap-4 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
-        <h2 id="add-heading" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold text-ink outline-none">
-          Add a drink
-        </h2>
-        <button
-          type="button"
-          onClick={onClose}
-          className="min-h-12 min-w-20 rounded-xl bg-surface-2 px-4 text-lg font-medium text-ink"
-        >
-          Close
-        </button>
-      </header>
-
-      <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-6 overflow-y-auto px-4 pb-6">
-        <section className="flex flex-col gap-3">
-          <label htmlFor="drink-text" className="text-lg font-medium text-ink">
-            What are you having?
-          </label>
-          <div className="flex gap-3">
-            <input
-              id="drink-text"
-              type="text"
-              value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                // Edited after reading: the old parse no longer describes it.
-                if (result) {
-                  setResult(null);
-                  if (details && details.source !== "manual") setDetails(undefined);
-                }
-              }}
-              onKeyDown={(e) => e.key === "Enter" && void readDrink()}
-              placeholder={region.example}
-              autoComplete="off"
-              enterKeyHint="go"
-              className="min-h-14 min-w-0 flex-1 rounded-xl border-2 border-line bg-surface px-4 text-lg text-ink placeholder:text-ink-2 focus:border-amber focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => void readDrink()}
-              disabled={!text.trim() || analyse.isPending}
-              className="min-h-14 shrink-0 rounded-xl bg-surface-2 px-4 text-lg font-semibold text-ink disabled:opacity-60"
-            >
-              {analyse.isPending ? "Reading…" : "Read it"}
-            </button>
-          </div>
-
-          {result && (
-            <div aria-live="polite" className="flex flex-col gap-1 text-lg text-ink">
-              {result.items
-                .filter((i) => i.standards > 0 || result.status === "none")
-                .map((item, i) => (
-                  <p key={i} className="flex justify-between gap-3">
-                    <span>
-                      {describeItem(item, region)}
-                      {item.assumed.includes("volume") && <span className="text-ink-2"> (usual size)</span>}
-                    </span>
-                    <span className="font-semibold whitespace-nowrap">{std(item.standards)} std</span>
-                  </p>
-                ))}
-              {result.items.some((i) => i.confidence < 0.7) && <p className="text-amber">Best guess. Check the number below.</p>}
-              {result.status === "none" && <p>No alcohol found in that.</p>}
-              {result.status === "partial" && result.unparsed.length > 0 && (
-                <p className="text-ink-2">Not counted: {result.unparsed.map((u) => `"${u}"`).join(", ")}</p>
-              )}
-              {result.status === "unavailable" && <p>Couldn&apos;t read that. Pick the closest below.</p>}
-            </div>
-          )}
-        </section>
-
-        <section className="flex flex-col gap-3" aria-labelledby="pick-heading">
-          <h3 id="pick-heading" className="text-lg font-medium text-ink">
-            Or pick one
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {chips.map((chip) => (
-              <button
-                key={chip.label}
-                type="button"
-                aria-pressed={selectedChip === chip.label}
-                onClick={() => pickChip(chip)}
-                className={`min-h-16 rounded-xl px-3 py-2 text-left text-ink ${
-                  selectedChip === chip.label ? "bg-surface-3 ring-3 ring-amber" : "bg-surface-2"
-                }`}
-              >
-                <span className="block text-lg leading-snug font-semibold">{chip.label}</span>
-                <span className="block text-base text-ink-2 tabular-nums">{std(chip.standards)} std</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="flex flex-col gap-3" aria-labelledby="amount-heading">
-          <h3 id="amount-heading" className="text-lg font-medium text-ink">
-            Standard drinks
-          </h3>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => step(-1)}
-              aria-label="Half a standard drink less"
-              className="min-h-14 min-w-14 rounded-xl bg-surface-2 text-2xl font-semibold text-ink"
-            >
-              −
-            </button>
-            <output aria-live="polite" className="flex-1 text-center text-3xl font-bold tabular-nums text-ink">
-              {std(standards)}
-            </output>
-            <button
-              type="button"
-              onClick={() => step(1)}
-              aria-label="Half a standard drink more"
-              className="min-h-14 min-w-14 rounded-xl bg-surface-2 text-2xl font-semibold text-ink"
-            >
-              +
-            </button>
-          </div>
-        </section>
-
-        <section className="flex flex-col gap-3" aria-labelledby="when-heading">
-          <h3 id="when-heading" className="text-lg font-medium text-ink">
-            Finished it
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {TIME_CHIPS.map((chip) => (
-              <button
-                key={chip.minutesAgo}
-                type="button"
-                aria-pressed={minutesAgo === chip.minutesAgo}
-                onClick={() => setMinutesAgo(chip.minutesAgo)}
-                className={`min-h-14 rounded-xl px-3 text-lg font-semibold text-ink ${
-                  minutesAgo === chip.minutesAgo ? "bg-surface-3 ring-3 ring-amber" : "bg-surface-2"
-                }`}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-        </section>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="Choose a drink" description="Pick a drink, how many and when, then add it.">
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Drink">
+        {serves.map((s, i) => (
+          <button
+            key={s.label}
+            type="button"
+            role="radio"
+            aria-checked={picked === i}
+            onClick={() => setPicked(i)}
+            className={`press flex min-h-[72px] items-center gap-3 rounded-2xl px-3 text-left ${
+              picked === i ? "bg-white/[0.14] shadow-[inset_0_0_0_2px_var(--color-ink)]" : "bg-white/[0.05] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]"
+            }`}
+          >
+            <DrinkIcon kind={drinkKind({ name: s.label, volumeMl: s.volumeMl, abv: s.abv })} className="size-6 shrink-0 text-ink-2" />
+            <span className="min-w-0">
+              <span className="block text-lg leading-tight font-medium">{s.label}</span>
+              <span className="block text-lg leading-tight text-ink-2 tabular-nums">{std(s.standards)} std</span>
+            </span>
+          </button>
+        ))}
       </div>
 
-      <footer
-        className="mx-auto w-full max-w-[480px] px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
-        style={keyboard > 0 ? { paddingBottom: keyboard + 12 } : undefined}
-      >
-        <button
-          type="button"
-          onClick={submit}
-          className="min-h-[72px] w-full rounded-3xl bg-amber px-5 text-xl font-bold text-bg active:bg-amber-press disabled:opacity-60"
-        >
-          {`Add ${details?.name ?? "drink"} · ${std(standards)} std`}
-        </button>
-      </footer>
-    </div>
+      <div className="mt-5 flex items-center justify-between gap-3">
+        <p className="text-lg text-ink-2">How many</p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="One fewer"
+            disabled={count <= 1}
+            onClick={() => setCount((c) => Math.max(1, c - 1))}
+            className="press grid size-12 place-items-center rounded-full bg-white/10 disabled:opacity-40"
+          >
+            <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
+          </button>
+          <span className="w-8 text-center text-xl font-medium tabular-nums" aria-live="polite">
+            {count}
+          </span>
+          <button
+            type="button"
+            aria-label="One more"
+            disabled={count >= MAX_COUNT}
+            onClick={() => setCount((c) => Math.min(MAX_COUNT, c + 1))}
+            className="press grid size-12 place-items-center rounded-full bg-white/10 disabled:opacity-40"
+          >
+            <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
+          </button>
+        </div>
+      </div>
+
+      <p className="mt-5 text-lg text-ink-2">When you finished it</p>
+      <div className="mt-2">
+        <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} />
+      </div>
+
+      <button type="button" onClick={submit} className="press key-glow mt-6 flex min-h-16 w-full items-center justify-center gap-2 rounded-full bg-ink text-xl font-medium text-bg">
+        <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
+        Add · {std(standards)} std
+      </button>
+    </Sheet>
   );
 }

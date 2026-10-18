@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useNight, type LoggedDrink, type NewDrink } from "~/hooks/useNight";
+import { signIn } from "next-auth/react";
+
+import { SIGNED_OUT, useNight, type LoggedDrink, type NewDrink } from "~/hooks/useNight";
 import { describeNight } from "~/lib/estimate-display";
 import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
 import { BACGraphModal } from "../BACGraphModal";
 import { AddSheet } from "./AddSheet";
+import { EditDrinkSheet } from "./EditDrinkSheet";
 import type { Notice, QuickDrink } from "./AddDock";
 import { NightView } from "./NightView";
 
@@ -53,6 +56,7 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
   const night = useNight();
   const [addOpen, setAddOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [editing, setEditing] = useState<LoggedDrink | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const lastTap = useRef<{ key: string; at: number } | null>(null);
 
@@ -106,6 +110,26 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
     night.remove(drink.id);
   }
 
+  // An edit is a replace through the same outbox as adds and removes, so it works with no signal and
+  // a replay never doubles it. The notice offers "Undo" back to the old version via Add back.
+  function saveEdit(drink: LoggedDrink, change: { standards: number; finishedAt: Date }) {
+    setEditing(null);
+    if (change.standards === drink.standards && change.finishedAt.getTime() === drink.finishedAt.getTime()) return;
+    night.remove(drink.id);
+    const shown = night.add({
+      standards: change.standards,
+      finishedAt: change.finishedAt,
+      details: {
+        name: drink.name ?? undefined,
+        volumeMl: drink.volumeMl ?? undefined,
+        abv: drink.abv ?? undefined,
+        count: drink.count ?? undefined,
+        source: "edited",
+      },
+    });
+    setNotice({ kind: "added", drink: shown, at: Date.now(), count: 1 });
+  }
+
   // Undo removes the latest add; Add back restores the latest removal. Each mirrors the other,
   // so a wrong tap on either is always reversible.
   function undo() {
@@ -146,17 +170,20 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         now={now}
         error={night.error}
         unsyncedCount={night.unsyncedCount}
-        userWeight={userWeight}
-        userSex={userSex}
         onAdd={quickAdd}
+        onAddNew={(d) => add(d, false)}
         onOpenAdd={() => setAddOpen(true)}
         onUndo={undo}
+        onEdit={setEditing}
         onRemove={remove}
+        onOpenProfile={onOpenUserInfo}
         onAddDetails={onOpenUserInfo}
         onShowTimeline={() => setTimelineOpen(true)}
+        onSignIn={night.error === SIGNED_OUT ? () => void signIn("google") : undefined}
       />
 
-      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
+      <AddSheet open={addOpen} now={now} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
+      <EditDrinkSheet drink={editing} now={now} onClose={() => setEditing(null)} onSave={saveEdit} />
 
       <BACGraphModal open={timelineOpen} onOpenChange={setTimelineOpen} drinks={drinks} userWeight={userWeight} userSex={userSex} />
     </>

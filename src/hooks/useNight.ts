@@ -28,7 +28,7 @@ export type LoggedDrink = NightDrink;
 
 const errorCode = (e: unknown) => (e instanceof TRPCClientError ? (e.data as { code?: string } | undefined)?.code : undefined);
 
-const SIGNED_OUT = "You've been signed out. Sign in again and your drinks will sync.";
+export const SIGNED_OUT = "You've been signed out. Sign in again and your drinks will sync.";
 // A send with no reply by then is treated as no signal (lie-fi), and tried again later.
 const SEND_TIMEOUT_MS = 15_000;
 // Waiting this long for a reply shows "saved on this phone" instead of leaving it unsaid.

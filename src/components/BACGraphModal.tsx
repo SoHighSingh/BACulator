@@ -39,7 +39,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
           )}
           <button
             type="button"
-            className="press mt-2 min-h-14 w-full rounded-2xl bg-surface-3 text-lg font-bold text-ink active:bg-line"
+            className="press mt-2 min-h-14 w-full rounded-full bg-white/10 text-lg font-medium text-ink hover:bg-white/15"
             onClick={() => onOpenChange(false)}
           >
             Close
