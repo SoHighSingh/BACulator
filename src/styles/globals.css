@@ -174,6 +174,7 @@
    --------------------------------------------------------------------------------------------- */
 :root {
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bloom: cubic-bezier(0.45, 0, 0.25, 1);
   --glass: rgb(24 24 28 / 0.62);
   --glass-strong: rgb(18 18 22 / 0.78);
 }
@@ -185,26 +186,137 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
+}
+/* Two lights on one ground: the blue (::before) and the red (::after). They cross-fade, so the
+   blue goes down as the red comes up instead of the red sitting on top of the blue (that mix
+   read muddy purple half-way). The blue leaves faster than the red arrives. */
+.glass-field::before,
+.glass-field::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.glass-field::before {
   background:
     radial-gradient(60% 45% at 50% 12%, rgb(70 120 255 / 0.22), transparent 70%),
     radial-gradient(40% 35% at 85% 0%, rgb(124 180 255 / 0.12), transparent 70%);
 }
 .glass-field::after {
-  content: "";
-  position: absolute;
-  inset: 0;
   opacity: 0;
   background:
     radial-gradient(70% 50% at 50% 14%, rgb(255 70 50 / 0.3), transparent 72%),
     radial-gradient(60% 45% at 50% 110%, rgb(255 70 50 / 0.14), transparent 70%),
     rgb(60 8 4 / 0.35);
 }
+.glass-field.is-alert::before {
+  opacity: 0;
+}
 .glass-field.is-alert::after {
   opacity: 1;
 }
+/* `.is-anim` is only on while a change the person just made is settling (NightView), so nothing
+   plays on load or when data arrives. */
 @media (prefers-reduced-motion: no-preference) {
-  .glass-field::after {
-    transition: opacity 900ms var(--ease-out);
+  /* A symmetric curve, not the ease-out: with ease-out the 900ms read as a 300ms snap. This way the
+     red blooms through the middle of the morph (half in at ~450ms) and is still by 900ms. */
+  .glass-field.is-anim::before {
+    transition: opacity 700ms var(--ease-bloom);
+  }
+  .glass-field.is-anim::after {
+    transition: opacity 900ms var(--ease-bloom);
+  }
+}
+
+/* The status in the chrome: one glass pill, fixed at the top left for the whole night. Calm, it is
+   clipped down to the mark's 44px tile (the mark sits on it); not safe, the clip opens into the full
+   pill, the tile shrinks into the warning disc and the words slide in. Only clip-path, transform and
+   opacity move; the pill's box (and so the blur) never changes size, and the keys never move. */
+.night-status {
+  clip-path: inset(2px calc(100% - 46px) 2px 2px round 11px);
+}
+.night-status.is-alert {
+  clip-path: inset(0 round 24px);
+}
+.night-status-mark {
+  transform-origin: 24px 24px;
+}
+.night-status-disc {
+  transform-origin: 24px 24px;
+  transform: scale(1.375);
+  opacity: 0;
+}
+.night-status-word {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+.night-status.is-alert .night-status-mark {
+  transform: scale(0.727);
+  opacity: 0;
+}
+.night-status.is-alert .night-status-disc {
+  transform: none;
+  opacity: 1;
+}
+.night-status.is-alert .night-status-word {
+  opacity: 1;
+  transform: none;
+}
+/* 320-wide phones: the slot left of the two keys is 176px, the pill 210. The disc drops its ring and
+   fill (the icon stays, 15px from the pill's top, left and bottom), the header takes 8px gutters and
+   the words tighten, still 18px. */
+@media (max-width: 359px) {
+  .night-header {
+    margin-inline: -8px;
+  }
+  .night-status-disc {
+    background: none;
+    box-shadow: none;
+  }
+  .night-status-word {
+    margin-left: -8px;
+    padding-right: 12px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Calm → not safe (~800ms): the mark reddens (0–250), then the tile grows into the pill while it
+     folds into the disc (250–800), and the words follow (450–800). Timed to the field's 900ms. */
+  .night-status.is-anim .bm-tone {
+    transition: opacity 250ms var(--ease-out);
+  }
+  .night-status.is-anim {
+    transition: clip-path 650ms var(--ease-out) 250ms;
+  }
+  .night-status.is-anim .night-status-mark,
+  .night-status.is-anim .night-status-disc {
+    transition:
+      transform 500ms var(--ease-out) 250ms,
+      opacity 380ms var(--ease-out) 300ms;
+  }
+  .night-status.is-anim .night-status-word {
+    transition:
+      opacity 450ms var(--ease-out) 330ms,
+      transform 450ms var(--ease-out) 330ms;
+  }
+  /* Not safe → calm (~650ms), faster: the words go first, the pill closes to the tile, and the
+     band goes blue as it lands. */
+  .night-status.is-anim:not(.is-alert) .night-status-word {
+    transition:
+      opacity 180ms var(--ease-out),
+      transform 180ms var(--ease-out);
+  }
+  .night-status.is-anim:not(.is-alert) {
+    transition: clip-path 450ms var(--ease-out) 100ms;
+  }
+  .night-status.is-anim:not(.is-alert) .night-status-mark,
+  .night-status.is-anim:not(.is-alert) .night-status-disc {
+    transition:
+      transform 400ms var(--ease-out) 150ms,
+      opacity 280ms var(--ease-out) 200ms;
+  }
+  .night-status.is-anim:not(.is-alert) .bm-tone {
+    transition: opacity 250ms var(--ease-out) 400ms;
   }
 }
 

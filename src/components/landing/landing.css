@@ -1,0 +1,229 @@
+/* Landing-only styles. Tokens come from globals.css (Glass); nothing here moves at rest. */
+
+.landing {
+  --gutter: clamp(16px, 3.4vw, 56px);
+  --strip-h: clamp(36px, 3vw, 48px);
+  --num: clamp(118px, 16vw, 256px);
+  --bar-h: clamp(84px, 9vw, 132px);
+  --gap: clamp(64px, 10vh, 160px);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing ::selection {
+  background: rgb(124 180 255 / 0.4);
+  color: var(--color-ink);
+}
+.landing :focus-visible {
+  outline: 3px solid var(--color-signal);
+  outline-offset: 3px;
+}
+
+/* The page's one grid: tight margins, wide measure, everything left-aligned on it. */
+.landing .wrap {
+  width: 100%;
+  max-width: 1680px;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.landing .sect {
+  position: relative;
+  margin-top: var(--gap);
+}
+
+/* ---- The giant strip ---- */
+.strip-num-box {
+  height: calc(var(--num) * 0.8);
+  overflow-x: clip;
+}
+.strip-num {
+  font-size: var(--num);
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+}
+.strip-bleed {
+  height: var(--strip-h);
+  margin-inline: calc(var(--gutter) * -1);
+  overflow-x: clip;
+  overflow-y: visible;
+}
+/* Heading up: the shaft and chevron, ink over the band, the night screen's cue at strip scale. */
+.strip-shaft {
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: rgb(250 250 250 / 0.8);
+}
+.strip-chev {
+  height: calc(var(--strip-h) * 0.5);
+  width: auto;
+  transform: translate(-80%, -50%);
+}
+
+/* The light field behind the hero's reading: still, never animated on its own. Once the visitor
+   adds a drink, it cross-fades to the night screen's warm red (not safe to drive) and holds still. */
+.hero-field {
+  background:
+    radial-gradient(42% 46% at 30% 74%, rgb(70 120 255 / 0.3), transparent 70%), /* taste-skill-ignore: Glass light field (DESIGN.md) */
+    radial-gradient(30% 30% at 82% 10%, rgb(124 180 255 / 0.1), transparent 70%); /* taste-skill-ignore: Glass light field */
+}
+.hero-field::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    radial-gradient(46% 50% at 30% 74%, rgb(255 70 50 / 0.32), transparent 72%), /* taste-skill-ignore: the night screen's red field */
+    radial-gradient(34% 34% at 82% 10%, rgb(255 90 70 / 0.12), transparent 70%), /* taste-skill-ignore: Glass light field */
+    rgb(60 8 4 / 0.3);
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent); /* taste-skill-ignore: fade of the field, not a fill */
+  mask-image: linear-gradient(to bottom, #000 70%, transparent); /* taste-skill-ignore: fade of the field, not a fill */
+}
+.hero-field.is-alert::after {
+  opacity: 1;
+}
+
+/* ---- Edges: Glass's 1px material. Control boundaries must reach 3:1 (impaired-user floor). ---- */
+.ctl-edge {
+  box-shadow: inset 0 0 0 1px var(--color-line); /* taste-skill-ignore: control boundary 3:1 */
+}
+.chip-edge {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12); /* taste-skill-ignore: Glass lit edge on try-it chips */
+}
+.alert-edge {
+  box-shadow: inset 0 0 0 1px rgb(255 164 148 / 0.35); /* taste-skill-ignore: status pill edge */
+}
+/* The tick is cut out of whatever it crosses by a ring of page ground. */
+.tick-cut {
+  outline: 3px solid var(--color-bg);
+}
+
+/* ---- The maths, as a snippet: name, formula, live result. ---- */
+.code-lines {
+  font-size: 18px;
+  line-height: 1.5;
+}
+.code-lines code {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+.code-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "name value"
+    "formula formula";
+  column-gap: 16px;
+  row-gap: 2px;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--color-edge); /* taste-skill-ignore: row divider inside the data-ui panel (Glass card rows) */
+}
+.code-line:last-child {
+  border-bottom: 0;
+}
+.code-name {
+  grid-area: name;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.code-formula {
+  grid-area: formula;
+  color: var(--color-ink-2);
+  overflow-wrap: anywhere;
+}
+.code-value {
+  grid-area: value;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+  white-space: nowrap;
+}
+.code-arrow {
+  color: var(--color-ink-2);
+}
+@media (min-width: 1024px) {
+  .code-line {
+    grid-template-columns: 12ch minmax(0, 1fr) auto;
+    grid-template-areas: "name formula value";
+    align-items: center;
+    column-gap: 24px;
+    padding-block: 14px;
+  }
+}
+.code-live {
+  display: inline-block;
+  border-radius: 8px;
+  padding: 1px 8px;
+  background: rgb(124 180 255 / 0.14);
+  box-shadow: inset 0 0 0 1px rgb(124 180 255 / 0.35); /* taste-skill-ignore: Glass 1px lit edge marks a live value */
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+/* ---- Night bar ---- */
+.nightbar-block {
+  min-height: 60px;
+  align-items: flex-start;
+}
+@media (min-width: 768px) {
+  .nightbar-block {
+    height: var(--bar-h);
+  }
+}
+.nightbar-tail {
+  background: rgb(124 180 255 / 0.1);
+}
+
+/* ---- FAQ tiles ---- */
+.faq-tile {
+  background: var(--color-surface-2);
+  border-radius: 14px;
+}
+.faq-tile[open] {
+  background: var(--color-surface-3);
+  box-shadow: inset 0 0 0 1px rgb(124 180 255 / 0.35); /* taste-skill-ignore: Glass lit edge on the open tile */
+}
+
+/* ---- Motion: only in answer to a tap or once on scroll-in. ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-field::after {
+    transition: opacity 900ms var(--ease-out);
+  }
+  .strip-move {
+    transition:
+      transform 620ms var(--ease-out),
+      flex-grow 620ms var(--ease-out);
+  }
+  /* The band brightens once as a drink lands, then settles. */
+  .strip-land {
+    animation: band-land 700ms var(--ease-out) both;
+  }
+  .nightbar-seg {
+    transition: flex-grow 620ms var(--ease-out);
+  }
+  .status-in {
+    animation: rise-in 260ms var(--ease-out) both;
+  }
+  .landing[data-reveal="armed"] .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  .landing[data-reveal="armed"] .reveal[data-in] {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 800ms var(--ease-out),
+      transform 800ms var(--ease-out);
+    transition-delay: var(--d, 0ms);
+  }
+}
+.strip-land {
+  opacity: 0;
+}
+@keyframes band-land {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0;
+  }
+}

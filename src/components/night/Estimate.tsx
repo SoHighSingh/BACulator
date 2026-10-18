@@ -1,10 +1,10 @@
 "use client";
 
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { aboutPoint, BAND_HIGH, BAND_LOW, formatBand } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
-import { WarningMark } from "./WarningMark";
 
 interface EstimateProps {
   bac: number;
@@ -13,8 +13,6 @@ interface EstimateProps {
   /** The model an hour ago, for the trail that shows which way it's going when it's falling. */
   hourAgo?: number | null;
   size?: "md" | "lg";
-  /** Shows "Not safe to drive" under the number (whenever any drink is counted). */
-  notSafe?: boolean;
   /** Makes the number a button that opens the details (range, peak, back to zero, why). */
   onOpenDetails?: () => void;
   ref?: React.Ref<HTMLElement>;
@@ -30,12 +28,13 @@ function useChanged(value: string) {
 
 /**
  * The estimate on the light field: one number rounded up, and under it a bar that says the rest
- * without words. The glowing band is the likely range; the white tick is now; while it's rising a
- * dashed track runs ahead to a ring where it should peak; while it's falling a fading trail runs
- * back to where it was an hour ago. Tapping the bar spells out the range. Nothing on the bar is a
- * limit: there are no marks but the reading's own.
+ * without words. The glowing band is the likely range; the white tick is now; while it's rising an
+ * ink arrow runs from the tick to a chevron where it should peak (drawn over the band, since the
+ * peak is usually inside it) and the label says "Rising to about X by T"; while it's falling a
+ * fading trail runs back to where it was an hour ago and the label says "Falling". Tapping the bar
+ * spells out the range. Nothing on the bar is a limit: there are no marks but the reading's own.
  */
-export function Estimate({ bac, peak, status, hourAgo = null, size = "md", notSafe = false, onOpenDetails, ref }: EstimateProps) {
+export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpenDetails, ref }: EstimateProps) {
   const [about, point] = aboutPoint(bac);
   const changed = useChanged(point);
   const [showRange, setShowRange] = useState(false);
@@ -49,6 +48,10 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", notSa
   const hasRange = bac > 0 && !!hi;
   const rangeText = hasRange ? `Likely ${lo} to ${hi}` : null;
   const peakText = rising ? `about ${aboutPoint(rising.bac)[1]} by ${formatClock(rising.at)}` : null;
+  const headingText = rising ? `Rising to ${peakText}` : falling !== null ? "Falling" : null;
+  const HeadingIcon = rising ? TrendingUp : TrendingDown;
+  // The arrow's shaft stops 6px short of the chevron; with the peak this close, the chevron alone says it.
+  const shaft = rising && pos(rising.bac) - pos(bac) > 4;
 
   return (
     <section ref={ref} aria-labelledby="estimate-heading" className="px-1 pt-6 pb-1">
@@ -78,12 +81,6 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", notSa
           <p>{number}</p>
         );
       })()}
-      {notSafe && (
-        <p role="status" className="mt-3 flex items-center gap-2 text-lg font-medium text-alert">
-          <WarningMark className="size-5" />
-          Not safe to drive
-        </p>
-      )}
 
       {hasRange && (
         <button
@@ -113,16 +110,26 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", notSa
           />
           {rising && (
             <>
-              <span
+              {shaft && (
+                <span
+                  aria-hidden="true"
+                  className="band-ease absolute top-[25px] h-0.5 rounded-full bg-ink/80"
+                  style={{ left: pct(bac), width: `calc(${pct(rising.bac)} - ${pct(bac)} - 6px)` }}
+                />
+              )}
+              <svg
                 aria-hidden="true"
-                className="band-ease absolute top-[25px] h-0 border-t-2 border-dashed border-ink/70"
-                style={{ left: pct(bac), width: `calc(${pct(rising.bac)} - ${pct(bac)})` }}
-              />
-              <span
-                aria-hidden="true"
-                className="band-ease absolute top-[19px] size-3.5 -translate-x-1/2 rounded-full border-2 border-ink bg-bg"
+                viewBox="0 0 10 14"
+                className="band-ease absolute top-[19px] h-3.5 w-2.5 -translate-x-[6px]"
                 style={{ left: pct(rising.bac) }}
-              />
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M2 2l6 5-6 5" />
+              </svg>
             </>
           )}
           <span aria-hidden="true" className="band-ease absolute top-4 h-5 w-0.5 -translate-x-1/2 rounded-full bg-ink" style={{ left: pct(bac) }} />
@@ -133,14 +140,10 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", notSa
               <span className="text-ink-2">tap to hide</span>
             </span>
           ) : (
-            peakText && (
-              <span
-                aria-hidden="true"
-                className="absolute top-10 text-lg whitespace-nowrap text-ink-2"
-                // Anchored at the ring, growing away from the nearer edge so it never runs off the bar.
-                style={pos(rising!.bac) > 50 ? { right: `${100 - pos(rising!.bac)}%` } : { left: pct(rising!.bac) }}
-              >
-                {peakText}
+            headingText && (
+              <span aria-hidden="true" className="absolute top-10 left-0 flex items-center gap-1.5 text-lg whitespace-nowrap text-ink-2">
+                <HeadingIcon className="size-5 shrink-0" strokeWidth={2.25} />
+                {headingText}
               </span>
             )
           )}

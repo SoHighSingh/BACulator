@@ -1,0 +1,31 @@
+/* Not-safe-to-drive lab (dev only). A copy of the night screen's red field, absolute inside each
+   phone frame instead of fixed to the viewport, so several frames can sit on one page. */
+.ns-frame {
+  position: relative;
+  width: 375px;
+  height: 812px;
+  overflow: hidden;
+  background: #09090b;
+  color: var(--color-ink);
+  isolation: isolate;
+}
+.ns-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 45% at 50% 12%, rgb(70 120 255 / 0.22), transparent 70%),
+    radial-gradient(40% 35% at 85% 0%, rgb(124 180 255 / 0.12), transparent 70%);
+}
+.ns-field::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(70% 50% at 50% 14%, rgb(255 70 50 / 0.3), transparent 72%),
+    radial-gradient(60% 45% at 50% 110%, rgb(255 70 50 / 0.14), transparent 70%),
+    rgb(60 8 4 / 0.35);
+}
+.ns-scrim {
+  background: linear-gradient(to bottom, rgb(9 9 11 / 0.95) 62%, rgb(9 9 11 / 0));
+}

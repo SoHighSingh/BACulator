@@ -23,7 +23,6 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     url: SITE_URL,
     siteName: "BACulator",
-    images: [{ url: "/BACulatorThumbnail.png", width: 1200, height: 630, alt: "BACulator blood alcohol calculator" }],
     locale: "en_US",
     alternateLocale: ["en_AU", "en_GB"],
     type: "website",
@@ -32,7 +31,6 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: ["/BACulatorThumbnail.png"],
   },
 };
 
@@ -41,7 +39,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#121110",
+  themeColor: "#09090b",
 };
 
 const geist = Geist({

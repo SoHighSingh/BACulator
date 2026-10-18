@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { TrendingDown, TrendingUp } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { aboutPoint, BAND_HIGH, BAND_LOW, formatBand } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
@@ -9,17 +10,44 @@ import type { useDemoNight } from "./useDemoNight";
 export type DemoNight = ReturnType<typeof useDemoNight>;
 
 /** True once a value has been shown and then changes, so first paint never animates. */
-function useChanged(value: string) {
+export function useChanged(value: string) {
   const prev = useRef<string | null>(null);
   const changed = prev.current !== null && prev.current !== value;
   prev.current = value;
   return changed;
 }
 
+/** The strip's scale only ever widens during a visit, so a tap moves the reading, not the ruler. */
+function useRatchet(value: number) {
+  const max = useRef(0);
+  max.current = Math.max(max.current, value);
+  return max.current;
+}
+
+/** Measured widths of the number and its box, so the number can sit centred on the tick. */
+function useWidths() {
+  const box = useRef<HTMLDivElement>(null);
+  const num = useRef<HTMLParagraphElement>(null);
+  const [w, setW] = useState<[number, number]>([0, 0]);
+  useLayoutEffect(() => {
+    const b = box.current;
+    const n = num.current;
+    if (!b || !n) return;
+    const read = () => setW([b.clientWidth, n.offsetWidth]);
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(b);
+    ro.observe(n);
+    return () => ro.disconnect();
+  }, []);
+  return { box, num, boxW: w[0], numW: w[1] };
+}
+
 /**
- * The night screen's range strip, blown up to the width of the window: a pill of likely range,
- * a white tick at the model's point, a dashed run to the peak while it's still rising. The big
- * number rides on the tick. Everything moves by transform only, so a tap slides it across.
+ * The night screen's range strip, blown up to the width of the window: a band of likely range,
+ * a white tick at the model's point. While it is still rising, an ink shaft runs over the band from
+ * the tick to a chevron at the coming peak (the night screen's cue, at this scale). The big
+ * number sits centred over the tick and travels with it. Everything moves by transform only.
  * No marks but the reading's own: nothing on the strip is a limit.
  */
 export function LiveStrip({ demo }: { demo: DemoNight }) {
@@ -29,87 +57,116 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
   const changed = useChanged(point);
   const [lo, hi] = formatBand(bac).split("–");
   const rising = model.peak && model.peak.bac > bac + 0.004 ? model.peak : null;
+  const falling = !rising && bac > 0.004;
+  // The ruler: zero at the left margin, the furthest thing on it (band or peak) near the right.
   const top = Math.max(bac * BAND_HIGH, rising?.bac ?? 0);
-  const scale = Math.max(0.24, top * 1.15);
+  const scale = useRatchet(Math.max(0.05, top * 1.02));
   const pos = (v: number) => Math.min(100, (v / scale) * 100);
   const loP = pos(bac * BAND_LOW);
   const hiP = pos(bac * BAND_HIGH);
   const nowP = pos(bac);
   const peakP = rising ? pos(rising.bac) : nowP;
   const slide = (p: number) => ({ transform: `translateX(${p}%)` });
+  const { box, num, boxW, numW } = useWidths();
+  // Centre the number on the tick, held inside the gutters.
+  const numX = boxW ? Math.max(0, Math.min(boxW - numW, (nowP / 100) * boxW - numW / 2)) : 0;
+  const peakText = rising ? `about ${aboutPoint(rising.bac)[1]} by ${formatClock(rising.at)}` : null;
+  // The shaft runs from the now tick to just short of the chevron; when the peak is under 4% of
+  // the bar away the chevron alone says it (the same rule as the night screen).
+  const ahead = peakP - nowP;
+  const shaft = ahead > 4;
+  const gapP = boxW ? (22 / boxW) * 100 : 0;
 
   return (
     <div className="relative" aria-hidden="true">
-      {/* The number rides the tick: the wrapper slides to the point, the number shifts back by the
-          same share of its own width, so it never runs off either edge. */}
-      <div className="relative h-[clamp(112px,15vw,232px)] overflow-x-clip">
-        <div className="strip-move absolute inset-0" style={slide(nowP)}>
-          <p className="strip-move absolute bottom-0 left-0 flex items-baseline gap-[0.12em] whitespace-nowrap" style={{ transform: `translateX(-${nowP}%)` }}>
-            {about && <span className="text-[clamp(22px,2.2vw,34px)] font-medium text-ink-2">about</span>}
-            <span
-              key={point}
-              data-changed={changed || undefined}
-              className="num-in inline-block text-[clamp(112px,15.5vw,240px)] leading-[0.8] font-medium tracking-[-0.06em]"
-            >
-              {point}
-            </span>
-          </p>
-        </div>
+      <div ref={box} className="strip-num-box relative">
+        <p
+          ref={num}
+          className="strip-move absolute bottom-0 left-0 flex items-baseline gap-[0.14em] whitespace-nowrap"
+          style={{ transform: `translateX(${numX}px)`, visibility: boxW ? undefined : "hidden" }}
+        >
+          {about && <span className="text-[clamp(22px,2vw,28px)] font-medium text-ink-2">about</span>}
+          <span key={point} data-changed={changed || undefined} className="strip-num num-in inline-block pr-[0.07em] font-medium">
+            {point}
+          </span>
+        </p>
       </div>
 
       {/* Full-bleed track: the scale starts at the page margin; the track runs on past both edges. */}
-      <div className="strip-bleed relative mt-[clamp(16px,2vw,28px)] -mx-[var(--gutter)] h-[var(--strip-h)] overflow-x-clip">
-        <div className="strip-track absolute inset-0 bg-white/[0.06]" />
-        <div className="absolute inset-y-0 left-[var(--gutter)] right-[var(--gutter)]">
-        {/* Likely range: two round caps and a body, each placed by transform. */}
-        <div className="strip-move absolute inset-0" style={slide(loP)}>
-          <span className="strip-cap absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
-        </div>
-        <div className="strip-move absolute inset-0" style={slide(hiP)}>
-          <span className="strip-cap absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
-        </div>
-        <div
-          className="strip-move strip-body absolute inset-0 origin-left bg-signal"
-          style={{ transform: `translateX(${loP}%) scaleX(${Math.max(0, hiP - loP) / 100})` }}
-        />
-        {rising && (
-          <>
-            <div
-              className="strip-move absolute inset-x-0 top-1/2 h-0 origin-left border-t-[3px] border-dashed border-bg/70"
-              style={{ transform: `translateX(${nowP}%) scaleX(${Math.max(0, peakP - nowP) / 100})` }}
-            />
-            <div className="strip-move absolute inset-0" style={slide(peakP)}>
-              <span className="absolute top-1/2 -left-3 size-6 -translate-y-1/2 rounded-full border-[3px] border-bg bg-signal" />
-            </div>
-          </>
-        )}
-        {/* Range ends, written inside the band when it's wide enough to hold them. */}
-        {hiP - loP > 14 && (
-          <>
-            <div className="strip-move absolute inset-0" style={slide(loP)}>
-              <span className="absolute top-1/2 left-1 hidden -translate-y-1/2 text-[clamp(18px,1.6vw,24px)] font-semibold text-bg tabular-nums md:block">{lo}</span>
-            </div>
-            <div className="strip-move absolute inset-0" style={slide(hiP)}>
-              <span className="absolute top-1/2 right-[calc(100%-4px)] hidden -translate-y-1/2 text-[clamp(18px,1.6vw,24px)] font-semibold text-bg tabular-nums md:block">{hi}</span>
-            </div>
-          </>
-        )}
-        {/* Now: a white tick through the band. */}
-        <div className="strip-move absolute -inset-y-3 inset-x-0" style={slide(nowP)}>
-          <span className="absolute inset-y-0 -left-[3px] w-[6px] rounded-full bg-ink shadow-[0_0_0_3px_var(--color-bg)]" />
-        </div>
+      <div className="strip-bleed relative mt-[clamp(14px,1.6vw,26px)]">
+        <div className="absolute inset-0 bg-white/[0.07]" />
+        <div className="absolute inset-y-0 right-[var(--gutter)] left-[var(--gutter)]">
+          {/* Likely range: two round caps and a body, each placed by transform. */}
+          <div className="strip-move absolute inset-0" style={slide(loP)}>
+            <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
+          </div>
+          <div className="strip-move absolute inset-0" style={slide(hiP)}>
+            <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
+          </div>
+          <div
+            className="strip-move absolute inset-0 origin-left bg-signal"
+            style={{ transform: `translateX(${loP}%) scaleX(${Math.max(0, hiP - loP) / 100})` }}
+          >
+            {/* A drink landing brightens the band once, then it settles. Never on first paint. */}
+            {demo.touched && <span key={demo.drinks.length} className="strip-land absolute inset-0 bg-white" />}
+          </div>
+          {rising && (
+            <>
+              {/* Which way it is heading, in the night screen's language: an ink shaft from the now
+                  tick to a chevron whose point sits on the coming peak. Drawn over the band. */}
+              {shaft && (
+                <div
+                  className="strip-move strip-shaft absolute inset-x-0 top-1/2 origin-left"
+                  style={{ transform: `translateX(${nowP}%) scaleX(${Math.max(0, peakP - nowP - gapP) / 100})` }}
+                />
+              )}
+              <div className="strip-move absolute inset-0" style={slide(peakP)}>
+                <svg viewBox="0 0 10 14" className="strip-chev absolute top-1/2 left-0" fill="none" aria-hidden="true">
+                  <path d="M2 2l6 5-6 5" stroke="var(--color-bg)" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2 2l6 5-6 5" stroke="var(--color-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </>
+          )}
+          {/* Now: a white tick through the band. */}
+          <div className="strip-move absolute -inset-y-3 inset-x-0" style={slide(nowP)}>
+            <span className="absolute inset-y-0 -left-[3px] w-[6px] rounded-full bg-ink tick-cut" />
+          </div>
         </div>
       </div>
 
-      {rising && (
-        <div className="relative mt-4 h-7 overflow-x-clip">
-          <div className="strip-move absolute inset-0" style={slide(peakP)}>
-            <p className="strip-move absolute top-0 left-0 text-lg whitespace-nowrap text-ink-2" style={{ transform: `translateX(-${peakP}%)` }}>
-              Still rising: <span className="text-ink">about {aboutPoint(rising.bac)[1]}</span> by {formatClock(rising.at)}
-            </p>
-          </div>
-        </div>
-      )}
+      <div className="relative mt-[clamp(14px,1.6vw,22px)] flex min-h-7 flex-wrap items-center justify-between gap-x-6 gap-y-1 text-lg">
+        <p className="text-ink-2">
+          Likely <span className="text-ink tabular-nums">{lo}</span> to <span className="text-ink tabular-nums">{hi}</span>
+        </p>
+        {rising ? (
+          <p className="flex items-center gap-2 text-ink">
+            <TrendingUp aria-hidden="true" className="size-5 text-signal" strokeWidth={2.25} />
+            Rising to {peakText}
+          </p>
+        ) : falling ? (
+          <p className="flex items-center gap-2 text-ink">
+            <TrendingDown aria-hidden="true" className="size-5 text-signal" strokeWidth={2.25} />
+            Falling
+          </p>
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+/**
+ * The motif at text size: a short band with the white tick. Used as the bullet, the button glyph
+ * and the section marks, so the page has one shape at many scales.
+ */
+export function StripGlyph({ className = "h-3 w-8", tone = "signal" }: { className?: string; tone?: "signal" | "dark" }) {
+  const band = tone === "dark" ? "#09090b" : "#7cb4ff";
+  const tick = tone === "dark" ? "#7cb4ff" : "#fafafa";
+  return (
+    <svg viewBox="0 0 32 12" className={`shrink-0 ${className}`} aria-hidden="true" focusable="false">
+      <rect x="0" y="3" width="32" height="6" rx="3" fill={band} opacity={tone === "dark" ? 0.18 : 0.22} />
+      <rect x="6" y="3" width="18" height="6" rx="3" fill={band} />
+      <rect x="12.5" y="0" width="3" height="12" rx="1.5" fill={tick} />
+    </svg>
   );
 }
