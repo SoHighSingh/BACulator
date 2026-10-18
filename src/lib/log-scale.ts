@@ -58,8 +58,7 @@ export function ladder(min: number, segments: Segment[]): Ladder {
     }
     return value - values[lo]! < values[hi]! - value ? lo : hi;
   };
-  const move = (value: number, by: number) =>
-    values[Math.min(last, Math.max(0, indexOf(value) + by))]!;
+  const move = (value: number, by: number) => values[Math.min(last, Math.max(0, indexOf(value) + by))]!;
   return {
     values,
     min: values[0]!,

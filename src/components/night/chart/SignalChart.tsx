@@ -1,26 +1,12 @@
 "use client";
 
-import {
-  useCallback,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { NightSimulation } from "~/lib/bac-calculator";
 import { formatPoint } from "~/lib/estimate-display";
 import { formatClock, formatHour } from "~/lib/format-clock";
 
-import {
-  chartWindow,
-  crisp,
-  monotonePath,
-  polyline,
-  thin,
-  valueAt,
-} from "./geometry";
+import { chartWindow, crisp, monotonePath, polyline, thin, valueAt } from "./geometry";
 
 export interface SignalChartProps {
   simulation: NightSimulation;
@@ -50,16 +36,7 @@ const STEP = 5 * 60_000;
  * line ever reads as a limit. Drag or arrow across it to read any time; the header reads the time.
  * Everything is in CSS pixels (measured, never stretched), so strokes stay exact at every width.
  */
-export function SignalChart({
-  simulation,
-  now,
-  height,
-  events = [],
-  onPick,
-  readout = false,
-  smooth = true,
-  ariaLabel,
-}: SignalChartProps) {
+export function SignalChart({ simulation, now, height, events = [], onPick, readout = false, smooth = true, ariaLabel }: SignalChartProps) {
   const id = useId().replace(/:/g, "");
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -79,14 +56,8 @@ export function SignalChart({
 
   const win = useMemo(() => chartWindow(simulation, now), [simulation, now]);
   const H = height;
-  const x = useCallback(
-    (t: number) => ((t - win.t0) / (win.t1 - win.t0)) * width,
-    [win.t0, win.t1, width],
-  );
-  const y = useCallback(
-    (b: number) => PAD_TOP + (1 - b / win.top) * (H - PAD_TOP),
-    [win.top, H],
-  );
+  const x = useCallback((t: number) => ((t - win.t0) / (win.t1 - win.t0)) * width, [win.t0, win.t1, width]);
+  const y = useCallback((b: number) => PAD_TOP + (1 - b / win.top) * (H - PAD_TOP), [win.top, H]);
   const baseY = crisp(y(0));
 
   const paths = useMemo(() => {
@@ -121,8 +92,7 @@ export function SignalChart({
   }
   function onKey(e: React.KeyboardEvent) {
     const cur = scrub ?? nowT;
-    const move = (d: number) =>
-      pickAt(Math.min(win.t1, Math.max(win.t0, cur + d)));
+    const move = (d: number) => pickAt(Math.min(win.t1, Math.max(win.t0, cur + d)));
     switch (e.key) {
       case "ArrowLeft":
         move(e.shiftKey ? -6 * STEP : -STEP);
@@ -147,8 +117,7 @@ export function SignalChart({
 
   const total = H + AXIS_H;
   // Hour labels need about 48px each; where they would crowd, label every second hour.
-  const labelEvery =
-    win.hours.length > 0 && width / win.hours.length < 52 ? 2 : 1;
+  const labelEvery = win.hours.length > 0 && width / win.hours.length < 52 ? 2 : 1;
   const cursorX = x(picked);
   const readoutText = `${formatClock(picked)} · ${pickedBac >= 0.01 ? "about " : ""}${formatPoint(pickedBac)}`;
 
@@ -176,103 +145,43 @@ export function SignalChart({
       onBlur={() => scrub !== null && pickAt(null)}
     >
       {width > 0 && (
-        <svg
-          aria-hidden="true"
-          width={width}
-          height={total}
-          viewBox={`0 0 ${width} ${total}`}
-          className="absolute inset-0 block overflow-visible"
-        >
+        <svg aria-hidden="true" width={width} height={total} viewBox={`0 0 ${width} ${total}`} className="absolute inset-0 block overflow-visible">
           <defs>
             <linearGradient id={`wash-${id}`} x1="0" x2="0" y1="0" y2="1">
-              <stop
-                offset="0"
-                stopColor="var(--color-signal)"
-                stopOpacity="0.3"
-              />
-              <stop
-                offset="1"
-                stopColor="var(--color-signal)"
-                stopOpacity="0"
-              />
+              <stop offset="0" stopColor="var(--color-signal)" stopOpacity="0.3" />
+              <stop offset="1" stopColor="var(--color-signal)" stopOpacity="0" />
             </linearGradient>
             <clipPath id={`past-${id}`}>
-              <rect
-                x={-2}
-                y={-20}
-                width={Math.max(0, nowX + 2)}
-                height={total + 40}
-              />
+              <rect x={-2} y={-20} width={Math.max(0, nowX + 2)} height={total + 40} />
             </clipPath>
             <clipPath id={`future-${id}`}>
-              <rect
-                x={nowX}
-                y={-20}
-                width={Math.max(0, width - nowX + 2)}
-                height={total + 40}
-              />
+              <rect x={nowX} y={-20} width={Math.max(0, width - nowX + 2)} height={total + 40} />
             </clipPath>
           </defs>
 
           {/* Past: the signal over a soft wash. */}
           <g clipPath={`url(#past-${id})`}>
             <path d={paths.area} fill={`url(#wash-${id})`} />
-            <path
-              d={paths.line}
-              fill="none"
-              stroke="var(--color-signal)"
-              strokeWidth={2}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
+            <path d={paths.line} fill="none" stroke="var(--color-signal)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
           </g>
           {/* Future: the same line, dashed and dimmer. */}
           <g clipPath={`url(#future-${id})`}>
-            <path
-              d={paths.line}
-              fill="none"
-              stroke="var(--color-signal)"
-              strokeOpacity={0.6}
-              strokeWidth={2}
-              strokeDasharray="3 5"
-              strokeLinecap="round"
-            />
+            <path d={paths.line} fill="none" stroke="var(--color-signal)" strokeOpacity={0.6} strokeWidth={2} strokeDasharray="3 5" strokeLinecap="round" />
           </g>
 
           {/* Baseline (zero), with each drink as a small mark on it. */}
-          <line
-            x1={0}
-            x2={width}
-            y1={baseY}
-            y2={baseY}
-            stroke="var(--color-edge)"
-            strokeWidth={1}
-          />
+          <line x1={0} x2={width} y1={baseY} y2={baseY} stroke="var(--color-edge)" strokeWidth={1} />
           {events
             .filter((t) => t >= win.t0 && t <= win.t1)
             .map((t, i) => (
-              <rect
-                key={`${t}-${i}`}
-                x={Math.round(x(t)) - 1}
-                y={baseY - 5}
-                width={2}
-                height={5}
-                rx={1}
-                fill="var(--color-ink-2)"
-              />
+              <rect key={`${t}-${i}`} x={Math.round(x(t)) - 1} y={baseY - 5} width={2} height={5} rx={1} fill="var(--color-ink-2)" />
             ))}
 
           {/* Hour labels. */}
           {win.hours.map(
             (t, i) =>
               i % labelEvery === 0 && (
-                <text
-                  key={t}
-                  x={Math.min(width - 20, Math.max(20, x(t)))}
-                  y={baseY + 20}
-                  textAnchor="middle"
-                  className="fill-ink-2 text-base tabular-nums"
-                >
+                <text key={t} x={Math.min(width - 20, Math.max(20, x(t)))} y={baseY + 20} textAnchor="middle" className="fill-ink-2 text-base tabular-nums">
                   {formatHour(t)}
                 </text>
               ),
@@ -288,44 +197,15 @@ export function SignalChart({
             strokeOpacity={scrub === null ? 0.5 : 0.25}
             strokeWidth={1}
           />
-          <circle
-            cx={nowX}
-            cy={nowY}
-            r={8}
-            fill="var(--color-signal)"
-            fillOpacity={scrub === null ? 0.35 : 0.18}
-          />
-          <circle
-            cx={nowX}
-            cy={nowY}
-            r={4.5}
-            fill="var(--color-ink)"
-            fillOpacity={scrub === null ? 1 : 0.6}
-          />
+          <circle cx={nowX} cy={nowY} r={8} fill="var(--color-signal)" fillOpacity={scrub === null ? 0.35 : 0.18} />
+          <circle cx={nowX} cy={nowY} r={4.5} fill="var(--color-ink)" fillOpacity={scrub === null ? 1 : 0.6} />
 
           {/* Cursor while scrubbing. */}
           {scrub !== null && (
             <g>
-              <line
-                x1={crisp(cursorX)}
-                x2={crisp(cursorX)}
-                y1={PAD_TOP - 6}
-                y2={baseY}
-                stroke="var(--color-ink)"
-                strokeWidth={1}
-              />
-              <circle
-                cx={cursorX}
-                cy={y(pickedBac)}
-                r={7}
-                fill="var(--color-surface)"
-              />
-              <circle
-                cx={cursorX}
-                cy={y(pickedBac)}
-                r={5}
-                fill="var(--color-ink)"
-              />
+              <line x1={crisp(cursorX)} x2={crisp(cursorX)} y1={PAD_TOP - 6} y2={baseY} stroke="var(--color-ink)" strokeWidth={1} />
+              <circle cx={cursorX} cy={y(pickedBac)} r={7} fill="var(--color-surface)" />
+              <circle cx={cursorX} cy={y(pickedBac)} r={5} fill="var(--color-ink)" />
             </g>
           )}
         </svg>
@@ -334,11 +214,7 @@ export function SignalChart({
         <div
           aria-hidden="true"
           className="border-edge bg-surface-2 text-ink pointer-events-none absolute top-0 rounded-md border px-2 py-0.5 text-lg leading-6 whitespace-nowrap tabular-nums"
-          style={
-            cursorX < width / 2
-              ? { left: Math.min(width - 8, cursorX + 12) }
-              : { right: width - cursorX + 12 }
-          }
+          style={cursorX < width / 2 ? { left: Math.min(width - 8, cursorX + 12) } : { right: width - cursorX + 12 }}
         >
           {readoutText}
         </div>

@@ -61,51 +61,25 @@ const VARIANTS: Variant[] = [
   },
 ];
 
-function Card({
-  v,
-  night,
-}: {
-  v: Variant;
-  night: ReturnType<typeof useSampleNight>;
-}) {
+function Card({ v, night }: { v: Variant; night: ReturnType<typeof useSampleNight> }) {
   const [picked, setPicked] = useState<{
     t: number | null;
     bac: number;
   } | null>(null);
-  const sim = useMemo(
-    () =>
-      simulateNight(
-        night.drinks,
-        night.weight ?? 75,
-        "female",
-        night.now,
-        v.step,
-      ),
-    [night.drinks, night.weight, night.now, v.step],
-  );
+  const sim = useMemo(() => simulateNight(night.drinks, night.weight ?? 75, "female", night.now, v.step), [night.drinks, night.weight, night.now, v.step]);
   if (!sim) return null;
   const bac = picked?.bac ?? valueAt(sim.samples, night.now.getTime());
-  const events = v.marks
-    ? night.drinks.map((d) => new Date(d.finishedAt).getTime())
-    : [];
+  const events = v.marks ? night.drinks.map((d) => new Date(d.finishedAt).getTime()) : [];
   return (
     <section className="card p-5" aria-label={v.name}>
       <div className="-mx-2 -mt-2 flex min-h-12 items-center justify-between gap-3 px-2">
         <h2 className="flex items-center gap-1.5 text-lg font-semibold">
           Tonight
-          <Maximize2
-            aria-hidden="true"
-            className="text-ink-2 size-4"
-            strokeWidth={2}
-          />
+          <Maximize2 aria-hidden="true" className="text-ink-2 size-4" strokeWidth={2} />
         </h2>
         <span className="text-lg">
-          <span className="text-ink-2">
-            {picked?.t ? formatClock(picked.t) : "Now"} ·{" "}
-          </span>
-          <span className="font-medium tabular-nums">
-            about {formatPoint(bac)}
-          </span>
+          <span className="text-ink-2">{picked?.t ? formatClock(picked.t) : "Now"} · </span>
+          <span className="font-medium tabular-nums">about {formatPoint(bac)}</span>
         </span>
       </div>
       <div className="mt-3">
@@ -130,10 +104,7 @@ export function ChartLab() {
     <main className="text-ink mx-auto flex max-w-[480px] flex-col gap-6 px-4 py-6">
       <header>
         <h1 className="text-2xl font-semibold">Tonight curve variants</h1>
-        <p className="text-ink-2 mt-1 text-lg">
-          Same sample night. Drag or use arrow keys on a chart to scrub. Dev
-          only.
-        </p>
+        <p className="text-ink-2 mt-1 text-lg">Same sample night. Drag or use arrow keys on a chart to scrub. Dev only.</p>
       </header>
       {VARIANTS.map((v) => (
         <div key={v.id} className="flex flex-col gap-2">

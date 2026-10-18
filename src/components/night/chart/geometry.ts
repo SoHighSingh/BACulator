@@ -59,9 +59,7 @@ export const crisp = (v: number) => Math.round(v) + 0.5;
 
 /** SVG path through points, two decimals, so a minute-sampled line is drawn as it was computed. */
 export function polyline(pts: [number, number][]): string {
-  return pts
-    .map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(2)} ${y.toFixed(2)}`)
-    .join(" ");
+  return pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
 }
 
 /**
@@ -109,10 +107,7 @@ export function monotonePath(pts: [number, number][]): string {
  * last points and every local peak or trough, so the drawn curve is lighter but turns where the
  * model turns.
  */
-export function thin(
-  pts: [number, number][],
-  minPx: number,
-): [number, number][] {
+export function thin(pts: [number, number][], minPx: number): [number, number][] {
   if (pts.length < 3) return pts;
   const out: [number, number][] = [pts[0]!];
   for (let i = 1; i < pts.length - 1; i++) {

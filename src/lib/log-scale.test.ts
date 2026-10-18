@@ -71,8 +71,7 @@ describe("minutesAgoScale", () => {
   });
 
   it("keeps the chip values as rungs", () => {
-    for (const m of [0, 10, 20, 30, 60])
-      expect(minutesAgoScale.snap(m)).toBe(m);
+    for (const m of [0, 10, 20, 30, 60]) expect(minutesAgoScale.snap(m)).toBe(m);
   });
 
   it("snaps an arbitrary age to a spoken value", () => {
@@ -96,17 +95,13 @@ describe("standardsScale", () => {
   });
 
   it("has no floating-point drift on its rungs", () => {
-    expect(standardsScale.values.slice(0, 5)).toEqual([
-      0.1, 0.2, 0.3, 0.4, 0.5,
-    ]);
+    expect(standardsScale.values.slice(0, 5)).toEqual([0.1, 0.2, 0.3, 0.4, 0.5]);
     expect(standardsScale.snap(0.30000000000000004)).toBe(0.3);
     expect(standardsScale.move(1.14, 1)).toBe(1.2);
     expect(standardsScale.move(1.6, -1)).toBe(1.5);
   });
 
   it("round-trips every rung", () => {
-    standardsScale.values.forEach((v, i) =>
-      expect(standardsScale.indexOf(v)).toBe(i),
-    );
+    standardsScale.values.forEach((v, i) => expect(standardsScale.indexOf(v)).toBe(i));
   });
 });

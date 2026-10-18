@@ -13,10 +13,7 @@ interface EditDrinkSheetProps {
   drink: LoggedDrink | null;
   now: Date;
   onClose: () => void;
-  onSave: (
-    drink: LoggedDrink,
-    change: { standards: number; finishedAt: Date },
-  ) => void;
+  onSave: (drink: LoggedDrink, change: { standards: number; finishedAt: Date }) => void;
 }
 
 /**
@@ -24,12 +21,7 @@ interface EditDrinkSheetProps {
  * stepper walks `standardsScale`: tenths under 2, halves to 10, whole drinks above, so a single
  * nip can be corrected finely while a big night isn't twenty taps away. Its labels say how far.
  */
-export function EditDrinkSheet({
-  drink,
-  now,
-  onClose,
-  onSave,
-}: EditDrinkSheetProps) {
+export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetProps) {
   const { region, std } = useRegion();
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [standards, setStandards] = useState(1);
@@ -37,11 +29,7 @@ export function EditDrinkSheet({
   useEffect(() => {
     if (!drink) return;
     // Snapped to the time slider's own rungs (1 min near now, coarser further back).
-    setMinutesAgo(
-      minutesAgoScale.snap(
-        (now.getTime() - drink.finishedAt.getTime()) / 60_000,
-      ),
-    );
+    setMinutesAgo(minutesAgoScale.snap((now.getTime() - drink.finishedAt.getTime()) / 60_000));
     setStandards(drink.standards);
     // Only when a different drink opens: the clock ticking must not reset what's being edited.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,12 +40,9 @@ export function EditDrinkSheet({
   const lessBy = -standardsScale.delta(shown, -1);
   const moreBy = standardsScale.delta(shown, 1);
   function step(direction: 1 | -1) {
-    setStandards(
-      fromRegionStandards(standardsScale.move(shown, direction), region),
-    );
+    setStandards(fromRegionStandards(standardsScale.move(shown, direction), region));
   }
-  const stepLabel = (d: number, word: string) =>
-    `${formatStandards(d)} standard ${d === 1 ? "drink" : "drinks"} ${word}`;
+  const stepLabel = (d: number, word: string) => `${formatStandards(d)} standard ${d === 1 ? "drink" : "drinks"} ${word}`;
 
   return (
     <Sheet
@@ -70,13 +55,7 @@ export function EditDrinkSheet({
         <>
           <p className="text-ink-2 text-lg">When you finished it</p>
           <div className="mt-2">
-            <TimeControl
-              minutesAgo={minutesAgo}
-              onChange={setMinutesAgo}
-              now={now}
-              startOpen
-              wrap
-            />
+            <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} startOpen wrap />
           </div>
 
           <div className="mt-6 flex items-center justify-between gap-3">
@@ -84,43 +63,24 @@ export function EditDrinkSheet({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                aria-label={
-                  lessBy === 0
-                    ? "Less (at the minimum)"
-                    : stepLabel(lessBy, "less")
-                }
+                aria-label={lessBy === 0 ? "Less (at the minimum)" : stepLabel(lessBy, "less")}
                 disabled={lessBy === 0}
                 onClick={() => step(-1)}
                 className="press grid size-12 place-items-center rounded-full bg-white/10 disabled:opacity-40"
               >
-                <Minus
-                  aria-hidden="true"
-                  className="size-5"
-                  strokeWidth={2.25}
-                />
+                <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
               </button>
-              <span
-                className="w-14 text-center text-xl font-medium tabular-nums"
-                aria-live="polite"
-              >
+              <span className="w-14 text-center text-xl font-medium tabular-nums" aria-live="polite">
                 {std(standards)}
               </span>
               <button
                 type="button"
-                aria-label={
-                  moreBy === 0
-                    ? "More (at the maximum)"
-                    : stepLabel(moreBy, "more")
-                }
+                aria-label={moreBy === 0 ? "More (at the maximum)" : stepLabel(moreBy, "more")}
                 disabled={moreBy === 0}
                 onClick={() => step(1)}
                 className="press grid size-12 place-items-center rounded-full bg-white/10 disabled:opacity-40"
               >
-                <Plus
-                  aria-hidden="true"
-                  className="size-5"
-                  strokeWidth={2.25}
-                />
+                <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
               </button>
             </div>
           </div>

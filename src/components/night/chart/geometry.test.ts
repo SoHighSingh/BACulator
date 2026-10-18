@@ -3,9 +3,7 @@ import { describe, expect, it } from "vitest";
 import { monotonePath, thin } from "./geometry";
 
 /** Parse the control and end points out of a path of cubic segments. */
-function cubics(
-  d: string,
-): {
+function cubics(d: string): {
   p0: [number, number];
   c1: [number, number];
   c2: [number, number];

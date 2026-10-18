@@ -27,8 +27,7 @@ export function agoLabel(minutes: number): string {
   return m === 0 ? `${h} h ago` : `${h} h ${m} min ago`;
 }
 
-const guideLabel = (m: number) =>
-  m === 0 ? "now" : m < 60 ? `${m} min` : `${m / 60} h`;
+const guideLabel = (m: number) => (m === 0 ? "now" : m < 60 ? `${m} min` : `${m / 60} h`);
 const stepLabel = (m: number) => (m === 1 ? "1 minute" : `${m} minutes`);
 
 interface TimeControlProps {
@@ -50,18 +49,11 @@ interface TimeControlProps {
  * now, 5 within the hour, up to 30 far back); their labels say how far. The read-out says the
  * clock time and how long ago, in words.
  */
-export function TimeControl({
-  minutesAgo,
-  onChange,
-  now,
-  startOpen = false,
-  wrap = false,
-}: TimeControlProps) {
+export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap = false }: TimeControlProps) {
   const id = useId();
   const [open, setOpen] = useState(startOpen || !CHIPS.includes(minutesAgo));
   const at = new Date(now.getTime() - minutesAgo * 60_000);
-  const chip = (m: number) =>
-    m === 0 ? "Now" : m < 60 ? `${m} min` : "1 hour";
+  const chip = (m: number) => (m === 0 ? "Now" : m < 60 ? `${m} min` : "1 hour");
   // Left is earlier, right is now, like a timeline: position 0 is 12 h ago, LAST is now.
   const position = LAST - minutesAgoScale.indexOf(minutesAgo);
   const earlierBy = minutesAgoScale.delta(minutesAgo, 1);
@@ -70,15 +62,7 @@ export function TimeControl({
   return (
     <div className="flex flex-col gap-3">
       {/* In a sheet the chips wrap; above a keyboard they scroll on one row to stay one line tall. */}
-      <div
-        className={
-          wrap
-            ? "flex flex-wrap gap-2"
-            : "-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5"
-        }
-        role="group"
-        aria-label="When you finished it"
-      >
+      <div className={wrap ? "flex flex-wrap gap-2" : "-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5"} role="group" aria-label="When you finished it">
         {CHIPS.map((m) => (
           <button
             key={m}
@@ -89,9 +73,7 @@ export function TimeControl({
             }}
             aria-pressed={!open && minutesAgo === m}
             className={`press min-h-12 shrink-0 rounded-full px-4 text-lg ${
-              !open && minutesAgo === m
-                ? "bg-ink text-bg font-medium"
-                : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
+              !open && minutesAgo === m ? "bg-ink text-bg font-medium" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
             }`}
           >
             {chip(m)}
@@ -126,11 +108,7 @@ export function TimeControl({
               type="button"
               onClick={() => onChange(minutesAgoScale.move(minutesAgo, 1))}
               disabled={earlierBy === 0}
-              aria-label={
-                earlierBy === 0
-                  ? "Earlier (at the start)"
-                  : `${stepLabel(earlierBy)} earlier`
-              }
+              aria-label={earlierBy === 0 ? "Earlier (at the start)" : `${stepLabel(earlierBy)} earlier`}
               className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-40"
             >
               <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
@@ -144,11 +122,7 @@ export function TimeControl({
                 max={LAST}
                 step={1}
                 value={position}
-                onChange={(e) =>
-                  onChange(
-                    minutesAgoScale.values[LAST - Number(e.target.value)]!,
-                  )
-                }
+                onChange={(e) => onChange(minutesAgoScale.values[LAST - Number(e.target.value)]!)}
                 className="time-range block w-full"
                 style={
                   {
@@ -157,10 +131,7 @@ export function TimeControl({
                 }
               />
               {/* Guide words under the track, at the rungs they name (the track runs between the thumb's centres, 16px in). */}
-              <div
-                aria-hidden="true"
-                className="text-ink-2 relative mx-4 -mt-1 h-5 text-base tabular-nums"
-              >
+              <div aria-hidden="true" className="text-ink-2 relative mx-4 -mt-1 h-5 text-base tabular-nums">
                 {GUIDES.map(({ m, narrow }) => (
                   <span
                     key={m}
@@ -178,11 +149,7 @@ export function TimeControl({
               type="button"
               onClick={() => onChange(minutesAgoScale.move(minutesAgo, -1))}
               disabled={laterBy === 0}
-              aria-label={
-                laterBy === 0
-                  ? "Later (already now)"
-                  : `${stepLabel(laterBy)} later`
-              }
+              aria-label={laterBy === 0 ? "Later (already now)" : `${stepLabel(laterBy)} later`}
               className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-40"
             >
               <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
