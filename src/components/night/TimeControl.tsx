@@ -54,7 +54,7 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
               setOpen(false);
             }}
             aria-pressed={!open && minutesAgo === m}
-            className={`press min-h-12 shrink-0 rounded-full px-4 text-lg ${
+            className={`press min-h-12 shrink-0 rounded-key px-4 text-lg ${
               !open && minutesAgo === m ? "bg-ink font-medium text-bg" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
             }`}
           >
@@ -66,14 +66,14 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
           onClick={() => setOpen(true)}
           aria-expanded={open}
           aria-controls={id}
-          className={`press min-h-12 shrink-0 rounded-full px-4 text-lg ${open ? "bg-ink font-medium text-bg" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"}`}
+          className={`press min-h-12 shrink-0 rounded-key px-4 text-lg ${open ? "bg-ink font-medium text-bg" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"}`}
         >
           Earlier…
         </button>
       </div>
 
       {open && (
-        <div id={id} className="compose-in rounded-2xl bg-white/[0.04] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+        <div id={id} className="compose-in rounded-row bg-white/[0.04] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
           <p className="text-center text-lg" aria-live="polite">
             <span className="font-medium">{formatClock(at)}</span>
             <span className="text-ink-2"> · {agoLabel(minutesAgo)}</span>
@@ -83,7 +83,7 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
               type="button"
               onClick={() => onChange(clamp(minutesAgo + 5))}
               aria-label="5 minutes earlier"
-              className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/15"
+              className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15"
             >
               <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
             </button>
@@ -104,7 +104,7 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
               type="button"
               onClick={() => onChange(clamp(minutesAgo - 5))}
               aria-label="5 minutes later"
-              className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/15"
+              className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15"
             >
               <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
             </button>

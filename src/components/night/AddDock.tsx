@@ -197,7 +197,7 @@ export function AddDock(props: AddDockProps) {
             </span>
           </p>
           {live && (
-            <button type="button" onClick={props.onUndo} className="press min-h-12 shrink-0 rounded-full bg-white/10 px-4 text-lg font-medium hover:bg-white/15">
+            <button type="button" onClick={props.onUndo} className="press min-h-12 shrink-0 rounded-key bg-white/10 px-4 text-lg font-medium hover:bg-white/15">
               {live.kind === "added" ? (live.count > 1 ? "Undo one" : "Undo") : "Add back"}
             </button>
           )}
@@ -212,7 +212,7 @@ export function AddDock(props: AddDockProps) {
           <button
             type="button"
             onClick={() => props.onAdd(repeat)}
-            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-full bg-ink px-4 text-lg font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6 min-[360px]:text-xl"
+            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-primary bg-ink px-4 text-lg font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6 min-[360px]:text-xl"
           >
             <Plus aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.5} />
             <span className="truncate">{lastDrink ? "Add another" : "Add"} {drinkLabel(repeat, std).toLowerCase()}</span>
@@ -221,7 +221,7 @@ export function AddDock(props: AddDockProps) {
           <button
             type="button"
             onClick={props.onOpenAdd}
-            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-full bg-ink px-4 text-lg font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6 min-[360px]:text-xl"
+            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-primary bg-ink px-4 text-lg font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6 min-[360px]:text-xl"
           >
             <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
             Add a drink
@@ -235,7 +235,7 @@ export function AddDock(props: AddDockProps) {
           <button
             type="button"
             onClick={() => setMode("typing")}
-            className="press flex min-h-14 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-white/[0.05] px-4 text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/10"
+            className="press flex min-h-14 min-w-0 flex-1 items-center justify-center gap-2 rounded-key bg-white/[0.05] px-4 text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/10"
           >
             <Plus aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.5} />
             <span className="truncate">{repeat ? "Add a different drink" : "Type or say a drink"}</span>
@@ -246,7 +246,7 @@ export function AddDock(props: AddDockProps) {
               type="button"
               onClick={listen}
               aria-label="Say a drink"
-              className="press hidden size-14 shrink-0 place-items-center rounded-full bg-white/[0.05] shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/10 min-[360px]:grid"
+              className="press hidden size-14 shrink-0 place-items-center rounded-key bg-white/[0.05] shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/10 min-[360px]:grid"
             >
               <Mic aria-hidden="true" className="size-6" strokeWidth={2.25} />
             </button>
@@ -260,13 +260,13 @@ export function AddDock(props: AddDockProps) {
             <p className="text-lg text-ink-2" aria-live="polite">
               {mode === "listening" ? "Listening…" : result?.items.length ? "Check it, then add" : "Tap one, or type it"}
             </p>
-            <button type="button" onClick={close} aria-label="Close" className="press grid size-12 place-items-center rounded-full bg-white/10 hover:bg-white/15">
+            <button type="button" onClick={close} aria-label="Close" className="press grid size-12 place-items-center rounded-key bg-white/10 hover:bg-white/15">
               <X aria-hidden="true" className="size-5" strokeWidth={2.25} />
             </button>
           </div>
 
           {result && result.items.length > 0 && focused ? (
-            <div className="flex items-center gap-3 rounded-full bg-white/[0.06] py-1 pr-1 pl-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
+            <div className="flex items-center gap-3 rounded-key bg-white/[0.06] py-1 pr-1 pl-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
               <DrinkIcon kind={drinkKind(result.items[0]!)} className="size-5 shrink-0 text-ink-2" />
               <span className="min-w-0 flex-1 truncate text-lg">
                 <span className="font-medium">{result.items.map((i) => (i.count > 1 ? `${i.count} × ${i.name}` : i.name)).join(" + ")}</span>
@@ -277,14 +277,14 @@ export function AddDock(props: AddDockProps) {
                 // Adds straight away at "now"; for an earlier time, press Done to drop the keyboard first.
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => addResult(result)}
-                className="press flex min-h-12 shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 text-lg font-medium text-bg"
+                className="press flex min-h-12 shrink-0 items-center gap-1.5 rounded-key bg-ink px-4 text-lg font-medium text-bg"
               >
                 <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
                 Add
               </button>
             </div>
           ) : result && result.items.length > 0 ? (
-            <div className="rounded-[22px] bg-white/[0.06] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
+            <div className="rounded-row bg-white/[0.06] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
               <ul className="flex flex-col gap-1.5 px-1">
                 {result.items.map((i, k) => (
                   <li key={k} className="flex items-center gap-3 text-lg">
@@ -310,7 +310,7 @@ export function AddDock(props: AddDockProps) {
               <button
                 type="button"
                 onClick={() => addResult(result)}
-                className="press mt-3 flex min-h-16 w-full items-center justify-center gap-2 rounded-full bg-ink text-xl font-medium text-bg"
+                className="press mt-3 flex min-h-16 w-full items-center justify-center gap-2 rounded-primary bg-ink text-xl font-medium text-bg"
               >
                 <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
                 Add · {std(result.totalStandards)} std
@@ -327,13 +327,13 @@ export function AddDock(props: AddDockProps) {
                     type="button"
                     onClick={() => void askBartender()}
                     disabled={analyse.isPending}
-                    className="press flex min-h-12 items-center gap-2 rounded-full bg-ink px-4 text-lg font-medium text-bg disabled:opacity-60"
+                    className="press flex min-h-12 items-center gap-2 rounded-key bg-ink px-4 text-lg font-medium text-bg disabled:opacity-60"
                   >
                     <Sparkles aria-hidden="true" className="size-5" strokeWidth={2} />
                     {analyse.isPending ? "Reading it…" : "Ask the bartender"}
                   </button>
                 )}
-                <button type="button" onClick={props.onOpenAdd} className="press flex min-h-12 items-center gap-2 rounded-full px-4 text-lg shadow-[inset_0_0_0_1px_var(--color-line)]">
+                <button type="button" onClick={props.onOpenAdd} className="press flex min-h-12 items-center gap-2 rounded-key px-4 text-lg shadow-[inset_0_0_0_1px_var(--color-line)]">
                   <List aria-hidden="true" className="size-5" strokeWidth={2} />
                   All drinks
                 </button>
@@ -350,7 +350,7 @@ export function AddDock(props: AddDockProps) {
                     close();
                   }}
                   onPointerDown={(e) => e.preventDefault()}
-                  className="press flex min-h-12 shrink-0 items-center gap-2 rounded-full bg-white/[0.06] px-4 text-lg whitespace-nowrap shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)] hover:bg-white/10"
+                  className="press flex min-h-12 shrink-0 items-center gap-2 rounded-key bg-white/[0.06] px-4 text-lg whitespace-nowrap shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)] hover:bg-white/10"
                 >
                   <DrinkIcon kind={drinkKind(d)} className="size-5 text-ink-2" />
                   {drinkLabel(d, std)}
@@ -360,7 +360,7 @@ export function AddDock(props: AddDockProps) {
               <button
                 type="button"
                 onClick={props.onOpenAdd}
-                className="press flex min-h-12 shrink-0 items-center gap-2 rounded-full px-4 text-lg whitespace-nowrap shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
+                className="press flex min-h-12 shrink-0 items-center gap-2 rounded-key px-4 text-lg whitespace-nowrap shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
               >
                 <List aria-hidden="true" className="size-5" strokeWidth={2} />
                 All drinks
@@ -379,7 +379,7 @@ export function AddDock(props: AddDockProps) {
             if (unread) void askBartender();
             inputRef.current?.blur();
           }}
-          className={`compose-bar flex min-h-14 items-center gap-2 rounded-full bg-white/[0.06] py-1 pr-1 pl-5 shadow-[inset_0_0_0_1px_var(--color-line)] focus-within:shadow-[inset_0_0_0_2px_var(--color-signal)] ${mode === "listening" ? "listening" : ""}`}
+          className={`compose-bar flex min-h-14 items-center gap-2 rounded-key bg-white/[0.06] py-1 pr-1 pl-5 shadow-[inset_0_0_0_1px_var(--color-line)] focus-within:shadow-[inset_0_0_0_2px_var(--color-signal)] ${mode === "listening" ? "listening" : ""}`}
         >
           <label className="sr-only" htmlFor="compose-drink">
             Type a drink
@@ -406,7 +406,7 @@ export function AddDock(props: AddDockProps) {
               onClick={listen}
               aria-label={mode === "listening" ? "Stop listening" : "Say a drink"}
               aria-pressed={mode === "listening"}
-              className={`press relative grid size-12 shrink-0 place-items-center rounded-full ${
+              className={`press relative grid size-12 shrink-0 place-items-center rounded-key ${
                 mode === "listening" ? "mic-live bg-ink text-bg" : "bg-white/10 hover:bg-white/15"
               }`}
             >

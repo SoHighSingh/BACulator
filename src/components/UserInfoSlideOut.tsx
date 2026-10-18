@@ -39,7 +39,7 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
             clearOfflineCache();
             void signOut();
           }}
-          className="press min-h-14 rounded-full text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
+          className="press min-h-14 rounded-key text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
         >
           Sign out
         </button>

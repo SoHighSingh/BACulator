@@ -62,7 +62,7 @@ export function TimelineCard({ simulation, now, onExpand, drinks, weight, sex }:
         type="button"
         onClick={onExpand}
         aria-label="Tonight: open a bigger graph"
-        className="press -mx-2 -mt-2 flex min-h-12 w-[calc(100%+16px)] items-center justify-between gap-3 rounded-xl px-2 text-left"
+        className="press -mx-2 -mt-2 flex min-h-12 w-[calc(100%+16px)] items-center justify-between gap-3 rounded-key px-2 text-left"
       >
         <h2 id="curve-heading" className="flex items-center gap-1.5 text-lg font-semibold">
           Tonight

@@ -39,7 +39,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
         <section className="card p-5">
           <DetailsForm onSaved={onDone} submitLabel="Save and start" />
         </section>
-        <button type="button" onClick={skip} className="press min-h-14 rounded-full text-lg text-ink-2 hover:bg-white/5">
+        <button type="button" onClick={skip} className="press min-h-14 rounded-key text-lg text-ink-2 hover:bg-white/5">
           Skip for now
         </button>
       </div>

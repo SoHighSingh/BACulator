@@ -22,7 +22,7 @@ export function GetHome() {
   const { region } = useRegion();
   const call = `Call ${region.emergency}`;
   const tile =
-    "press lit flex min-h-[68px] flex-col items-center justify-center gap-1.5 rounded-2xl px-1 py-2 text-center text-lg font-medium leading-tight";
+    "press lit flex min-h-[68px] flex-col items-center justify-center gap-1.5 rounded-row px-1 py-2 text-center text-lg font-medium leading-tight";
   return (
     <section aria-labelledby="get-home-heading" className="card overflow-hidden">
       <div className="flex flex-wrap items-baseline gap-x-3 px-4 pt-4 pb-3">

@@ -24,7 +24,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
         if (next && document.activeElement instanceof HTMLElement) document.activeElement.blur();
       }}
     >
-      <DialogContent className="fixed top-1/2 left-1/2 z-[130] mx-auto w-[94vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-0 bg-surface p-0">
+      <DialogContent className="fixed top-1/2 left-1/2 z-[130] mx-auto w-[94vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-panel border-0 bg-surface p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-2xl font-bold text-ink">Tonight&apos;s curve</DialogTitle>
           <DialogDescription className="text-lg text-ink-2">
@@ -39,7 +39,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
           )}
           <button
             type="button"
-            className="press mt-2 min-h-14 w-full rounded-full bg-white/10 text-lg font-medium text-ink hover:bg-white/15"
+            className="press mt-2 min-h-14 w-full rounded-key bg-white/10 text-lg font-medium text-ink hover:bg-white/15"
             onClick={() => onOpenChange(false)}
           >
             Close

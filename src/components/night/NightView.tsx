@@ -41,7 +41,7 @@ export interface NightViewProps {
   onSignIn?: () => void;
 }
 
-const ICON_BUTTON = "glass press relative grid size-12 shrink-0 place-items-center rounded-full";
+const ICON_BUTTON = "glass press relative grid size-12 shrink-0 place-items-center rounded-key";
 
 /**
  * True for ~1.4s after `alert` flips because of something the person just did (a notice landed in
@@ -122,7 +122,7 @@ export function NightView(props: NightViewProps) {
                 <section className="card mt-4 flex flex-col gap-3 p-6">
                   <h2 className="text-2xl font-semibold tracking-[-0.02em]">Add your weight to see an estimate</h2>
                   <p className="text-lg text-ink-2">{model.hasDrinks ? "Your drinks are saved and counted." : "Your drinks still get saved without it."}</p>
-                  <button type="button" onClick={props.onAddDetails} className="press min-h-14 rounded-full bg-ink text-lg font-medium text-bg">
+                  <button type="button" onClick={props.onAddDetails} className="press min-h-14 rounded-key bg-ink text-lg font-medium text-bg">
                     Add details
                   </button>
                 </section>
@@ -140,7 +140,7 @@ export function NightView(props: NightViewProps) {
                 <div role="alert" className="card flex flex-col gap-3 p-4">
                   <p className="text-lg font-medium text-alert">{props.error}</p>
                   {props.onSignIn && (
-                    <button type="button" onClick={props.onSignIn} className="press min-h-12 self-start rounded-full bg-ink px-5 text-lg font-medium text-bg">
+                    <button type="button" onClick={props.onSignIn} className="press min-h-12 self-start rounded-key bg-ink px-5 text-lg font-medium text-bg">
                       Sign in
                     </button>
                   )}
@@ -165,7 +165,7 @@ export function NightView(props: NightViewProps) {
 
       <footer
         ref={dockRef}
-        className="night-dock glass glass-strong fixed inset-x-2 z-30 mx-auto max-w-[464px] rounded-[28px] p-3"
+        className="night-dock glass glass-strong fixed inset-x-2 z-30 mx-auto max-w-[464px] rounded-panel p-3"
         style={{ bottom: keyboard > 0 ? keyboard + 6 : "max(8px, env(safe-area-inset-bottom))" }}
       >
         <AddDock

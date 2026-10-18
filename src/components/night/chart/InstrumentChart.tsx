@@ -145,7 +145,7 @@ export function InstrumentChart({ simulation, now, height, events = [], onPick, 
       aria-valuenow={picked}
       aria-valuetext={readoutText}
       aria-orientation="horizontal"
-      className="curve-reveal relative touch-pan-y select-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-signal/70 focus-visible:ring-offset-4 focus-visible:ring-offset-surface"
+      className="curve-reveal relative touch-pan-y select-none rounded-card outline-none focus-visible:ring-2 focus-visible:ring-signal/70 focus-visible:ring-offset-4 focus-visible:ring-offset-surface"
       style={{ height: total }}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -245,7 +245,7 @@ export function InstrumentChart({ simulation, now, height, events = [], onPick, 
       {scrub !== null && readout && width > 0 && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute top-0 whitespace-nowrap rounded-md border border-edge bg-surface-2 px-2 py-0.5 text-lg leading-6 text-ink tabular-nums"
+          className="pointer-events-none absolute top-0 whitespace-nowrap rounded-mark border border-edge bg-surface-2 px-2 py-0.5 text-lg leading-6 text-ink tabular-nums"
           style={cursorX < plotW / 2 ? { left: Math.min(plotW - 8, cursorX + 10) } : { right: width - cursorX + 10 }}
         >
           {readoutText}
