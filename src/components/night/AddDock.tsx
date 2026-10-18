@@ -6,9 +6,10 @@ import type { LoggedDrink, NewDrink } from "~/hooks/useNight";
 import { CATALOG } from "~/lib/drinks/catalog";
 import { toDrinkDetails } from "~/lib/drinks/details";
 import { buildIndex, parseWithCatalog } from "~/lib/drinks/parse";
-import { SERVE_SIZES } from "~/lib/drinks/serves";
+import { SERVE_SIZES, servesForRegion } from "~/lib/drinks/serves";
 import type { ParseResult } from "~/lib/drinks/types";
 import { drinkLabel, timeAgo } from "~/lib/estimate-display";
+import type { RegionId } from "~/lib/region";
 import { api } from "~/trpc/react";
 import { DrinkIcon, drinkKind } from "./DrinkIcon";
 import { TimeControl } from "./TimeControl";
@@ -61,12 +62,13 @@ const speechCtor = (): RecognitionCtor | null => {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 };
 
-let catalogIndex: ReturnType<typeof buildIndex> | null = null;
-const index = () => (catalogIndex ??= buildIndex(CATALOG, SERVE_SIZES));
+// One index per region: US shots are 44 ml, not the Australian 30 ml nip.
+const catalogIndexes: Partial<Record<RegionId, ReturnType<typeof buildIndex>>> = {};
+const index = (region: RegionId) => (catalogIndexes[region] ??= buildIndex(CATALOG, servesForRegion(SERVE_SIZES, region)));
 
 /** The catalog read of some text, as a ParseResult (null when it understood nothing). */
-function readOnDevice(text: string): ParseResult | null {
-  const p = parseWithCatalog(text, index());
+function readOnDevice(text: string, region: RegionId): ParseResult | null {
+  const p = parseWithCatalog(text, index(region));
   const items = p.items.filter((i) => i.standards > 0);
   if (items.length === 0) return null;
   const total = Math.ceil(items.reduce((a, i) => a + i.standards, 0) * 10 - 1e-9) / 10;
@@ -84,7 +86,7 @@ type Mode = "idle" | "typing" | "listening";
  */
 export function AddDock(props: AddDockProps) {
   const { repeat, recents, lastDrink, notice, now, unsynced } = props;
-  const { std } = useRegion();
+  const { std, region } = useRegion();
   const [mode, setMode] = useState<Mode>("idle");
   const [text, setText] = useState("");
   const [minutesAgo, setMinutesAgo] = useState(0);
@@ -99,7 +101,7 @@ export function AddDock(props: AddDockProps) {
 
   useEffect(() => setHasVoice(!!speechCtor()), []);
 
-  const onDevice = useMemo(() => (text.trim().length >= 2 ? readOnDevice(text.trim()) : null), [text]);
+  const onDevice = useMemo(() => (text.trim().length >= 2 ? readOnDevice(text.trim(), region.id) : null), [text, region.id]);
   const result = onDevice ?? (server && server.text === text.trim() ? server.result : null);
   const live = notice && now.getTime() - notice.at < UNDO_WINDOW_MS ? notice : null;
 
@@ -125,7 +127,7 @@ export function AddDock(props: AddDockProps) {
     const asked = text.trim();
     if (!asked || analyse.isPending) return;
     try {
-      const parsed = await analyse.mutateAsync({ drinkText: asked });
+      const parsed = await analyse.mutateAsync({ drinkText: asked, region: region.id });
       setServer({ text: asked, result: parsed });
     } catch {
       setServer({ text: asked, result: { status: "unavailable", items: [], totalStandards: 0, unparsed: [asked], layer: null } });

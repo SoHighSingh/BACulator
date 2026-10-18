@@ -253,6 +253,13 @@ function readQuantities(tokens: string[], used: boolean[]): Quantities {
       mark(next === "per" && tokens[i + 2] === "cent" ? 3 : 2);
       continue;
     }
+    // 80 proof | 80proof: US proof is twice the ABV
+    m = /^(\d+(?:\.\d+)?)proof$/.exec(t);
+    if (m || (/^\d+(?:\.\d+)?$/.test(t) && next === "proof")) {
+      q.abv = Number(m ? m[1] : t) / 2;
+      mark(m ? 1 : 2);
+      continue;
+    }
     if (t === "%" || t === "abv" || t === "percent") {
       mark();
       continue;

@@ -7,6 +7,7 @@ import { useRef } from "react";
 import { DrinkIcon, drinkKind } from "~/components/night/DrinkIcon";
 import { WarningMark } from "~/components/night/WarningMark";
 import { useRegion } from "~/hooks/useRegion";
+import { callLabel } from "~/lib/emergency";
 import { drinkLabel, formatPoint, timeAgo } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
 import { dockStatus, useSampleNight, type SampleNight } from "../_kit/useSampleNight";
@@ -98,8 +99,8 @@ export function ClinicalNight() {
 }
 
 function GettingHome() {
-  const { region } = useRegion();
-  const call = `Call ${region.emergency}`;
+  const { emergency } = useRegion();
+  const call = callLabel(emergency);
   const row = "press flex min-h-14 items-center gap-3 rounded-xl px-4 text-lg font-semibold active:bg-line";
   return (
     <section aria-labelledby="home-heading" className="rounded-[18px] bg-surface-2 p-5">
@@ -110,7 +111,7 @@ function GettingHome() {
         {call} if someone can&apos;t be woken, is breathing slowly, or is vomiting while drowsy. Stay with them.
       </p>
       <div className="mt-4 flex flex-col gap-2.5">
-        <a href={`tel:${region.emergency}`} className={`${row} bg-surface font-bold text-alert`}>
+        <a href={`tel:${emergency.dial}`} className={`${row} bg-surface font-bold text-alert`}>
           <Phone aria-hidden="true" className="size-6" strokeWidth={2.25} />
           {call}
         </a>

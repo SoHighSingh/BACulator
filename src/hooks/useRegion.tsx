@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { emergencyFor, UNKNOWN_EMERGENCY, type Emergency } from "~/lib/emergency";
 import { formatStandards } from "~/lib/estimate-display";
 import { guessRegion, isRegionId, REGIONS, toRegionStandards, type Region, type RegionId } from "~/lib/region";
 
@@ -12,6 +13,8 @@ interface RegionContextValue {
   setRegion: (id: RegionId) => void;
   /** Stored 10 g standards, written in this region's standard drinks: "1.6" */
   std: (stored: number) => string;
+  /** Who to call, from where the phone is (time zone, then language), not from the units picked. */
+  emergency: Emergency;
 }
 
 const RegionContext = createContext<RegionContextValue | null>(null);
@@ -28,9 +31,18 @@ function readStored(): RegionId | null {
 /** Region is a per-device preference; nothing about it is stored on the server. */
 export function RegionProvider({ children }: { children: ReactNode }) {
   const [id, setId] = useState<RegionId>("metric");
+  // Neutral until the browser says where it is, so the server render never shows a wrong number.
+  const [emergency, setEmergency] = useState<Emergency>(UNKNOWN_EMERGENCY);
 
   useEffect(() => {
     setId(readStored() ?? guessRegion(navigator.languages));
+    let zone: string | undefined;
+    try {
+      zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      zone = undefined;
+    }
+    setEmergency(emergencyFor(zone, navigator.languages));
   }, []);
 
   const setRegion = useCallback((next: RegionId) => {
@@ -44,8 +56,8 @@ export function RegionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<RegionContextValue>(() => {
     const region = REGIONS[id];
-    return { region, setRegion, std: (stored) => formatStandards(toRegionStandards(stored, region)) };
-  }, [id, setRegion]);
+    return { region, setRegion, std: (stored) => formatStandards(toRegionStandards(stored, region)), emergency };
+  }, [id, setRegion, emergency]);
 
   return <RegionContext.Provider value={value}>{children}</RegionContext.Provider>;
 }

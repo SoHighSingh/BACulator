@@ -33,8 +33,8 @@ export default function TermsPage() {
           machinery, or do anything else where alcohol puts you or others at risk.
         </strong>{" "}
         If you&apos;ve been drinking, don&apos;t drive: use a designated driver, public
-        transport, a taxi or a rideshare. In an emergency, call 000 (911 in the US) or your
-        local emergency number.
+        transport, a taxi or a rideshare. In an emergency, call your local emergency number (000 in
+        Australia, 111 in New Zealand, 911 in the US and Canada, 999 in the UK, 112 in Europe).
       </p>
 
       <h2>Using BACulator</h2>

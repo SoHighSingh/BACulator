@@ -3,9 +3,10 @@ import { z } from "zod";
 import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { TERMS_VERSION } from "~/lib/consent";
+import { NIGHT_WINDOW_MS, serverDrinkTime } from "~/lib/night-model";
 import { analyseDrinkText } from "~/server/bartender";
 
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { consentedProcedure, createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 const drinkDetailsSchema = z.object({
   name: z.string().max(200).optional(),
@@ -43,10 +44,10 @@ async function cleanupOldTabs(db: PrismaClient, userId: string) {
   }
 }
 
-// A very heavy night can take more than a day to clear, so the estimate looks back 48 hours.
-const NIGHT_WINDOW_MS = 48 * 60 * 60 * 1000;
+// A very heavy night can take more than a day to clear, so the estimate looks back 48 hours
+// (NIGHT_WINDOW_MS).
 
-// A drink time must be real, not in the future (a little slack for clock skew), and inside the window.
+// An edited drink time must be real, not in the future (a little slack for clock skew), and inside the window.
 const drinkTime = z
   .string()
   .datetime()
@@ -54,6 +55,11 @@ const drinkTime = z
     const t = Date.parse(iso);
     return t <= Date.now() + 5 * 60 * 1000 && t >= Date.now() - NIGHT_WINDOW_MS;
   }, "Drink time must be within the last 48 hours");
+
+// A new drink, possibly queued on a phone with a wrong clock or held offline for days: any real
+// time is accepted and moved onto the server clock (serverDrinkTime), never refused. Refusing it
+// deleted the drink from the phone's queue.
+const addTime = z.string().datetime();
 
 // Drinks that can still affect the estimate: everything finished in the window,
 // whatever session it was logged in, so stopping a session never hides alcohol still in the body.
@@ -100,19 +106,25 @@ async function findOwnDrink(db: PrismaClient, userId: string, drinkId: string) {
 }
 
 export const postRouter = createTRPCRouter({
-  analyseDrink: protectedProcedure
-    .input(z.object({ drinkText: z.string().trim().min(1).max(200) }))
-    .mutation(({ ctx, input }) => analyseDrinkText(ctx.db, ctx.session.user.id, input.drinkText)),
+  analyseDrink: consentedProcedure
+    // region: the units the person uses, so a US "shot" is read as 44 ml.
+    .input(z.object({ drinkText: z.string().trim().min(1).max(200), region: z.enum(["metric", "us"]).optional() }))
+    .mutation(({ ctx, input }) => analyseDrinkText(ctx.db, ctx.session.user.id, input.drinkText, input.region)),
   // Permanently removes the user and everything linked to them. Deleted child-first so it
   // doesn't depend on the database enforcing the schema's cascades.
   deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.user.id;
+    // Sign-in links are keyed by email, not user id.
+    const email = (await ctx.db.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email ?? null;
     // One batch, so a failure part-way never leaves some of someone's data behind.
     await ctx.db.$transaction([
       ctx.db.drink.deleteMany({ where: { tab: { userId } } }),
       ctx.db.tab.deleteMany({ where: { userId } }),
       ctx.db.session.deleteMany({ where: { userId } }),
       ctx.db.account.deleteMany({ where: { userId } }),
+      // The bartender's per-person counters (keys from usageKeys in lib/drinks/ai-quota).
+      ctx.db.aiUsage.deleteMany({ where: { key: { startsWith: `ai:u:${userId}:` } } }),
+      ...(email ? [ctx.db.verificationToken.deleteMany({ where: { identifier: email } })] : []),
       ctx.db.user.delete({ where: { id: userId } }),
     ]);
     return { deleted: true };
@@ -186,7 +198,7 @@ export const postRouter = createTRPCRouter({
       sessions: tabs.map(({ drinks, ...tab }) => ({ ...tab, drinks: drinks.map(({ standards, ...d }) => ({ ...d, standards10g: standards })) })),
     };
   }),
-  updateUserInfo: protectedProcedure
+  updateUserInfo: consentedProcedure
     .input(z.object({
       weight: z.number().min(30).max(300), // kg; the form enforces the same range
       sex: z.enum(["male", "female"]),
@@ -210,10 +222,12 @@ export const postRouter = createTRPCRouter({
     });
     return user;
   }),
-  addDrink: protectedProcedure
+  addDrink: consentedProcedure
     .input(z.object({
-      standards: z.number().positive().max(50),
-      finishedAt: drinkTime,
+      standards: z.number().positive().max(200), // a US handle of spirits is about 55
+      finishedAt: addTime,
+      // The phone's clock when it sent this, so a fast or slow clock can be corrected.
+      clientNow: addTime.optional(),
       // What the bartender parsed, if the drink came from text (all optional for manual entry)
       details: drinkDetailsSchema.optional(),
       // Set by the phone so a retried or replayed add is saved once: the saved row comes back.
@@ -231,7 +245,7 @@ export const postRouter = createTRPCRouter({
           data: {
             tabId: tab.id,
             standards: input.standards,
-            finishedAt: new Date(input.finishedAt),
+            finishedAt: serverDrinkTime(input.finishedAt, input.clientNow, Date.now()),
             source: "manual",
             ...input.details,
             clientId: input.clientId,
@@ -244,10 +258,10 @@ export const postRouter = createTRPCRouter({
         return saved;
       }
     }),
-  updateDrink: protectedProcedure
+  updateDrink: consentedProcedure
     .input(z.object({
       drinkId,
-      standards: z.number().positive().max(50),
+      standards: z.number().positive().max(200), // a US handle of spirits is about 55
       finishedAt: drinkTime,
     }))
     .mutation(async ({ ctx, input }) => {

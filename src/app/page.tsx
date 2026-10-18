@@ -1,6 +1,7 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { signIn, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 import { Landing } from "~/components/landing/Landing";
@@ -10,6 +11,7 @@ import { TermsAndDisclaimerDialog } from "~/components/TermsAndDisclaimerDialog"
 import { useUserInfo } from "~/components/UserInfoSlideOutProvider";
 import { useUserInfoData } from "~/hooks/useUserInfoData";
 import { needsConsent, parsePendingConsent, PENDING_CONSENT_KEY, TERMS_VERSION } from "~/lib/consent";
+import { signOutHere } from "~/lib/sign-out";
 import { api } from "~/trpc/react";
 
 function savePendingConsent() {
@@ -46,6 +48,7 @@ export default function Home() {
   const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
 
   const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const consent = api.post.consentStatus.useQuery(undefined, { enabled: authenticated });
   const recordConsent = api.post.recordConsent.useMutation({
     onSuccess: () => utils.post.consentStatus.invalidate(),
@@ -97,7 +100,7 @@ export default function Home() {
           agreeLabel="Continue"
           busy={recordConsent.isPending}
           error={recordConsent.isError ? "That didn't save. Check your signal and try again." : undefined}
-          onClose={() => void signOut({ callbackUrl: "/" })}
+          onClose={() => void signOutHere(queryClient, { callbackUrl: "/" })}
           onAgree={() => recordConsent.mutate({ termsVersion: TERMS_VERSION, ageConfirmed: true })}
         />
       </main>

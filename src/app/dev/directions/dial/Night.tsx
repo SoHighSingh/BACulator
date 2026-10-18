@@ -8,6 +8,7 @@ import { useUserInfo } from "~/components/UserInfoSlideOutProvider";
 import { DrinkIcon, drinkKind } from "~/components/night/DrinkIcon";
 import { WarningMark } from "~/components/night/WarningMark";
 import { useRegion } from "~/hooks/useRegion";
+import { callLabel } from "~/lib/emergency";
 import type { NightSimulation } from "~/lib/bac-calculator";
 import { drinkLabel, formatPoint, timeAgo } from "~/lib/estimate-display";
 import { formatClock, formatHour } from "~/lib/format-clock";
@@ -258,8 +259,8 @@ function CurveCard({ sim, now, win, scrub }: { sim: NightSimulation; now: Date; 
 }
 
 function GettingHome() {
-  const { region } = useRegion();
-  const call = `Call ${region.emergency}`;
+  const { emergency } = useRegion();
+  const call = callLabel(emergency);
   return (
     <section aria-labelledby="dial-home" className="rounded-[16px] bg-surface p-5">
       <h2 id="dial-home" className="x-wide text-[22px]">
@@ -284,7 +285,7 @@ function GettingHome() {
           Find a ride
         </a>
         <a
-          href={`tel:${region.emergency}`}
+          href={`tel:${emergency.dial}`}
           className="press col-span-2 flex min-h-14 items-center justify-center rounded-[12px] bg-surface-3 text-lg font-bold text-alert shadow-[inset_0_0_0_2px_var(--color-alert)]"
         >
           {call}

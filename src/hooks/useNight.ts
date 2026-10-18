@@ -6,15 +6,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DrinkDetails } from "~/lib/drinks/details";
 import {
   drinkFromPayload,
+  markUnsynced,
   mergeNight,
   outboxView,
+  stuckExpired,
   syncFailure,
   type AddPayload,
   type NightDrink,
   type OutboxEntry,
   type Removal,
 } from "~/lib/night-model";
-import { listOutbox, putOutbox, removeOutbox, type StoredEntry } from "~/lib/outbox";
+import { listOutbox, markOutboxStuck, putOutbox, removeOutbox, type StoredEntry } from "~/lib/outbox";
 import { claimOfflineCache } from "~/trpc/offline-cache";
 import { api } from "~/trpc/react";
 
@@ -95,7 +97,7 @@ export function useNight() {
   const drinks = useMemo(() => {
     const { pending, removals } = outboxView(queue);
     const shown = mergeNight(server, pending, removals);
-    return waiting ? shown : shown.map((d) => (d.unsynced ? { ...d, unsynced: false } : d));
+    return markUnsynced(shown, waiting, new Set(queue.flatMap((e) => (e.stuck ? [e.clientId] : []))));
   }, [server, queue, waiting]);
 
   const dropFromQueue = useCallback(async (entry: StoredEntry) => {
@@ -109,7 +111,8 @@ export function useNight() {
       const signal = typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(SEND_TIMEOUT_MS) : undefined;
       try {
         if (entry.op === "add") {
-          const created = await utils.client.post.addDrink.mutate(entry.payload, { signal });
+          // The phone's clock at send time lets the server correct a fast or slow clock.
+          const created = await utils.client.post.addDrink.mutate({ ...entry.payload, clientNow: new Date().toISOString() }, { signal });
           utils.post.getNight.setData(undefined, (prev) =>
             prev && !prev.some((d) => d.id === created.id) ? [...prev, created] : prev,
           );
@@ -151,6 +154,11 @@ export function useNight() {
         setQueue((q) => mergeQueue(entries, q));
         for (const entry of entries) {
           if (cancelledSeqs.current.delete(entry.seq)) continue;
+          // Refused before: kept here and counted, not sent again. Gone once it's out of the night.
+          if (entry.stuck) {
+            if (stuckExpired(entry, Date.now())) await dropFromQueue(entry);
+            continue;
+          }
           if (typeof navigator !== "undefined" && navigator.onLine === false) {
             setWaiting(true);
             return; // the `online` event starts the next flush
@@ -171,13 +179,14 @@ export function useNight() {
             setError(SIGNED_OUT);
             return;
           }
-          if (outcome === "drop") {
-            setError(
-              entry.op === "add"
-                ? "A drink saved on this phone couldn't be added to your account."
-                : "A drink couldn't be removed from your account. Try removing it again.",
-            );
+          if (outcome === "drop" && entry.op === "add") {
+            // Never delete a drink someone logged: keep it on this phone, still in the estimate.
+            const stuck = await markOutboxStuck(entry);
+            setQueue((q) => q.map((x) => (x.seq === entry.seq ? stuck : x)));
+            setError("A drink couldn't be added to your account. It's kept on this phone and still counts in your estimate.");
+            continue;
           }
+          if (outcome === "drop") setError("A drink couldn't be removed from your account. Try removing it again.");
           await dropFromQueue(entry);
           sent++;
           retryDelay.current = RETRY_MIN_MS;
@@ -292,7 +301,7 @@ export function useNight() {
     recents: recentsQuery.data ?? [],
     isLoading: nightQuery.isLoading,
     /** Changes saved on this phone that haven't reached the account yet. */
-    unsyncedCount: waiting ? queue.filter((e) => e.op === "add").length : 0,
+    unsyncedCount: queue.filter((e) => e.op === "add" && (waiting || e.stuck)).length,
     error,
     add,
     remove,

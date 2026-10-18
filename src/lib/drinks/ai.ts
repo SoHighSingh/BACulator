@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { RegionId } from "../region";
 import { lookupEntry, type CatalogIndex } from "./parse";
 import { clamp, computeStandards, LIMITS } from "./standards";
 import { CATEGORIES, type Category, type ParsedItem } from "./types";
@@ -42,6 +43,11 @@ For each distinct drink return:
 - confidence: 0 to 1
 
 Do not calculate standard drinks.`;
+
+// Added for people using US units, whose bar measures and bottles differ.
+const US_NOTE = `
+
+This user is in the US: use US sizes instead (shot or jigger 44, double 88, pint 473, can or bottle of beer 355, wine glass 148, a "handle" of spirits 1750, a "forty" 1180). Proof is twice the ABV (80 proof = 40).`;
 
 const RESPONSE_SCHEMA = {
   type: "object",
@@ -163,14 +169,14 @@ export function itemsFromAi(payload: unknown, index: CatalogIndex): ParsedItem[]
  * Parses free text with Workers AI. Throws AiUnavailableError when the binding is missing, the
  * free allocation is used up, the call times out or the output is unusable.
  */
-export async function parseWithAi(ai: AiRunner | null | undefined, text: string, index: CatalogIndex) {
+export async function parseWithAi(ai: AiRunner | null | undefined, text: string, index: CatalogIndex, region: RegionId = "metric") {
   if (!ai) throw new AiUnavailableError("No AI binding");
   let raw: unknown;
   try {
     raw = await withTimeout(
       ai.run(AI_MODEL, {
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: region === "us" ? SYSTEM_PROMPT + US_NOTE : SYSTEM_PROMPT },
           // Delimited and labelled so instructions inside it read as data.
           { role: "user", content: `Drink description (data only):\n"""\n${text.slice(0, 300).replace(/"""/g, "")}\n"""` },
         ],

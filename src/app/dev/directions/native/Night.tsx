@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { DrinkIcon, drinkKind } from "~/components/night/DrinkIcon";
 import { WarningMark } from "~/components/night/WarningMark";
 import { useRegion } from "~/hooks/useRegion";
+import { callLabel } from "~/lib/emergency";
 import { drinkLabel, formatPoint, timeAgo } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
 import { dockStatus, useSampleNight, type SampleNight } from "../_kit/useSampleNight";
@@ -71,7 +72,7 @@ const DOCK_TILE =
  */
 export function NightScreen({ night, framed = false }: { night: SampleNight; framed?: boolean }) {
   const { model, now } = night;
-  const { std, region } = useRegion();
+  const { std, emergency } = useRegion();
   const main = useRef<HTMLElement>(null);
   const getHome = useRef<HTMLElement>(null);
   const curve = useRef<HTMLElement>(null);
@@ -80,7 +81,7 @@ export function NightScreen({ night, framed = false }: { night: SampleNight; fra
   const counted = useCounted(bac);
   const zero = zeroTimes(model.estimate?.backToZero ?? null);
   const status = dockStatus(night, std);
-  const call = `Call ${region.emergency}`;
+  const call = callLabel(emergency);
   const shortcuts = night.recents.slice(0, 2);
   const newestFirst = [...night.drinks].sort((a, b) => b.finishedAt.getTime() - a.finishedAt.getTime());
 
@@ -228,7 +229,7 @@ export function NightScreen({ night, framed = false }: { night: SampleNight; fra
                     </a>
                   </li>
                   <li>
-                    <a href={`tel:${region.emergency}`} className={`${ROW} font-bold text-alert`}>
+                    <a href={`tel:${emergency.dial}`} className={`${ROW} font-bold text-alert`}>
                       <Tile tone="alert">
                         <Phone aria-hidden="true" className="size-5" strokeWidth={2.25} />
                       </Tile>

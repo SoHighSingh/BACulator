@@ -4,7 +4,7 @@ export const ETHANOL_DENSITY = 0.789;
 export const GRAMS_PER_STANDARD = 10;
 
 export const LIMITS = {
-  abv: { min: 0, max: 80 },
+  abv: { min: 0, max: 95 }, // Everclear and other rectified spirits are 95%
   volumeMl: { min: 15, max: 2000 },
   count: { min: 0.25, max: 48 },
 } as const;

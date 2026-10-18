@@ -1,11 +1,13 @@
+import type { RegionId } from "../region";
 import { AiUnavailableError, parseWithAi, type AiRunner } from "./ai";
 import { normaliseText } from "./normalise";
 import { parseWithCatalog, type CatalogIndex } from "./parse";
 import { roundUpToTenth } from "./standards";
-import type { ParsedItem, ParseResult, ParseSource } from "./types";
+import type { Category, ParsedItem, ParseResult, ParseSource } from "./types";
 
 /** Bump when parsing rules or the catalog change in a way that should invalidate cached parses. */
-export const PARSER_VERSION = 2;
+// 3: "handle" is no longer a 285 ml pot, US shots are 44 ml, ABV up to 95%, "proof" is read.
+export const PARSER_VERSION = 3;
 
 /*
  * The parse cache is shared by everyone, so it only keeps short phrases that read like a drink
@@ -16,9 +18,37 @@ export const PARSER_VERSION = 2;
 export const CACHE_RULES = { maxChars: 48, maxWords: 8, minConfidence: 0.5 };
 export const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+/*
+ * The shared cache must never hand everyone an under-count. An AI answer is only stored when each
+ * of its drinks is at least a plausible strength and size for its type; below that (a "beer" at
+ * 0.5%, a 10 ml "glass of wine") it may still be right for this one person, who sees it marked as
+ * a guess, but it isn't replayed to anyone else. A drink the AI calls non-alcoholic is never
+ * stored: that is the cheapest way to talk a drink down to zero.
+ */
+export const PLAUSIBLE_FLOOR: Record<Category, { abv: number; volumeMl: number } | null> = {
+  beer: { abv: 2.5, volumeMl: 140 },
+  cider: { abv: 3, volumeMl: 200 },
+  wine: { abv: 8, volumeMl: 60 },
+  sparkling: { abv: 7, volumeMl: 60 },
+  fortified: { abv: 14, volumeMl: 30 },
+  spirit: { abv: 20, volumeMl: 25 },
+  liqueur: { abv: 10, volumeMl: 25 },
+  rtd: { abv: 3, volumeMl: 200 },
+  cocktail: { abv: 5, volumeMl: 60 },
+  soju_sake: { abv: 5, volumeMl: 30 },
+  non_alcoholic: null,
+};
+
+export function isPlausibleAiItem(item: ParsedItem) {
+  if (item.source !== "ai") return true;
+  const floor = item.category ? PLAUSIBLE_FLOOR[item.category] : null;
+  return !!floor && item.abv >= floor.abv && item.volumeMl >= floor.volumeMl;
+}
+
 export function isCacheable(norm: string, items: ParsedItem[]) {
   return (
     items.length > 0 &&
+    items.every(isPlausibleAiItem) &&
     norm.length <= CACHE_RULES.maxChars &&
     norm.split(" ").length <= CACHE_RULES.maxWords &&
     !/\d{5,}/.test(norm.replace(/ /g, "")) && // "0412 345 678" counts as one long number
@@ -36,6 +66,8 @@ export interface BartenderDeps {
   cachePut?: (normText: string, items: ParsedItem[]) => Promise<void>;
   ai?: AiRunner | null;
   onAiError?: (err: unknown) => void;
+  /** Whose bar measures to assume (US shots are 44 ml). The index should be built to match. */
+  region?: RegionId;
 }
 
 /** "same again", "another one", "one more"... */
@@ -75,7 +107,7 @@ export async function parseDrinks(text: string, deps: BartenderDeps): Promise<Pa
   if (catalog.unparsed.length === 0) return result(catalog.items, [], "catalog");
 
   try {
-    const aiItems = await parseWithAi(deps.ai, catalog.unparsed.join("; "), deps.index);
+    const aiItems = await parseWithAi(deps.ai, catalog.unparsed.join("; "), deps.index, deps.region);
     const items = [...catalog.items, ...aiItems];
     if (aiItems.length > 0 && isCacheable(norm, items)) await deps.cachePut?.(norm, items).catch(() => undefined);
     // Text the AI looked at but found no drink in (e.g. an injection attempt) is reported, not counted.

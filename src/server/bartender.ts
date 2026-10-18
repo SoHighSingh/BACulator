@@ -8,11 +8,12 @@ import { CATALOG } from "~/lib/drinks/catalog";
 import { normaliseText } from "~/lib/drinks/normalise";
 import { buildIndex, type CatalogIndex } from "~/lib/drinks/parse";
 import { CACHE_TTL_MS, parseDrinks, PARSER_VERSION } from "~/lib/drinks/pipeline";
-import { SERVE_SIZES } from "~/lib/drinks/serves";
+import { SERVE_SIZES, servesForRegion } from "~/lib/drinks/serves";
 import type { CatalogEntry, Category, ParsedItem, ServeSize } from "~/lib/drinks/types";
+import type { RegionId } from "~/lib/region";
 
 const INDEX_TTL_MS = 10 * 60 * 1000;
-let cachedIndex: { index: CatalogIndex; loadedAt: number } | null = null;
+let cachedIndex: { indexes: Record<RegionId, CatalogIndex>; loadedAt: number } | null = null;
 
 const parseJson = <T,>(text: string | null, fallback: T): T => {
   if (!text) return fallback;
@@ -24,8 +25,8 @@ const parseJson = <T,>(text: string | null, fallback: T): T => {
 };
 
 /** Catalog + serve sizes from D1, cached per isolate. Falls back to the bundled seed if empty. */
-async function loadIndex(db: PrismaClient): Promise<CatalogIndex> {
-  if (cachedIndex && Date.now() - cachedIndex.loadedAt < INDEX_TTL_MS) return cachedIndex.index;
+async function loadIndex(db: PrismaClient, region: RegionId): Promise<CatalogIndex> {
+  if (cachedIndex && Date.now() - cachedIndex.loadedAt < INDEX_TTL_MS) return cachedIndex.indexes[region];
   let entries: CatalogEntry[] = CATALOG;
   let serves: ServeSize[] = SERVE_SIZES;
   try {
@@ -44,7 +45,10 @@ async function loadIndex(db: PrismaClient): Promise<CatalogIndex> {
       }));
     }
     if (serveRows.length > 0) {
-      serves = serveRows.map((r) => ({
+      // The bundled sizes are reviewed in code and win over the seeded rows, so a size fix (a US
+      // "handle" is not a 285 ml pot) applies before its reseed migration has run.
+      const bundled = new Set(SERVE_SIZES.map((s) => s.id));
+      const extra = serveRows.filter((r) => !bundled.has(r.id)).map((r) => ({
         id: r.id,
         name: r.name,
         kind: r.kind as ServeSize["kind"],
@@ -54,14 +58,18 @@ async function loadIndex(db: PrismaClient): Promise<CatalogIndex> {
         aliases: parseJson<string[]>(r.aliases, []),
         sourceUrl: r.sourceUrl,
       }));
+      serves = [...SERVE_SIZES, ...extra];
     }
     if (catalogRows.length === 0) console.warn("DrinkCatalog is empty; using the bundled catalog. Run npm run db:migrate:local.");
   } catch (err) {
     console.error("Could not load the drink catalog from D1; using the bundled catalog.", err);
   }
-  const index = buildIndex(entries, serves);
-  cachedIndex = { index, loadedAt: Date.now() };
-  return index;
+  const indexes: Record<RegionId, CatalogIndex> = {
+    metric: buildIndex(entries, serves),
+    us: buildIndex(entries, servesForRegion(serves, "us")),
+  };
+  cachedIndex = { indexes, loadedAt: Date.now() };
+  return indexes[region];
 }
 
 /** The user's most recently logged drink ("same again"). */
@@ -157,21 +165,27 @@ function getAi(): AiRunner | null {
   }
 }
 
-export async function analyseDrinkText(db: PrismaClient, userId: string, text: string) {
-  const index = await loadIndex(db);
+// US shots are bigger, so the same words cache separately for US units.
+const cacheKey = (norm: string, region: RegionId) => (region === "us" ? `us:${norm}` : norm);
+
+export async function analyseDrinkText(db: PrismaClient, userId: string, text: string, region: RegionId = "metric") {
+  const index = await loadIndex(db, region);
   await pruneExpired(db);
   return parseDrinks(text, {
     index,
+    region,
     lastDrink: () => findLastDrink(db, userId),
     findRecent: (norm) => findRecent(db, userId, norm),
-    cacheGet: async (key) => {
+    cacheGet: async (norm) => {
+      const key = cacheKey(norm, region);
       const row = await db.parseCache.findUnique({ where: { key } });
       if (!row || row.version !== PARSER_VERSION) return null;
       if (Date.now() - row.createdAt.getTime() > CACHE_TTL_MS) return null;
       await db.parseCache.update({ where: { key }, data: { hits: { increment: 1 } } });
       return parseJson<ParsedItem[] | null>(row.items, null);
     },
-    cachePut: async (key, items) => {
+    cachePut: async (norm, items) => {
+      const key = cacheKey(norm, region);
       const data = { version: PARSER_VERSION, items: JSON.stringify(items) };
       // Re-parsing restarts the 30-day clock.
       await db.parseCache.upsert({ where: { key }, create: { key, ...data }, update: { ...data, createdAt: new Date() } });

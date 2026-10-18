@@ -108,7 +108,7 @@ describe("AI output validation", () => {
   it("clamps volume and ABV and computes standards in code", () => {
     const [item] = itemsFromAi({ items: [{ type: "spirit", brand: "", serveMl: 99999, abv: 300, count: 1, confidence: 1 }] }, index);
     expect(item?.volumeMl).toBe(2000);
-    expect(item?.abv).toBe(80);
+    expect(item?.abv).toBe(95);
     expect(item?.confidence).toBeLessThanOrEqual(0.7);
   });
 

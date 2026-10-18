@@ -11,6 +11,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import { needsConsent } from "~/lib/consent";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 
@@ -133,3 +134,27 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/**
+ * Consented procedure
+ *
+ * For anything that stores drinks or details or asks the bartender: the signed-in person must have
+ * confirmed their legal drinking age and agreed to the current terms (post.recordConsent). The app
+ * asks before the night screen, but that check runs in the browser; this is the one that holds for
+ * anyone calling the API directly. PRECONDITION_FAILED (not FORBIDDEN) so a phone keeps its queued
+ * drinks and sends them once the person agrees (see syncFailure in lib/night-model).
+ *
+ * Left on protectedProcedure on purpose: consentStatus and recordConsent (how consent is given),
+ * deleteAccount, exportMyData and deleteDrink (someone who never agreed can still take their data
+ * out or erase it), and reads of the person's own data.
+ */
+export const consentedProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const user = await ctx.db.user.findUnique({
+    where: { id: ctx.session.user.id },
+    select: { termsVersion: true, ageConfirmedAt: true },
+  });
+  if (!user?.ageConfirmedAt || needsConsent(user.termsVersion)) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirm your age and agree to the terms first" });
+  }
+  return next();
+});

@@ -139,8 +139,49 @@ export function syncFailure(code: string | undefined, op: OutboxEntry["op"]): "r
   if (code === "UNAUTHORIZED") return "signedOut";
   // Already gone (Undo on two phones, a double tap): that's what was wanted.
   if (code === "NOT_FOUND" && op === "delete") return "done";
+  // Terms not agreed yet (the server's consent gate): keep it, it goes once they agree.
+  if (code === "PRECONDITION_FAILED") return "retry";
   if (code === "BAD_REQUEST" || code === "CONFLICT" || code === "FORBIDDEN" || code === "NOT_FOUND" || code === "PARSE_ERROR") return "drop";
   return "retry";
+}
+
+/** How long the estimate looks back, and how long a drink the server refused is kept on this device. */
+export const NIGHT_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+/**
+ * An add the server refused stays on this device ("stuck"), still counted in the estimate and
+ * marked as not saved to the account, instead of being deleted. Once it's older than the night
+ * window it no longer affects anything and can go.
+ */
+export const stuckExpired = (entry: OutboxEntry, now: number) =>
+  entry.op === "add" && Date.parse(entry.payload.finishedAt) < now - NIGHT_WINDOW_MS;
+
+/**
+ * Hides "saved on this phone" while sends are going through, except on drinks the server refused:
+ * those stay marked, because they really are only on this phone.
+ */
+export function markUnsynced(shown: NightDrink[], waiting: boolean, stuckClientIds: ReadonlySet<string>): NightDrink[] {
+  if (waiting) return shown;
+  return shown.map((d) => (d.unsynced && !(d.clientId && stuckClientIds.has(d.clientId)) ? { ...d, unsynced: false } : d));
+}
+
+/** Within this much, the phone's clock is taken as right (the send itself takes a moment). */
+const CLOCK_SLACK_MS = 60 * 1000;
+
+/**
+ * When a drink sent from this device happened, on the server's clock. `clientNow` is the phone's
+ * clock at the moment it sent: if the phone is fast or slow, the drink time moves by the same
+ * amount. A time still in the future becomes now. Old drinks (a queue held offline for days) are
+ * kept at their real time rather than refused, so nothing logged is ever thrown away.
+ */
+export function serverDrinkTime(finishedAt: string, clientNow: string | undefined, serverNow: number): Date {
+  let t = Date.parse(finishedAt);
+  const phoneNow = clientNow ? Date.parse(clientNow) : NaN;
+  if (Number.isFinite(phoneNow)) {
+    const skew = serverNow - phoneNow;
+    if (Math.abs(skew) > CLOCK_SLACK_MS) t += skew;
+  }
+  return new Date(Math.min(t, serverNow));
 }
 
 /** Same drink, same size: the identity used for repeat buttons and the double-tap guard. */

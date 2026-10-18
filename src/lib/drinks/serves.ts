@@ -1,3 +1,4 @@
+import type { RegionId } from "../region";
 import type { ServeSize } from "./types";
 
 // Australian serve sizes. Seeded into the ServeSize table by scripts/build-catalog-sql.ts.
@@ -7,6 +8,10 @@ import type { ServeSize } from "./types";
 //    https://www.health.gov.au/topics/alcohol/about-alcohol/standard-drinks-guide
 const GLASSES = "https://en.wikipedia.org/wiki/Beer_in_Australia#Beer_glasses";
 const HEALTH = "https://www.health.gov.au/topics/alcohol/about-alcohol/standard-drinks-guide";
+// US shot / jigger 1.5 fl oz: https://www.niaaa.nih.gov/alcohols-effects-health/what-standard-drink
+const NIAAA = "https://www.niaaa.nih.gov/alcohols-effects-health/what-standard-drink";
+// A "handle" is a 1.75 L bottle: https://en.wikipedia.org/wiki/Alcohol_measurements#Bottles
+const US_HANDLE = "https://en.wikipedia.org/wiki/Alcohol_measurements#Bottles";
 
 export const SERVE_SIZES: ServeSize[] = [
   // Region-specific names first so "sa pint" wins over "pint".
@@ -15,7 +20,11 @@ export const SERVE_SIZES: ServeSize[] = [
   { id: "sa_schooner", name: "SA schooner", kind: "measure", volumeMl: 285, impliesCategory: "beer",
     aliases: ["sa schooner", "south australian schooner", "adelaide schooner", "schooner in adelaide", "schooner in sa"], sourceUrl: GLASSES },
   { id: "pot", name: "Pot / middy", kind: "measure", volumeMl: 285, impliesCategory: "beer",
-    aliases: ["pot", "middy", "middie", "half pint", "handle"], sourceUrl: GLASSES },
+    aliases: ["pot", "middy", "middie", "half pint"], sourceUrl: GLASSES },
+  // "Handle" is a beer glass in the NT and New Zealand, but a 1.75 L bottle of spirits in the US.
+  // Read as the larger of the two beer glasses unless the drink is a spirit.
+  { id: "handle", name: "Handle", kind: "container", volumeMl: 425, impliesCategory: "beer",
+    categoryMl: { beer: 425, cider: 425, spirit: 1750, liqueur: 1750 }, aliases: ["handle"], sourceUrl: US_HANDLE },
   { id: "schooner", name: "Schooner", kind: "measure", volumeMl: 425, impliesCategory: "beer",
     aliases: ["schooner", "schooey", "schooie", "schooy", "schoonie", "schoon"], sourceUrl: GLASSES },
   { id: "pint", name: "Pint", kind: "measure", volumeMl: 570, impliesCategory: "beer",
@@ -48,8 +57,22 @@ export const SERVE_SIZES: ServeSize[] = [
   { id: "double", name: "Double", kind: "measure", volumeMl: 60, impliesCategory: "spirit", aliases: ["double", "double shot"], sourceUrl: HEALTH },
   { id: "triple", name: "Triple", kind: "measure", volumeMl: 90, impliesCategory: "spirit", aliases: ["triple"], sourceUrl: null },
   { id: "shot", name: "Shot / nip", kind: "measure", volumeMl: 30, impliesCategory: "spirit",
-    aliases: ["shot", "nip", "shooter", "jigger"], sourceUrl: HEALTH },
+    aliases: ["shot", "nip", "shooter"], sourceUrl: HEALTH },
+  // A jigger is a US bar measure: 1.5 US fl oz.
+  { id: "jigger", name: "Jigger", kind: "measure", volumeMl: 44, impliesCategory: "spirit", aliases: ["jigger"], sourceUrl: NIAAA },
 ];
+
+/**
+ * US bar measures: a shot is 1.5 fl oz (44 ml), not the Australian 30 ml nip. Applied over the
+ * serve list for people using US units (see servesForRegion).
+ */
+const US_MEASURES: Record<string, number> = { shot: 44, double: 88, triple: 132 };
+
+/** The serve list for a region: Australian sizes, with US bar measures for the US. */
+export function servesForRegion(serves: ServeSize[], region: RegionId): ServeSize[] {
+  if (region !== "us") return serves;
+  return serves.map((s) => (US_MEASURES[s.id] ? { ...s, volumeMl: US_MEASURES[s.id]!, sourceUrl: NIAAA } : s));
+}
 
 /** Multi-packs are counts, not volumes: "a six pack of vb" = 6 × VB. */
 export const PACK_COUNTS: { aliases: string[]; count: number }[] = [

@@ -7,7 +7,11 @@ import type { OutboxEntry } from "./night-model";
  * survive a reload. Browser only.
  */
 
-export type StoredEntry = OutboxEntry & { seq: number };
+export type StoredEntry = OutboxEntry & {
+  seq: number;
+  /** The server refused this add: it stays here (and in the estimate) but isn't sent again. */
+  stuck?: boolean;
+};
 
 const DB_NAME = "baculator";
 const STORE = "outbox";
@@ -75,6 +79,23 @@ export async function removeOutbox(seq: number): Promise<void> {
   if (memory.delete(seq)) return;
   const db = await openDb();
   if (db) await run(db, "readwrite", (s) => s.delete(seq)).catch(() => undefined);
+}
+
+/** Keeps a refused add on this phone instead of deleting it. Resolves with the updated entry. */
+export async function markOutboxStuck(entry: StoredEntry): Promise<StoredEntry> {
+  const stuck: StoredEntry = { ...entry, stuck: true };
+  if (memory.has(entry.seq)) {
+    memory.set(entry.seq, stuck);
+    return stuck;
+  }
+  const db = await openDb();
+  if (db) await run(db, "readwrite", (s) => s.put(stuck)).catch(() => undefined);
+  return stuck;
+}
+
+/** How many drinks this person added on this phone that their account doesn't have yet. */
+export async function countQueuedAdds(userId: string): Promise<number> {
+  return (await listOutbox(userId)).filter((e) => e.op === "add").length;
 }
 
 /** Forget everything this person queued on this phone (account deleted). */

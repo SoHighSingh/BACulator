@@ -6,6 +6,7 @@ import { useRef } from "react";
 import { DrinkIcon, drinkKind } from "~/components/night/DrinkIcon";
 import { WarningMark } from "~/components/night/WarningMark";
 import { useRegion } from "~/hooks/useRegion";
+import { callLabel } from "~/lib/emergency";
 import { drinkLabel, formatPoint, timeAgo } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
 import { dockStatus, useSampleNight } from "../_kit/useSampleNight";
@@ -20,14 +21,14 @@ const SECONDARY =
 
 export function Night() {
   const night = useSampleNight();
-  const { std, region } = useRegion();
+  const { std, emergency } = useRegion();
   const { model, now } = night;
   const status = dockStatus(night, std);
   const getHome = useRef<HTMLElement>(null);
   const animKey = night.drinks.map((d) => d.id).join(",");
   const sim = model.simulation;
   const est = model.estimate;
-  const call = `Call ${region.emergency}`;
+  const call = callLabel(emergency);
   const newestFirst = [...night.drinks].sort((a, b) => b.finishedAt.getTime() - a.finishedAt.getTime());
   const shortcuts = night.recents.slice(0, 2);
 
@@ -121,7 +122,7 @@ export function Night() {
                   Find a ride
                 </a>
                 <a
-                  href={`tel:${region.emergency}`}
+                  href={`tel:${emergency.dial}`}
                   className="press col-span-2 flex min-h-14 items-center justify-center rounded-lg border-2 border-alert bg-bg text-lg font-bold text-alert active:bg-surface"
                 >
                   {call}

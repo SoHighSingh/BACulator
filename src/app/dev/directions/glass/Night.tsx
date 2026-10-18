@@ -7,6 +7,7 @@ import { useId, useRef } from "react";
 import { DrinkIcon, drinkKind } from "~/components/night/DrinkIcon";
 import { WarningMark } from "~/components/night/WarningMark";
 import { useRegion } from "~/hooks/useRegion";
+import { callLabel } from "~/lib/emergency";
 import type { NightSimulation } from "~/lib/bac-calculator";
 import { drinkLabel, formatBand, formatPoint, timeAgo } from "~/lib/estimate-display";
 import { formatClock, formatHour } from "~/lib/format-clock";
@@ -253,8 +254,8 @@ export function Curve({ simulation, now }: { simulation: NightSimulation; now: D
 }
 
 function GettingHome() {
-  const { region } = useRegion();
-  const call = `Call ${region.emergency}`;
+  const { emergency } = useRegion();
+  const call = callLabel(emergency);
   const row = "g-press g-lit flex min-h-14 items-center gap-3 px-4 text-lg font-medium hover:bg-white/[0.03]";
   return (
     <section aria-labelledby="g-home" className="g-card overflow-hidden">
@@ -267,7 +268,7 @@ function GettingHome() {
         </p>
       </div>
       <div className="divide-y divide-[var(--g-edge)] border-t border-[var(--g-edge)]">
-        <a href={`tel:${region.emergency}`} onPointerMove={lightAt} className={`${row} font-semibold text-[var(--g-alert)]`}>
+        <a href={`tel:${emergency.dial}`} onPointerMove={lightAt} className={`${row} font-semibold text-[var(--g-alert)]`}>
           <Phone aria-hidden="true" className="size-5" strokeWidth={2} />
           {call}
         </a>

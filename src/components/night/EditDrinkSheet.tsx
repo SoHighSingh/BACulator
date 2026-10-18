@@ -16,7 +16,8 @@ interface EditDrinkSheetProps {
 }
 
 const STEP = 0.5;
-const MAX_STANDARDS = 50;
+// Matches the server: a US handle (1.75 L of 40% spirit) is about 55 standards.
+const MAX_STANDARDS = 200;
 
 /** Fix a logged drink: when it was finished, and how many standard drinks it was. */
 export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetProps) {

@@ -9,6 +9,7 @@ import { DrinkIcon, drinkKind } from "~/components/night/DrinkIcon";
 import { lightAt } from "~/components/night/GetHome";
 import { WarningMark } from "~/components/night/WarningMark";
 import { useRegion } from "~/hooks/useRegion";
+import { callLabel } from "~/lib/emergency";
 import { aboutPoint, drinkLabel, formatBand } from "~/lib/estimate-display";
 import { REGION_IDS, REGIONS } from "~/lib/region";
 import { AddFlowVideo } from "./AddFlowVideo";
@@ -190,7 +191,7 @@ function TryIt({ demo }: { demo: DemoNight }) {
 
 /** The public front door: the range strip at the width of the window, then the maths behind it. */
 export function Landing({ onStart }: LandingProps) {
-  const { region } = useRegion();
+  const { emergency } = useRegion();
   const demo = useDemoNight();
   const root = useReveal();
   const bac = demo.model.bac ?? 0;
@@ -318,7 +319,7 @@ export function Landing({ onStart }: LandingProps) {
           <div className="reveal flex flex-col gap-5 lg:col-span-8" style={d(90)}>
             <h2 id="help-heading" className={H2}>
               <span className="block">Can&apos;t wake someone?</span>
-              <span className="block text-alert">Call {region.emergency}.</span>
+              <span className="block text-alert">{callLabel(emergency)}.</span>
             </h2>
             <p className="max-w-[52ch] text-xl leading-relaxed">Also call if they&apos;re breathing slowly, or vomiting while drowsy. Stay with them.</p>
             <p className="max-w-[52ch] text-xl text-ink-2">

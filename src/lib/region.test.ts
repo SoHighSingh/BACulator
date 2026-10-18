@@ -62,9 +62,4 @@ describe("region", () => {
     // Never rounded below the alcohol actually in the serve.
     for (const s of servesFor(metric)) expect(s.standards * 10).toBeGreaterThanOrEqual((s.volumeMl * s.abv * 0.789) / 100 - 1e-9);
   });
-
-  it("uses the region's emergency number", () => {
-    expect(metric.emergency).toBe("000");
-    expect(us.emergency).toBe("911");
-  });
 });

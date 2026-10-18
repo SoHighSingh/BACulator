@@ -1,4 +1,5 @@
 import { useRegion } from "~/hooks/useRegion";
+import { callPhrase } from "~/lib/emergency";
 import { aboutPoint, formatBand, type NightModel } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
 import { Sheet } from "./Sheet";
@@ -12,7 +13,7 @@ interface EstimateDetailsProps {
 
 /** What tapping the number explains: why it says not safe to drive, and the numbers behind it. */
 export function EstimateDetails({ open, onClose, model }: EstimateDetailsProps) {
-  const { region } = useRegion();
+  const { emergency } = useRegion();
   const bac = model.bac ?? 0;
   const [lo, hi] = formatBand(bac).split("–");
   const rows: [string, string][] = [];
@@ -47,7 +48,7 @@ export function EstimateDetails({ open, onClose, model }: EstimateDetailsProps) 
       )}
       <p className="mt-4 text-lg text-ink-2">
         Bodies and pours vary, so the real number is likely anywhere in the range. If someone can&apos;t be woken or is breathing slowly,
-        call {region.emergency}.
+        {callPhrase(emergency)}.
       </p>
     </Sheet>
   );

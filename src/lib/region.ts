@@ -2,7 +2,8 @@ import { rawStandards } from "./drinks/standards";
 
 /**
  * Where the user drinks decides what "one standard drink" means, how weight and volume are written,
- * which serves are on the quick-pick chips and which number to call.
+ * and which serves are on the quick-pick chips. The emergency number is not part of a region: it
+ * follows where the phone is (lib/emergency).
  *
  * Storage and the BAC engine always work in 10 g standards (see GRAMS_PER_STANDARD). A region only
  * changes how those numbers are shown and entered, so switching region never rewrites anyone's data.
@@ -22,7 +23,6 @@ export interface Region {
   gramsPerStandard: number;
   weightUnit: "kg" | "lb";
   volumeUnit: "ml" | "oz";
-  emergency: string;
   /** Example for the free-text drink box, in the region's own words. */
   example: string;
   serves: Serve[];
@@ -35,11 +35,10 @@ const STORED_GRAMS_PER_STANDARD = 10;
 export const REGIONS: Record<RegionId, Region> = {
   metric: {
     id: "metric",
-    label: "10 g standard drink · kg · ml · call 000",
+    label: "10 g standard drink · kg · ml",
     gramsPerStandard: 10,
     weightUnit: "kg",
     volumeUnit: "ml",
-    emergency: "000",
     example: "e.g. 2 schooners of lager",
     serves: [
       { label: "Schooner of beer", volumeMl: 425, abv: 4.8 },
@@ -52,11 +51,10 @@ export const REGIONS: Record<RegionId, Region> = {
   },
   us: {
     id: "us",
-    label: "US: 14 g standard drink · lb · oz · call 911",
+    label: "US: 14 g standard drink · lb · oz",
     gramsPerStandard: 14,
     weightUnit: "lb",
     volumeUnit: "oz",
-    emergency: "911",
     example: "e.g. 2 Bud Lights",
     serves: [
       { label: "Can or bottle of beer", volumeMl: 355, abv: 5 },
