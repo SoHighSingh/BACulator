@@ -1,4 +1,4 @@
-import { List, Mic, Plus, Sparkles, Square, X } from "lucide-react";
+import { Keyboard, List, Mic, Plus, Sparkles, Square, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useRegion } from "~/hooks/useRegion";
@@ -30,7 +30,7 @@ export type Notice =
 export const UNDO_WINDOW_MS = 2 * 60 * 1000;
 
 interface AddDockProps {
-  /** The drink the white pill repeats: the last one added, else the most recent. */
+  /** The latest drink (first among the composer's suggestions): the last one added, else the most recent. */
   repeat: QuickDrink | null;
   recents: QuickDrink[];
   lastDrink: LoggedDrink | null;
@@ -78,10 +78,11 @@ function readOnDevice(text: string, region: RegionId): ParseResult | null {
 type Mode = "idle" | "typing" | "listening";
 
 /**
- * The dock, always under the thumb. Top to bottom: what just happened (with Undo / Add back), the
- * white pill that repeats the last drink in one tap, and a composer that takes any drink typed or
- * spoken. Opening the composer hides the pill and shows recents as suggestions, so recognising a
- * drink still beats remembering one. Text is read on the phone first; the bartender (server) is
+ * The dock, always under the thumb. Top to bottom: what just happened (with Undo / Add back), one
+ * white **Add a drink** key that opens the add sheet with recents first (user decision, 18 Oct 2026
+ * late: one add key; a repeat drink is now two taps), and a second way in for anything not on the
+ * list: a composer that takes any drink typed or spoken, with recents as suggestions so recognising
+ * a drink still beats remembering one. Text is read on the phone first; the bartender (server) is
  * only asked when the catalog can't read it.
  */
 export function AddDock(props: AddDockProps) {
@@ -209,29 +210,20 @@ export function AddDock(props: AddDockProps) {
         <p className="px-2 text-lg text-ink-2">{unsynced === 1 ? "Saved on this phone, will sync" : `${unsynced} saved on this phone, will sync`}</p>
       )}
 
-      {!open &&
-        (repeat ? (
-          <button
-            type="button"
-            onClick={() => props.onAdd(repeat)}
-            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-primary bg-ink px-4 text-lg font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6 min-[360px]:text-xl"
-          >
-            <Plus aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.5} />
-            <span className="truncate">{lastDrink ? "Add another" : "Add"} {drinkLabel(repeat, std).toLowerCase()}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={props.onOpenAdd}
-            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-primary bg-ink px-4 text-lg font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6 min-[360px]:text-xl"
-          >
-            <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
-            Add a drink
-          </button>
-        ))}
+      {/* One add key. It opens the add sheet, recents first, so the drink you just had is the top row. */}
+      {!open && (
+        <button
+          type="button"
+          onClick={props.onOpenAdd}
+          className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-primary bg-ink px-4 text-xl font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6"
+        >
+          <Plus aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.5} />
+          Add a drink
+        </button>
+      )}
 
-      {/* The second way in is unmistakably an add: a bordered pill that says so, with the mic as its
-          own key. The type-or-say field only appears once one of them is tapped. */}
+      {/* The second way in is the composer, for anything not on the list: type it, or say it with the
+          mic as its own key. The field only appears once one of them is tapped. */}
       {!open && (
         <div className="flex items-stretch gap-2">
           <button
@@ -239,8 +231,8 @@ export function AddDock(props: AddDockProps) {
             onClick={() => setMode("typing")}
             className="press flex min-h-14 min-w-0 flex-1 items-center justify-center gap-2 rounded-key bg-white/[0.05] px-4 text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/10"
           >
-            <Plus aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.5} />
-            <span className="truncate">{repeat ? "Add a different drink" : "Type or say a drink"}</span>
+            <Keyboard aria-hidden="true" className="size-6 shrink-0" strokeWidth={2} />
+            <span className="truncate">{hasVoice ? "Type or say a drink" : "Type a drink"}</span>
           </button>
           {/* Under 360px the label needs the width; the mic is still inside the composer. */}
           {hasVoice && (

@@ -1,16 +1,15 @@
 "use client";
 
-import { GlassWater, Plus, RotateCcw } from "lucide-react";
+import { GlassWater, Plus, RotateCcw, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 import { BrandMark } from "~/components/BrandMark";
 import { DrinkIcon, drinkKind } from "~/components/night/DrinkIcon";
-import { lightAt } from "~/components/night/GetHome";
-import { WarningMark } from "~/components/night/WarningMark";
 import { useRegion } from "~/hooks/useRegion";
 import { callLabel } from "~/lib/emergency";
 import { aboutPoint, drinkLabel, formatBand } from "~/lib/estimate-display";
+import { lightAt } from "~/lib/pointer-light";
 import { REGION_IDS, REGIONS } from "~/lib/region";
 import { AddFlowVideo } from "./AddFlowVideo";
 import { CodePanel } from "./CodePanel";
@@ -30,7 +29,7 @@ const QUESTIONS = [
   },
   {
     q: "Can it tell me if I'm okay to drive?",
-    a: "No. While any drink counts, BACulator says one thing: not safe to drive.",
+    a: "No. It's an estimate only, and it can't tell you whether you're fit to drive. The screen goes red from an estimated 0.05, and a hazard mark by the logo opens the detail once the likely range reaches it.",
   },
   {
     q: "What counts as a standard drink?",
@@ -125,7 +124,7 @@ function StartButton({ onStart, className = "" }: { onStart: () => void; classNa
 }
 
 /** The try-it row under the giant strip: the drinks, the status, and what the last tap did. */
-function TryIt({ demo }: { demo: DemoNight }) {
+function TryIt({ demo, alert }: { demo: DemoNight; alert: boolean }) {
   const { std } = useRegion();
   return (
     <div className="flex flex-col gap-4">
@@ -153,10 +152,17 @@ function TryIt({ demo }: { demo: DemoNight }) {
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        {demo.model.notSafeToDrive && (
-          <p className="flex min-h-12 items-center gap-2.5 rounded-key bg-alert/[0.12] px-4 text-lg font-semibold text-alert alert-edge">
-            <WarningMark className="size-5" />
-            Not safe to drive
+        {/* The night screen's chrome, as it is there: the mark (red from a shown 0.05) and the hazard key
+            beside it once the likely range reaches 0.05; no words on screen (user decision, 18 Oct 2026 late). */}
+        {demo.model.hazard && (
+          <p className="flex items-center gap-2">
+            <span className="grid size-12 place-items-center" aria-hidden="true">
+              <BrandMark size={48} tone={alert ? "alert" : "calm"} />
+            </span>
+            <span className="grid size-12 place-items-center rounded-key bg-alert/[0.12] text-alert alert-edge">
+              <TriangleAlert aria-hidden="true" className="size-7" strokeWidth={2.25} />
+              <span className="sr-only">Estimate details: likely range reaches 0.05</span>
+            </span>
           </p>
         )}
         <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-2 text-lg" aria-live="polite">
@@ -171,9 +177,16 @@ function TryIt({ demo }: { demo: DemoNight }) {
               </button>
             </span>
           ) : (
-            <span className="text-ink-2">{demo.drinks.length} drinks so far tonight</span>
+            <span className="flex items-center gap-3">
+              <span className="text-ink-2">{demo.drinks.length === 1 ? "1 drink" : `${demo.drinks.length} drinks`} so far tonight</span>
+              {demo.drinks.length > 0 && (
+                <button type="button" onClick={demo.undo} className="press min-h-12 rounded-key bg-white/10 px-4 font-medium hover:bg-white/15">
+                  Undo one
+                </button>
+              )}
+            </span>
           )}
-          {demo.drinks.length > 4 && (
+          {demo.touched && (
             <button
               type="button"
               onClick={demo.reset}
@@ -195,15 +208,16 @@ export function Landing({ onStart }: LandingProps) {
   const demo = useDemoNight();
   const root = useReveal();
   const bac = demo.model.bac ?? 0;
-  // The light turns red the way the night screen's does, but only once the visitor has tapped.
-  const alert = demo.touched && demo.model.notSafeToDrive;
+  // The light is red by the night screen's own rule (a shown 0.05 or more) and goes blue again when
+  // the visitor undoes the night below it. It only moves (`is-anim`) in answer to a tap, never on load.
+  const alert = demo.model.alert;
   const spoken = demo.ready
-    ? `Sample night: estimated blood alcohol about ${aboutPoint(bac)[1]}, likely ${formatBand(bac).replace("–", " to ")}.${demo.model.notSafeToDrive ? " Not safe to drive." : ""}`
+    ? `Sample night: estimated blood alcohol about ${aboutPoint(bac)[1]}, likely ${formatBand(bac).replace("–", " to ")}.`
     : "";
 
   return (
     <div ref={root} className="landing relative overflow-x-clip bg-bg text-ink">
-      <div aria-hidden="true" className={`hero-field pointer-events-none absolute inset-x-0 top-0 h-[min(1100px,130vh)] ${alert ? "is-alert" : ""}`} />
+      <div aria-hidden="true" className={`hero-field pointer-events-none absolute inset-x-0 top-0 h-[min(1100px,130vh)] ${alert ? "is-alert" : ""} ${demo.touched ? "is-anim" : ""}`} />
 
       <nav className="wrap relative z-10 flex items-center gap-2 pt-[max(12px,env(safe-area-inset-top))]">
         <Link href="/" className="flex min-h-12 flex-1 items-center gap-3">
@@ -252,7 +266,7 @@ export function Landing({ onStart }: LandingProps) {
             <p className="text-lg text-ink-2">Free. Sign in with Google to keep your drinks.</p>
           </div>
           <div className="lg:col-span-7">
-            <TryIt demo={demo} />
+            <TryIt demo={demo} alert={alert} />
           </div>
         </div>
       </header>
@@ -300,10 +314,10 @@ export function Landing({ onStart }: LandingProps) {
       <section aria-labelledby="tap-heading" className="wrap sect grid items-center gap-8 lg:grid-cols-12 lg:gap-12">
         <div className="reveal flex flex-col gap-5 lg:order-2 lg:col-span-6 lg:col-start-7">
           <h2 id="tap-heading" className={H2}>
-            Same again is one tap.
+            Same again, two taps.
           </h2>
           <p className="max-w-[44ch] text-xl leading-relaxed">
-            The drink you just had is the white button at the bottom, at its real size. Anything else, type it or say it the way you&apos;d order it.
+            Add a drink opens your recent drinks first, at their real size: the one you just had is at the top. Anything else, type it or say it the way you&apos;d order it.
           </p>
           <p className="max-w-[44ch] text-xl leading-relaxed text-ink-2">Tapped the wrong thing? Undo stays right there. Works with no signal, too.</p>
         </div>
@@ -322,9 +336,7 @@ export function Landing({ onStart }: LandingProps) {
               <span className="block text-alert">{callLabel(emergency)}.</span>
             </h2>
             <p className="max-w-[52ch] text-xl leading-relaxed">Also call if they&apos;re breathing slowly, or vomiting while drowsy. Stay with them.</p>
-            <p className="max-w-[52ch] text-xl text-ink-2">
-              Getting home sits on the same screen as your drinks: call for help, text a mate or find a ride, in one tap.
-            </p>
+            <p className="max-w-[52ch] text-xl text-ink-2">The same line, with the number to call, sits in the estimate&apos;s details on the night screen.</p>
           </div>
         </div>
       </section>

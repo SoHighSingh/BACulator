@@ -12,6 +12,10 @@ export const BAND_HIGH = 1.4;
 const ZERO_EARLY = 0.75;
 const ZERO_LATE = 1.6;
 const QUARTER_HOUR_MS = 15 * 60 * 1000;
+// One threshold for every region (stricter than the US 0.08). User decision, 18 Oct 2026 late: the
+// screen goes red when the shown number reaches it, and the hazard key appears once the top of the
+// likely range reaches it. Neither is framed as a driving or legal state.
+export const ALERT_AT = 0.05;
 
 export interface EstimateDisplay {
   /** The headline number: "0.07", "under 0.01" or "0.00" */
@@ -53,6 +57,18 @@ export function formatBand(bac: number): string {
   const low = floor2(bac * BAND_LOW);
   const high = Math.max(ceil2(bac * BAND_HIGH), low + 0.01);
   return `${low.toFixed(2)}–${high.toFixed(2)}`;
+}
+
+/** Red: the headline as shown (rounded up, so 0.0449 shows 0.05) is ALERT_AT or more. */
+export function isAlert(bac: number | null): boolean {
+  return bac !== null && bac >= 0.01 && ceil2(bac - 1e-9) >= ALERT_AT;
+}
+
+/** The hazard key: the top of the likely range as shown ("Likely X to Y", Y rounded up) is ALERT_AT or more. */
+export function isHazard(bac: number | null): boolean {
+  if (bac === null || bac < 0.01) return false;
+  const low = floor2(bac * BAND_LOW);
+  return Math.max(ceil2(bac * BAND_HIGH), low + 0.01) >= ALERT_AT;
 }
 
 function roundToQuarterHour(ms: number) {
@@ -112,10 +128,15 @@ export interface NightModel {
   /** Peak still to come from drinks being absorbed. */
   peak: { bac: number; at: Date } | null;
   /**
-   * Shown whenever any drink is counted and either there's no estimate, the model is above zero,
-   * or we're still inside the slow-eliminator tail after the model reaches zero.
+   * True whenever any drink is counted and either there's no estimate, the model is above zero,
+   * or we're still inside the slow-eliminator tail after the model reaches zero. The night UI no
+   * longer shows anything for it (user decision, 18 Oct 2026 late); it stays for the model's own use.
    */
   notSafeToDrive: boolean;
+  /** Red field, red mark, red favicon: the shown number is ALERT_AT (0.05) or more. */
+  alert: boolean;
+  /** The hazard key beside the mark: the top of the likely range is ALERT_AT or more. */
+  hazard: boolean;
   simulation: NightSimulation | null;
 }
 
@@ -127,7 +148,7 @@ export function describeNight(drinks: Drink[], userWeight: number | null, userSe
   const simulation = userWeight && userSex ? simulateNight(drinks, userWeight, userSex, now) : null;
 
   if (!result) {
-    return { hasDrinks, estimate: null, bac: null, peak: null, notSafeToDrive: hasDrinks, simulation };
+    return { hasDrinks, estimate: null, bac: null, peak: null, notSafeToDrive: hasDrinks, alert: false, hazard: false, simulation };
   }
 
   const estimate = describeEstimate(result, drinks, now);
@@ -150,6 +171,8 @@ export function describeNight(drinks: Drink[], userWeight: number | null, userSe
     bac: result.currentBAC,
     peak,
     notSafeToDrive: hasDrinks && (estimate.notSafeToDrive || inTail),
+    alert: hasDrinks && isAlert(result.currentBAC),
+    hazard: hasDrinks && isHazard(result.currentBAC),
     simulation,
   };
 }

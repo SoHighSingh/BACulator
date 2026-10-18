@@ -197,7 +197,7 @@ export function isDoubleTap(last: { key: string; at: number } | null, key: strin
   return last !== null && last.key === key && now - last.at < DOUBLE_TAP_MS;
 }
 
-/** The drink "Add another" repeats (the latest), and up to `limit` other recents, without repeats. */
+/** The latest drink (first in the add sheet's recents), and up to `limit` other recents, without repeats. */
 export function pickRepeatAndRecents<T extends { name: string | null; standards: number }>(
   latest: T | null,
   recents: T[],

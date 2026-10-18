@@ -3,6 +3,7 @@
 //
 //   npm run shoot -- <outDir> <url> [width height] [--actions=<json>]
 //   RM=1 npm run shoot -- ...            (emulate prefers-reduced-motion)
+//   TZ_ID=America/New_York npm run shoot -- ...   (the phone's time zone: the emergency number follows it)
 //
 // Example:
 //   npm run shoot -- .shots/night http://localhost:3000/dev/night 375 812 //     '--actions=[{"click":"+ New drink","exact":true},{"wait":500,"shot":1}]'
@@ -30,6 +31,7 @@ const page = await browser.newPage({
   hasTouch: +w < 768,
   reducedMotion: process.env.RM ? "reduce" : "no-preference",
   colorScheme: "dark",
+  timezoneId: process.env.TZ_ID || undefined,
 });
 const errors = [];
 page.on("console", (m) => m.type() === "error" && errors.push(m.text().slice(0, 300)));

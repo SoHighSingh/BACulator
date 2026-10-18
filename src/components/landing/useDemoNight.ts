@@ -36,12 +36,15 @@ export function useDemoNight() {
   const [now, setNow] = useState(() => new Date());
   const [sex, setSex] = useState<DemoSex>("female");
   const [lastAdded, setLastAdded] = useState<LoggedDrink | null>(null);
-  // True once the visitor has added something: the hero's light answers their tap, not the page load.
+  // True once the visitor has changed something: the hero's light then moves in answer to their tap,
+  // never on the page load.
   const [touched, setTouched] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setDrinks(sample());
     setNow(new Date());
+    setReady(true);
   }, []);
 
   const model = useMemo(() => describeNight(drinks, DEMO_WEIGHT, sex, now), [drinks, sex, now]);
@@ -70,17 +73,22 @@ export function useDemoNight() {
     }
   }
 
+  /** Takes back the latest drink: the one just added, else the latest of the night, so Undo can take the
+   *  night down and the field, the mark and the hazard key go back to calm the way the night screen's do. */
   function undo() {
-    if (!lastAdded) return;
-    setDrinks((d) => d.filter((x) => x.id !== lastAdded.id));
+    const latest = lastAdded ?? drinks.reduce<LoggedDrink | null>((l, d) => (!l || d.finishedAt > l.finishedAt ? d : l), null);
+    if (!latest) return;
+    setDrinks((d) => d.filter((x) => x.id !== latest.id));
     setLastAdded(null);
+    setTouched(true);
     setNow(new Date());
   }
 
+  /** Back to the sample night (which is above zero, so the field is red again). */
   function reset() {
     setDrinks(sample());
     setLastAdded(null);
-    setTouched(false);
+    setTouched(true);
     setNow(new Date());
   }
 
@@ -89,5 +97,5 @@ export function useDemoNight() {
     setNow(new Date());
   }
 
-  return { model, result, drinks, now, sex, setSex: changeSex, ready: drinks.length > 0, lastAdded, touched, add, undo, reset };
+  return { model, result, drinks, now, sex, setSex: changeSex, ready, lastAdded, touched, add, undo, reset };
 }

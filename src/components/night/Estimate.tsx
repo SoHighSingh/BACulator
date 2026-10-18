@@ -79,7 +79,7 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
           </span>
         );
         return onOpenDetails ? (
-          <button type="button" onClick={onOpenDetails} aria-label={`About this estimate: ${about ? "about " : ""}${point}`} className="press -mx-1 block rounded-row px-1 text-left">
+          <button type="button" onClick={onOpenDetails} aria-label={`About tonight's estimate: ${about ? "about " : ""}${point}`} className="press -mx-1 block rounded-row px-1 text-left">
             {number}
           </button>
         ) : (

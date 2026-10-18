@@ -7,8 +7,8 @@ const OURS = "data-alert-favicon";
 const PAUSED_REL = "alert-favicon-paused";
 
 /**
- * While `alert` is true (drinks counted: not safe to drive) the tab's favicon turns into the red
- * mark, so the warning is visible even from another tab. Nothing animates.
+ * While `alert` is true (the shown number is 0.05 or more) the tab's favicon turns into the red
+ * mark, so the state is visible even from another tab. Nothing animates.
  *
  * Next renders the site's own <link rel="icon"> tags through React, so we never edit or remove
  * them. Ours is appended last (browsers take the last matching icon) and the originals' `rel` is

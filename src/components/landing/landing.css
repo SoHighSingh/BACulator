@@ -71,8 +71,9 @@
   box-shadow: 0 0 12px 1px rgb(250 250 250 / 0.45); /* taste-skill-ignore: the tick's hot head */
 }
 
-/* The light field behind the hero's reading: still, never animated on its own. Once the visitor
-   adds a drink, it cross-fades to the night screen's warm red (not safe to drive) and holds still. */
+/* The light field behind the hero's reading: still, never animated on its own. It is the night
+   screen's warm red from a shown 0.05 and blue below; it only cross-fades (`.is-anim`) in answer
+   to the visitor's tap, never on load, and then holds still. */
 .hero-field {
   background:
     radial-gradient(42% 46% at 30% 74%, rgb(70 120 255 / 0.3), transparent 70%), /* taste-skill-ignore: Glass light field (DESIGN.md) */
@@ -197,7 +198,7 @@
 
 /* ---- Motion: only in answer to a tap or once on scroll-in. ---- */
 @media (prefers-reduced-motion: no-preference) {
-  .hero-field::after {
+  .hero-field.is-anim::after {
     transition: opacity 900ms var(--ease-out);
   }
   .strip-move {

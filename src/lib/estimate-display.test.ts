@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeEstimate, describeNight, drinkLabel, formatBackToZero, formatBand, formatPoint, timeAgo } from "./estimate-display";
+import { describeEstimate, describeNight, drinkLabel, formatBackToZero, formatBand, formatPoint, isAlert, isHazard, timeAgo } from "./estimate-display";
 
 const base = {
   currentBAC: 0,
@@ -94,6 +94,44 @@ describe("formatPoint", () => {
     expect(formatPoint(0.0549)).toBe("0.06");
     expect(formatPoint(0.07)).toBe("0.07");
     expect(formatPoint(0.1234)).toBe("0.13");
+  });
+});
+
+describe("red and the hazard key (user decision, 18 Oct 2026 late: 0.05, by what is shown)", () => {
+  it("is red once the shown number is 0.05", () => {
+    expect(isAlert(0.05)).toBe(true);
+    // 0.0449 shows 0.05 (rounded up), so it is red.
+    expect(isAlert(0.0449)).toBe(true);
+    expect(isAlert(0.04)).toBe(false);
+    expect(isAlert(0)).toBe(false);
+    expect(isAlert(null)).toBe(false);
+  });
+
+  it("shows the hazard key once the top of the likely range is 0.05", () => {
+    // 0.04 shows "Likely 0.03 to 0.06": the key, but not red.
+    expect(isHazard(0.04)).toBe(true);
+    expect(isAlert(0.04)).toBe(false);
+    // 0.028 shows "Likely 0.02 to 0.04": neither.
+    expect(formatBand(0.028)).toBe("0.02–0.04");
+    expect(isHazard(0.028)).toBe(false);
+    expect(isAlert(0.028)).toBe(false);
+    // 0.05: both.
+    expect(isHazard(0.05)).toBe(true);
+    expect(isAlert(0.05)).toBe(true);
+    expect(isHazard(0)).toBe(false);
+    expect(isHazard(null)).toBe(false);
+  });
+
+  it("is neither with no drinks", () => {
+    const m = describeNight([], 75, "female", now);
+    expect(m.alert).toBe(false);
+    expect(m.hazard).toBe(false);
+  });
+
+  it("is neither without a weight to estimate with, even with drinks", () => {
+    const m = describeNight([{ id: "a", standards: 2, finishedAt: new Date(now.getTime() - 30 * 60000) }], null, null, now);
+    expect(m.alert).toBe(false);
+    expect(m.hazard).toBe(false);
   });
 });
 

@@ -2,7 +2,6 @@
 
 import { House, Plus, Search, Mic, UserRound } from "lucide-react";
 
-import { GetHome } from "~/components/night/GetHome";
 import { NightNumbers } from "~/components/night/NightNumbers";
 import { TimelineCard, valueAt } from "~/components/night/TimelineCard";
 import { useRegion } from "~/hooks/useRegion";
@@ -61,7 +60,6 @@ export function Frame({ night, t, scrolled }: { night: SampleNight; t: Treatment
         {t.cardRow}
         <TimelineCard simulation={model.simulation} now={now} onExpand={() => undefined} />
         {model.hasDrinks && <NightNumbers model={model} drinkCount={drinks.length} totalStandards={night.totalStd} />}
-        <GetHome />
       </div>
 
       <div className="glass glass-strong absolute inset-x-2 bottom-2 z-30 rounded-[28px] p-3">

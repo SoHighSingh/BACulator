@@ -225,9 +225,9 @@
   --card: rgb(15 15 18 / 0.68);
 }
 
-/* A still field of light behind the estimate. It never moves. While any drink is counted (the same
-   rule as "Not safe to drive", never a number threshold) the light turns warm red across the whole
-   screen, so the state reads from across the room; it cross-fades once, then holds still. */
+/* A still field of light behind the estimate. It never moves. From a shown 0.05 (`NightModel.alert`;
+   user decision, 18 Oct 2026 late) the light turns warm red across the whole screen, so the state
+   reads from across the room; it cross-fades once, then holds still. */
 .glass-field {
   position: fixed;
   inset: 0;
@@ -273,45 +273,15 @@
   }
 }
 
-/* The status in the chrome: one glass pill, fixed at the top left for the whole night. Calm, it is
-   clipped down to the mark's 44px tile (the mark sits on it); not safe, the clip opens into the full
-   pill, the tile shrinks into the warning disc and the words slide in. Only clip-path, transform and
-   opacity move; the pill's box (and so the blur) never changes size, and the keys never move. */
-.night-status {
-  /* Calm: clipped to the mark's 44px tile (its own corners, the tile radius, 2px inside the pill).
-     Not safe: the clip opens to the whole box, so the pill's own squircle corner (the key radius)
-     shapes it; the logo reads as opening up into the pill. clip-path's `round` is always a plain
-     arc (corner-shape does not reach it), so the open clip carries no rounding of its own: the
-     squircle border-radius is the only corner left, in Chrome and in the fallback alike. */
-  border-radius: var(--radius-key);
-  clip-path: inset(2px calc(100% - 46px) 2px 2px round var(--radius-tile));
-}
-.night-status.is-alert {
-  clip-path: inset(0 round 0);
-}
-.night-status-word {
-  opacity: 0;
-  transform: translateX(-10px);
-}
-.night-status.is-alert .night-status-word {
-  opacity: 1;
-  transform: none;
-}
-/* 320-wide phones: the slot left of the two keys is narrow. The header takes 8px gutters and the
-   words tighten, still 18px. */
-@media (max-width: 359px) {
-  .night-header {
-    margin-inline: -8px;
-  }
-  .night-status-word {
-    padding-left: 2px;
-    padding-right: 8px;
-    font-weight: 500;
-    letter-spacing: -0.03em;
-  }
+/* The chrome's status: the mark and, once the likely range reaches 0.05, a glass hazard key beside it
+   (NightStatus). No words on screen: the red field, the red mark with its tick slid right and the key
+   carry the state. `.is-anim` is only on while a change the person just made is settling, so the
+   mark's colour and tick only move then, and nothing plays on load. */
+.night-status .hazard-key {
+  position: relative;
 }
 /* The mark's tick: in the alert tone it steps 6 units right on the 64 grid (still inside the band),
-   as if the needle moved up. Rendered in its final place; it only slides with the morph below. */
+   as if the needle moved up. Rendered in its final place; it only slides with a change below. */
 .bm-tick {
   transform: translateX(0);
 }
@@ -319,37 +289,24 @@
   transform: translateX(6px);
 }
 @media (prefers-reduced-motion: no-preference) {
-  /* Calm → not safe (~900ms, timed to the field): the mark reddens and its tick slides right (0–250),
-     then the tile opens to the right (250–900) and the words slide out of the mark (330–780). */
+  /* The mark reddens and its tick slides right on one 250ms clock; the hazard key then lands
+     beside it, scaling up from the mark's side over 300ms. Calm again: the key is simply gone and
+     the band goes blue as the tick slides back. */
   .night-status.is-anim .bm-tone {
     transition: opacity 250ms var(--ease-out);
   }
   .night-status.is-anim .bm-tick {
     transition: transform 250ms var(--ease-out);
   }
-  .night-status.is-anim {
-    transition: clip-path 650ms var(--ease-out) 250ms;
+  .hazard-key.is-anim {
+    animation: hazard-in 300ms var(--ease-out) 120ms both;
+    transform-origin: left center;
   }
-  .night-status.is-anim .night-status-word {
-    transition:
-      opacity 450ms var(--ease-out) 330ms,
-      transform 450ms var(--ease-out) 330ms;
-  }
-  /* Not safe → calm (~650ms): the words go first, the tile closes back to the mark, and the band
-     goes blue as it lands. */
-  .night-status.is-anim:not(.is-alert) .night-status-word {
-    transition:
-      opacity 180ms var(--ease-out),
-      transform 180ms var(--ease-out);
-  }
-  .night-status.is-anim:not(.is-alert) {
-    transition: clip-path 450ms var(--ease-out) 100ms;
-  }
-  .night-status.is-anim:not(.is-alert) .bm-tone {
-    transition: opacity 250ms var(--ease-out) 400ms;
-  }
-  .night-status.is-anim:not(.is-alert) .bm-tick {
-    transition: transform 250ms var(--ease-out) 400ms;
+}
+@keyframes hazard-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
   }
 }
 

@@ -6,7 +6,7 @@ import { useId } from "react";
  * accessible label.
  *
  * `tone="alert"` is the mark "in trouble": the same shape, with the band in the alert family
- * (#ffa494 over a deeper #ff6a55 glow) and a warm rim, whenever the night is not safe to drive.
+ * (#ffa494 over a deeper #ff6a55 glow) and a warm rim, whenever the shown number is 0.05 or more.
  * The tick stays white and steps 6 units to the right, the needle moving up. Both bands are always
  * drawn and cross-fade with `.bm-tone` (250ms) while the tick slides (`.bm-tick`, same clock); both
  * only animate inside an animating `.night-status` and are instant under reduced motion, so
