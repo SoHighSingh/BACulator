@@ -25,7 +25,7 @@ export function EstimateDetails({ open, onClose, model }: EstimateDetailsProps) 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="About this estimate" description="Why it says not safe to drive, and the numbers behind the estimate.">
       {model.notSafeToDrive && (
-        <section className="rounded-2xl bg-[rgb(255_120_100/0.1)] p-4 shadow-[inset_0_0_0_1px_rgb(255_164_148/0.3)]">
+        <section className="rounded-row bg-[rgb(255_120_100/0.1)] p-4 shadow-[inset_0_0_0_1px_rgb(255_164_148/0.3)]">
           <p className="flex items-center gap-2 text-lg font-semibold text-alert">
             <WarningMark className="size-5" />
             Not safe to drive

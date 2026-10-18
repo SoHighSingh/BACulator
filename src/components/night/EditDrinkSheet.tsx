@@ -52,13 +52,13 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
           <div className="mt-6 flex items-center justify-between gap-3">
             <p className="text-lg text-ink-2">Standard drinks</p>
             <div className="flex items-center gap-2">
-              <button type="button" aria-label="Half a standard drink less" onClick={() => step(-1)} className="press grid size-12 place-items-center rounded-full bg-white/10">
+              <button type="button" aria-label="Half a standard drink less" onClick={() => step(-1)} className="press grid size-12 place-items-center rounded-key bg-white/10">
                 <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
               </button>
               <span className="w-14 text-center text-xl font-medium tabular-nums" aria-live="polite">
                 {std(standards)}
               </span>
-              <button type="button" aria-label="Half a standard drink more" onClick={() => step(1)} className="press grid size-12 place-items-center rounded-full bg-white/10">
+              <button type="button" aria-label="Half a standard drink more" onClick={() => step(1)} className="press grid size-12 place-items-center rounded-key bg-white/10">
                 <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
               </button>
             </div>
@@ -67,7 +67,7 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
           <button
             type="button"
             onClick={() => onSave(drink, { standards, finishedAt: new Date(now.getTime() - minutesAgo * 60_000) })}
-            className="press key-glow mt-6 flex min-h-16 w-full items-center justify-center rounded-full bg-ink text-xl font-medium text-bg"
+            className="press key-glow mt-6 flex min-h-16 w-full items-center justify-center rounded-primary bg-ink text-xl font-medium text-bg"
           >
             Save
           </button>

@@ -13,7 +13,7 @@ interface DetailsFormProps {
 }
 
 const choice = (on: boolean) =>
-  `press min-h-14 rounded-2xl px-4 text-lg ${on ? "bg-white/[0.14] font-medium shadow-[inset_0_0_0_2px_var(--color-ink)]" : "bg-white/[0.05] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]"}`;
+  `press min-h-14 rounded-row px-4 text-lg ${on ? "bg-white/[0.14] font-medium shadow-[inset_0_0_0_2px_var(--color-ink)]" : "bg-white/[0.05] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]"}`;
 
 /**
  * Weight, sex and units: what the estimate needs, asked once (ideally sober) and editable any time.
@@ -89,7 +89,7 @@ export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps)
             setWeight(e.target.value);
             setSaved(false);
           }}
-          className="min-h-14 rounded-2xl bg-white/[0.05] px-4 text-xl text-ink shadow-[inset_0_0_0_1px_var(--color-line)] focus:shadow-[inset_0_0_0_2px_var(--color-signal)] focus:outline-none"
+          className="min-h-14 rounded-row bg-white/[0.05] px-4 text-xl text-ink shadow-[inset_0_0_0_1px_var(--color-line)] focus:shadow-[inset_0_0_0_2px_var(--color-signal)] focus:outline-none"
         />
       </div>
 
@@ -114,7 +114,7 @@ export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps)
         <p className="text-lg text-ink-2">The formula uses average body water, which differs by sex.</p>
       </fieldset>
 
-      <button type="submit" disabled={!valid || update.isPending} className="press key-glow min-h-16 rounded-full bg-ink text-xl font-medium text-bg disabled:opacity-50">
+      <button type="submit" disabled={!valid || update.isPending} className="press key-glow min-h-16 rounded-primary bg-ink text-xl font-medium text-bg disabled:opacity-50">
         {update.isPending ? "Saving…" : saved ? "Saved" : submitLabel}
       </button>
       {error && (

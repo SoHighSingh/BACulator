@@ -103,10 +103,10 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
           {/* Likely range: two round caps and a body, each placed by transform, glowing as one. */}
           <div className="strip-glow absolute inset-0">
             <div className="strip-move absolute inset-0" style={slide(loP)}>
-              <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
+              <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-circle bg-signal" />
             </div>
             <div className="strip-move absolute inset-0" style={slide(hiP)}>
-              <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
+              <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-circle bg-signal" />
             </div>
             <div
               className="strip-move absolute inset-0 origin-left bg-signal"
@@ -121,18 +121,18 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
               {/* The momentum light, the night screen's at this scale: a coma of light on the tick
                   tapering the way it is heading, and the band gone white-hot, thinning away. */}
               <div className={`strip-light momentum-glow strip-coma absolute ${rising ? "" : "momentum-glow-fall"}`} style={lightStyle} />
-              <div className={`strip-light momentum-core absolute inset-y-0 rounded-full ${rising ? "" : "momentum-core-fall"}`} style={lightStyle} />
+              <div className={`strip-light momentum-core absolute inset-y-0 rounded-circle ${rising ? "" : "momentum-core-fall"}`} style={lightStyle} />
             </>
           )}
           {rising && (
             // The hollow ring at the coming peak.
             <div className="strip-move absolute inset-0" style={slide(peakP)}>
-              <span className="strip-ring absolute top-1/2 left-0 rounded-full border-ink bg-bg/50" />
+              <span className="strip-ring absolute top-1/2 left-0 rounded-circle border-ink bg-bg/50" />
             </div>
           )}
           {/* Now: a white tick through the band. */}
           <div className="strip-move absolute inset-0" style={slide(nowP)}>
-            <span className="strip-tick absolute left-0 rounded-full bg-ink" />
+            <span className="strip-tick absolute left-0 rounded-circle bg-ink" />
           </div>
         </div>
       </div>

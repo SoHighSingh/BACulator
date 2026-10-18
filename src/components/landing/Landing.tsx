@@ -102,7 +102,7 @@ function RegionSwitch() {
           type="button"
           aria-pressed={region.id === id}
           onClick={() => setRegion(id)}
-          className={`press min-h-12 rounded-full px-4 text-lg ${region.id === id ? "bg-ink font-medium text-bg" : "ctl-edge hover:bg-white/5 hover:text-ink"}`}
+          className={`press min-h-12 rounded-key px-4 text-lg ${region.id === id ? "bg-ink font-medium text-bg" : "ctl-edge hover:bg-white/5 hover:text-ink"}`}
         >
           {REGIONS[id].gramsPerStandard} g{id === "us" ? " (US)" : ""}
         </button>
@@ -116,7 +116,7 @@ function StartButton({ onStart, className = "" }: { onStart: () => void; classNa
     <button
       type="button"
       onClick={onStart}
-      className={`press key-glow flex min-h-14 items-center gap-3 rounded-full bg-ink pr-7 pl-6 text-lg font-semibold text-bg ${className}`}
+      className={`press key-glow flex min-h-14 items-center gap-3 rounded-key bg-ink pr-7 pl-6 text-lg font-semibold text-bg ${className}`}
     >
       <StripGlyph tone="dark" className="h-3.5 w-9" />
       Start tonight
@@ -140,7 +140,7 @@ function TryIt({ demo }: { demo: DemoNight }) {
               type="button"
               onClick={() => demo.add(q)}
               onPointerMove={lightAt}
-              className="press lit flex min-h-12 items-center gap-2.5 rounded-full bg-white/[0.06] px-4 text-lg font-medium chip-edge"
+              className="press lit flex min-h-12 items-center gap-2.5 rounded-key bg-white/[0.06] px-4 text-lg font-medium chip-edge"
             >
               {q.standards > 0 ? (
                 <DrinkIcon kind={drinkKind(q)} className="size-5 text-ink-2" />
@@ -154,7 +154,7 @@ function TryIt({ demo }: { demo: DemoNight }) {
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         {demo.model.notSafeToDrive && (
-          <p className="flex min-h-12 items-center gap-2.5 rounded-full bg-alert/[0.12] px-4 text-lg font-semibold text-alert alert-edge">
+          <p className="flex min-h-12 items-center gap-2.5 rounded-key bg-alert/[0.12] px-4 text-lg font-semibold text-alert alert-edge">
             <WarningMark className="size-5" />
             Not safe to drive
           </p>
@@ -166,7 +166,7 @@ function TryIt({ demo }: { demo: DemoNight }) {
                 <span className="text-ink-2">Added: </span>
                 <span className="font-medium">{drinkLabel(demo.lastAdded, std)}</span>
               </span>
-              <button type="button" onClick={demo.undo} className="press min-h-12 rounded-full bg-white/10 px-4 font-medium hover:bg-white/15">
+              <button type="button" onClick={demo.undo} className="press min-h-12 rounded-key bg-white/10 px-4 font-medium hover:bg-white/15">
                 Undo
               </button>
             </span>
@@ -177,7 +177,7 @@ function TryIt({ demo }: { demo: DemoNight }) {
             <button
               type="button"
               onClick={demo.reset}
-              className="press flex min-h-12 items-center gap-2 rounded-full px-4 font-medium text-ink-2 ctl-edge hover:text-ink"
+              className="press flex min-h-12 items-center gap-2 rounded-key px-4 font-medium text-ink-2 ctl-edge hover:text-ink"
             >
               <RotateCcw aria-hidden="true" className="size-4" strokeWidth={2.25} />
               Start over
@@ -211,13 +211,13 @@ export function Landing({ onStart }: LandingProps) {
           <span className="text-lg font-semibold tracking-[-0.02em]">BACulator</span>
           <span className="hidden text-lg text-ink-2 md:inline">Blood alcohol estimator</span>
         </Link>
-        <a href="#maths" className="hidden min-h-12 items-center rounded-full px-4 text-lg text-ink-2 hover:text-ink md:flex">
+        <a href="#maths" className="hidden min-h-12 items-center rounded-key px-4 text-lg text-ink-2 hover:text-ink md:flex">
           The maths
         </a>
-        <a href="#questions" className="hidden min-h-12 items-center rounded-full px-4 text-lg text-ink-2 hover:text-ink md:flex">
+        <a href="#questions" className="hidden min-h-12 items-center rounded-key px-4 text-lg text-ink-2 hover:text-ink md:flex">
           Questions
         </a>
-        <button type="button" onClick={onStart} className="press min-h-12 rounded-full px-5 text-lg font-medium ctl-edge hover:bg-white/5">
+        <button type="button" onClick={onStart} className="press min-h-12 rounded-key px-5 text-lg font-medium ctl-edge hover:bg-white/5">
           Sign in
         </button>
       </nav>
@@ -245,7 +245,7 @@ export function Landing({ onStart }: LandingProps) {
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <StartButton onStart={onStart} />
-              <a href="#maths" className="press hidden min-h-14 items-center rounded-full px-6 text-lg font-medium ctl-edge hover:bg-white/5 sm:flex">
+              <a href="#maths" className="press hidden min-h-14 items-center rounded-key px-6 text-lg font-medium ctl-edge hover:bg-white/5 sm:flex">
                 See the maths
               </a>
             </div>
@@ -363,8 +363,8 @@ export function Landing({ onStart }: LandingProps) {
         <div aria-hidden="true" className="wrap mt-[clamp(40px,7vh,112px)]">
           <p className="text-[clamp(56px,20.6vw,380px)] leading-[0.8] font-semibold tracking-[-0.065em] whitespace-nowrap">BACulator</p>
           <div className="relative mt-[clamp(16px,2vw,28px)] -mx-[var(--gutter)] h-[var(--strip-h)] bg-white/[0.07]">
-            <div className="absolute inset-y-0 left-[calc(var(--gutter)+18%)] w-[44%] rounded-full bg-signal" />
-            <div className="absolute -inset-y-3 left-[calc(var(--gutter)+34%)] w-[6px] rounded-full bg-ink tick-cut" />
+            <div className="absolute inset-y-0 left-[calc(var(--gutter)+18%)] w-[44%] rounded-circle bg-signal" />
+            <div className="absolute -inset-y-3 left-[calc(var(--gutter)+34%)] w-[6px] rounded-circle bg-ink tick-cut" />
           </div>
         </div>
         <div className="wrap flex flex-wrap items-center gap-x-8 gap-y-2 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-lg">

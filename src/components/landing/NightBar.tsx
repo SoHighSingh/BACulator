@@ -47,7 +47,7 @@ export function NightBar({ demo }: { demo: DemoNight }) {
         {stages.map((s, i) => {
           return (
             <li key={s.key} className="nightbar-seg flex min-w-0 flex-col gap-3" style={{ flexGrow: widths[i], flexBasis: 0 }}>
-              <div className={`nightbar-block strip-move flex rounded-[14px] px-5 py-4 md:p-5 ${s.cls}`}>
+              <div className={`nightbar-block strip-move flex rounded-card px-5 py-4 md:p-5 ${s.cls}`}>
                 <p className="text-[clamp(20px,2vw,28px)] leading-tight font-semibold tracking-[-0.02em]">{s.title}</p>
               </div>
               <p className="max-w-[34ch] text-lg text-ink-2">{s.note}</p>
@@ -58,7 +58,7 @@ export function NightBar({ demo }: { demo: DemoNight }) {
       {/* Now, on the desktop bar only (the stacked phone bar reads top to bottom instead). */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-[-12px] hidden h-[calc(var(--bar-h)+24px)] md:block">
         <div className="strip-move absolute inset-0" style={{ transform: `translateX(${nowP}%)` }}>
-          <span className="absolute inset-y-0 -left-[3px] w-[6px] rounded-full bg-ink tick-cut" />
+          <span className="absolute inset-y-0 -left-[3px] w-[6px] rounded-circle bg-ink tick-cut" />
           <span className="absolute -top-9 -left-6 text-lg font-medium text-ink">Now</span>
         </div>
       </div>

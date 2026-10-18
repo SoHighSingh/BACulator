@@ -25,6 +25,22 @@
   --color-alert: #ffa494; /* 10.0:1 */
 }
 
+/* Corners — one squircle language (DESIGN.md, Material → Corners). Every container is a squircle
+   (`corner-shape: squircle`, set on everything below) with a radius of about 25–30% of its height
+   for controls, like the mark's tile (rx 16 on a 64 grid). Nothing is a pill. True circles exist
+   only for marks that are not containers (`rounded-circle`): the range bar's band, tick and ring,
+   the chart's now-dot, the slider thumb, status dots, the sheet's grab handle. */
+@theme {
+  --radius-mark: 8px; /* marks ≤ 32px: the chart tooltip, the live-value tag */
+  --radius-tile: 11px; /* 40–44px tiles: the brand tile (44 → 11), icon tiles in list rows */
+  --radius-key: 13px; /* 48–56px controls: keys, chips, icon keys, the status pill, the composer */
+  --radius-card: 14px; /* cards */
+  --radius-row: 16px; /* rows, inputs, panels inside a sheet or dock, the Getting-home tiles */
+  --radius-primary: 20px; /* 64–72px white keys (Add another …, Add, Save) */
+  --radius-panel: 28px; /* the dock, floating panels, centred modals, the landing's glass frame */
+  --radius-sheet: 32px; /* bottom sheets, top corners */
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -145,6 +161,15 @@
   html {
     color-scheme: dark;
   }
+  /* The squircle: every corner (and every pseudo-element rim, scrim and mask) follows it, so a
+     `rounded-*` utility or a raw border-radius is a squircle without asking. Chrome 139+. */
+  @supports (corner-shape: squircle) {
+    *,
+    ::before,
+    ::after {
+      corner-shape: squircle;
+    }
+  }
   /* Nothing should move for people who've asked for less motion. */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -156,6 +181,26 @@
       scroll-behavior: auto !important;
     }
   }
+}
+/* Where corners are still plain arcs (Safari, Firefox), a squircle of radius r reads about like
+   an arc of 0.8r, so the scale steps down to keep the same visual tightness. */
+@supports not (corner-shape: squircle) {
+  :root {
+    --radius-mark: 7px;
+    --radius-tile: 9px;
+    --radius-key: 11px;
+    --radius-card: 12px;
+    --radius-row: 13px;
+    --radius-primary: 16px;
+    --radius-panel: 23px;
+    --radius-sheet: 26px;
+  }
+}
+/* A true circle (or round-ended bar) for marks that are not containers: the range bar's band,
+   tick and peak ring, the chart's now-dot, status dots, the slider thumb, the grab handle. */
+@utility rounded-circle {
+  border-radius: calc(infinity * 1px);
+  corner-shape: round;
 }
 
 
@@ -232,13 +277,16 @@
    pill, the tile shrinks into the warning disc and the words slide in. Only clip-path, transform and
    opacity move; the pill's box (and so the blur) never changes size, and the keys never move. */
 .night-status {
-  /* Calm: clipped to the mark's tile. Not safe: the same tile extends to the right to hold the
-     words, keeping the tile's corners (11px + the 2px inset), so it reads as the logo opening up. */
-  border-radius: 13px;
-  clip-path: inset(2px calc(100% - 46px) 2px 2px round 11px);
+  /* Calm: clipped to the mark's 44px tile (its own corners, the tile radius, 2px inside the pill).
+     Not safe: the clip opens to the whole box, so the pill's own squircle corner (the key radius)
+     shapes it; the logo reads as opening up into the pill. clip-path's `round` is always a plain
+     arc (corner-shape does not reach it), so the open clip carries no rounding of its own: the
+     squircle border-radius is the only corner left, in Chrome and in the fallback alike. */
+  border-radius: var(--radius-key);
+  clip-path: inset(2px calc(100% - 46px) 2px 2px round var(--radius-tile));
 }
 .night-status.is-alert {
-  clip-path: inset(0 round 13px);
+  clip-path: inset(0 round 0);
 }
 .night-status-word {
   opacity: 0;
@@ -305,6 +353,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  corner-shape: inherit;
   padding: 1px;
   background: linear-gradient(160deg, rgb(255 255 255 / 0.32), rgb(255 255 255 / 0.04) 40%, rgb(255 255 255 / 0.02) 70%, rgb(255 255 255 / 0.12));
   -webkit-mask:
@@ -336,7 +385,7 @@
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-edge);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
 }
 
 /* The white key: the one filled action colour. */
@@ -442,7 +491,8 @@ html:has(.app-shell) body {
     content: "";
     position: absolute;
     inset: -6px;
-    border-radius: 50%;
+    /* Concentric with the mic key's squircle (key radius + the 6px it stands off). */
+    border-radius: calc(var(--radius-key) + 6px);
     box-shadow: 0 0 0 2px rgb(124 180 255 / 0.7);
     animation: mic 1.4s var(--ease-out) infinite;
   }
@@ -513,11 +563,13 @@ html:has(.app-shell) body {
 .time-range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
+  corner-shape: round;
   background: linear-gradient(to right, var(--color-signal) var(--fill, 0%), rgb(255 255 255 / 0.12) var(--fill, 0%));
 }
 .time-range::-moz-range-track {
   height: 6px;
   border-radius: 3px;
+  corner-shape: round;
   background: rgb(255 255 255 / 0.12);
 }
 .time-range::-webkit-slider-thumb {
@@ -526,6 +578,7 @@ html:has(.app-shell) body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
+  corner-shape: round;
   background: var(--color-ink);
   box-shadow: 0 2px 10px rgb(0 0 0 / 0.5);
 }
@@ -534,6 +587,7 @@ html:has(.app-shell) body {
   height: 32px;
   border: 0;
   border-radius: 50%;
+  corner-shape: round;
   background: var(--color-ink);
 }
 

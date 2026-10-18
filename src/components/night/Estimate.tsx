@@ -76,7 +76,7 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
           </span>
         );
         return onOpenDetails ? (
-          <button type="button" onClick={onOpenDetails} aria-label={`About this estimate: ${about ? "about " : ""}${point}`} className="press -mx-1 block rounded-2xl px-1 text-left">
+          <button type="button" onClick={onOpenDetails} aria-label={`About this estimate: ${about ? "about " : ""}${point}`} className="press -mx-1 block rounded-row px-1 text-left">
             {number}
           </button>
         ) : (
@@ -93,10 +93,10 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
           className="relative mt-3 block h-[72px] w-full text-left"
         >
           {/* The bar sits in the upper half of a 72px target; labels hang under it. */}
-          <span aria-hidden="true" className="absolute inset-x-0 top-6 h-1 rounded-full bg-white/10" />
+          <span aria-hidden="true" className="absolute inset-x-0 top-6 h-1 rounded-circle bg-white/10" />
           <span
             aria-hidden="true"
-            className="band-ease absolute top-6 h-1 rounded-full bg-signal shadow-[0_0_16px_2px_rgb(124_180_255/0.55)]"
+            className="band-ease absolute top-6 h-1 rounded-circle bg-signal shadow-[0_0_16px_2px_rgb(124_180_255/0.55)]"
             style={{ left: pct(bac * BAND_LOW), width: `calc(${pct(bac * BAND_HIGH)} - ${pct(bac * BAND_LOW)})` }}
           />
           {lightStyle && (
@@ -104,19 +104,19 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
               {/* The coma: a soft head of light on the tick, tapering the way it is heading. */}
               <span aria-hidden="true" className={`band-ease momentum-glow absolute top-4 h-5 ${rising ? "" : "momentum-glow-fall"}`} style={lightStyle} />
               {/* The core: the band itself, white-hot at the tick and thinning away from it. */}
-              <span aria-hidden="true" className={`band-ease momentum-core absolute top-6 h-1 rounded-full ${rising ? "" : "momentum-core-fall"}`} style={lightStyle} />
+              <span aria-hidden="true" className={`band-ease momentum-core absolute top-6 h-1 rounded-circle ${rising ? "" : "momentum-core-fall"}`} style={lightStyle} />
             </>
           )}
           {rising && (
             <span
               aria-hidden="true"
-              className="band-ease absolute top-[19px] size-3.5 -translate-x-1/2 rounded-full border-2 border-ink bg-bg/50"
+              className="band-ease absolute top-[19px] size-3.5 -translate-x-1/2 rounded-circle border-2 border-ink bg-bg/50"
               style={{ left: pct(rising.bac) }}
             />
           )}
           <span
             aria-hidden="true"
-            className="band-ease absolute top-4 h-5 w-0.5 -translate-x-1/2 rounded-full bg-ink shadow-[0_0_10px_1px_rgb(250_250_250/0.45)]"
+            className="band-ease absolute top-4 h-5 w-0.5 -translate-x-1/2 rounded-circle bg-ink shadow-[0_0_10px_1px_rgb(250_250_250/0.45)]"
             style={{ left: pct(bac) }}
           />
 

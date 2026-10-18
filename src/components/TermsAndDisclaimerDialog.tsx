@@ -52,7 +52,7 @@ export function TermsAndDisclaimerDialog({
         }
       }}
     >
-      <DialogContent className="flex max-h-[85dvh] w-[92vw] max-w-md flex-col overflow-hidden rounded-2xl border border-line bg-surface">
+      <DialogContent className="flex max-h-[85dvh] w-[92vw] max-w-md flex-col overflow-hidden rounded-panel border border-line bg-surface">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-2xl font-semibold text-ink">Before you start</DialogTitle>
           <DialogDescription className="text-lg text-ink-2">Three things to know.</DialogDescription>
@@ -78,7 +78,7 @@ export function TermsAndDisclaimerDialog({
 
           <label
             htmlFor={checkboxId}
-            className="flex min-h-14 cursor-pointer items-center gap-4 rounded-xl border border-line bg-surface-2 px-4 py-3"
+            className="flex min-h-14 cursor-pointer items-center gap-4 rounded-row border border-line bg-surface-2 px-4 py-3"
           >
             <input
               id={checkboxId}
@@ -119,14 +119,14 @@ export function TermsAndDisclaimerDialog({
           <Button
             variant="outline"
             onClick={onClose}
-            className="min-h-14 flex-1 rounded-xl border-line bg-surface-2 text-lg text-ink"
+            className="min-h-14 flex-1 rounded-row border-line bg-surface-2 text-lg text-ink"
           >
             Not now
           </Button>
           <Button
             onClick={onAgree}
             disabled={!ageConfirmed || busy}
-            className="min-h-14 flex-1 rounded-full bg-ink text-lg font-medium text-bg disabled:opacity-40"
+            className="min-h-14 flex-1 rounded-key bg-ink text-lg font-medium text-bg disabled:opacity-40"
           >
             {agreeLabel}
           </Button>

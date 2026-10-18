@@ -59,7 +59,7 @@ export default function UserInfoSlideOut({ isOpen, onClose, userName }: UserInfo
         <button
           type="button"
           onClick={() => void onSignOut()}
-          className="press min-h-14 rounded-full text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
+          className="press min-h-14 rounded-key text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
         >
           {queued > 0 ? "Sign out anyway" : "Sign out"}
         </button>

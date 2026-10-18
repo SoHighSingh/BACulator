@@ -26,8 +26,8 @@ interface AddSheetProps {
 const MAX_COUNT = 6;
 const ceil10 = (n: number) => Math.ceil(n * 10 - 1e-9) / 10; // never round a drink down
 
-const ROW = "press flex w-full items-center gap-4 rounded-2xl bg-white/[0.05] px-4 py-4 text-left shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] hover:bg-white/[0.08]";
-const ICON_TILE = "grid size-11 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-ink-2";
+const ROW = "press flex w-full items-center gap-4 rounded-row bg-white/[0.05] px-4 py-4 text-left shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] hover:bg-white/[0.08]";
+const ICON_TILE = "grid size-11 shrink-0 place-items-center rounded-tile bg-white/[0.06] text-ink-2";
 
 /**
  * Pick a drink from a list, the way a food log or an order screen does it: recents first, then the
@@ -97,7 +97,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
     >
       {serve && size ? (
         <div className="flex flex-col gap-5 pt-1">
-          <button type="button" onClick={() => setPicked(null)} className="press -ml-2 flex min-h-12 w-fit items-center gap-1 rounded-full pr-4 pl-2 text-lg font-medium text-ink-2 hover:bg-white/[0.06]">
+          <button type="button" onClick={() => setPicked(null)} className="press -ml-2 flex min-h-12 w-fit items-center gap-1 rounded-key pr-4 pl-2 text-lg font-medium text-ink-2 hover:bg-white/[0.06]">
             <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2.25} />
             All drinks
           </button>
@@ -134,7 +134,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
                         {formatVolume(s.volumeMl, region)} · {std(Math.ceil(rawStandards(1, s.volumeMl, serve.abv) * 100 - 1e-6) / 100)} std
                       </span>
                     </span>
-                    <span className={`grid size-7 shrink-0 place-items-center rounded-full ${on ? "bg-ink text-bg" : "shadow-[inset_0_0_0_1.5px_var(--color-line)]"}`}>
+                    <span className={`grid size-7 shrink-0 place-items-center rounded-circle ${on ? "bg-ink text-bg" : "shadow-[inset_0_0_0_1.5px_var(--color-line)]"}`}>
                       {on && <Check aria-hidden="true" className="size-4" strokeWidth={3} />}
                     </span>
                   </button>
@@ -143,7 +143,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
             </div>
           </section>
 
-          <div className="flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-white/[0.04] px-4 py-2 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+          <div className="flex min-h-16 items-center justify-between gap-3 rounded-row bg-white/[0.04] px-4 py-2 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
             <p className="text-lg font-semibold">How many</p>
             <div className="flex items-center gap-2">
               <button
@@ -151,7 +151,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
                 aria-label="One fewer"
                 disabled={count <= 1}
                 onClick={() => setCount((c) => Math.max(1, c - 1))}
-                className="press grid size-12 place-items-center rounded-full bg-white/10 disabled:opacity-40"
+                className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40"
               >
                 <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
               </button>
@@ -163,7 +163,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
                 aria-label="One more"
                 disabled={count >= MAX_COUNT}
                 onClick={() => setCount((c) => Math.min(MAX_COUNT, c + 1))}
-                className="press grid size-12 place-items-center rounded-full bg-white/10 disabled:opacity-40"
+                className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40"
               >
                 <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
               </button>
@@ -176,7 +176,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
           </section>
 
           <div className="sticky -bottom-5 -mx-5 -mb-5 bg-gradient-to-t from-[var(--glass-strong)] from-70% to-transparent px-5 pt-4 pb-5">
-            <button type="button" onClick={submit} className="press key-glow flex min-h-16 w-full items-center justify-center gap-2 rounded-full bg-ink text-xl font-medium text-bg">
+            <button type="button" onClick={submit} className="press key-glow flex min-h-16 w-full items-center justify-center gap-2 rounded-primary bg-ink text-xl font-medium text-bg">
               <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
               Add {count > 1 ? `${count} · ` : "· "}
               {std(standards)} std
@@ -211,7 +211,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
                           {std(d.standards)} std
                         </span>
                       </span>
-                      <span className="flex min-h-12 shrink-0 items-center gap-1 rounded-full bg-ink pr-4 pl-3 text-lg font-medium text-bg">
+                      <span className="flex min-h-12 shrink-0 items-center gap-1 rounded-key bg-ink pr-4 pl-3 text-lg font-medium text-bg">
                         <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
                         Add
                       </span>
@@ -228,7 +228,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
             </h3>
             <ul className="flex flex-col gap-2">
               {serves.map((s, i) => (
-                <li key={s.label} className="flex items-center rounded-2xl bg-white/[0.05] pr-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+                <li key={s.label} className="flex items-center rounded-row bg-white/[0.05] pr-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
                   {/* The row opens the size step; its + key logs one at the usual size, now. */}
                   <button
                     type="button"
@@ -237,7 +237,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
                       setVolumeMl(s.volumeMl);
                     }}
                     aria-label={`${s.label}, ${detail(s.volumeMl, s.abv)}, ${std(s.standards)} standard drinks. Change size or time`}
-                    className="press flex min-h-[72px] min-w-0 flex-1 items-center gap-3 rounded-l-2xl py-3 pr-2 pl-4 text-left"
+                    className="press flex min-h-[72px] min-w-0 flex-1 items-center gap-3 rounded-l-row py-3 pr-2 pl-4 text-left"
                   >
                     <span className={ICON_TILE}>
                       <DrinkIcon kind={drinkKind({ name: s.label, volumeMl: s.volumeMl, abv: s.abv })} className="size-6" />
@@ -253,7 +253,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
                     type="button"
                     onClick={() => quickAdd(i)}
                     aria-label={`Add ${s.label.toLowerCase()}`}
-                    className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/15"
+                    className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/15"
                   >
                     <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
                   </button>

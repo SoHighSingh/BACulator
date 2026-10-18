@@ -54,7 +54,7 @@ export default function DeleteAccountPage() {
             <p>Sign in with the Google account whose data you want to download or delete.</p>
             <button
               onClick={() => signIn("google", { callbackUrl: "/account/delete" })}
-              className="cursor-pointer rounded-md bg-white px-4 py-2 font-medium text-black"
+              className="cursor-pointer rounded-key bg-white px-4 py-2 font-medium text-black"
             >
               Sign in with Google
             </button>
@@ -63,7 +63,7 @@ export default function DeleteAccountPage() {
 
         {status === "authenticated" && (
           <>
-            <section className="space-y-3 rounded-md border border-neutral-800 p-4">
+            <section className="space-y-3 rounded-card border border-neutral-800 p-4">
               <h2 className="text-xl font-semibold text-white">Download my data</h2>
               <p>
                 Get a copy of your details and every drink you&apos;ve logged, as a JSON file.
@@ -72,7 +72,7 @@ export default function DeleteAccountPage() {
               <button
                 onClick={() => void downloadMyData()}
                 disabled={exportState === "busy"}
-                className="min-h-12 w-full cursor-pointer rounded-md bg-white px-4 py-2 font-medium text-black disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-12 w-full cursor-pointer rounded-key bg-white px-4 py-2 font-medium text-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {exportState === "busy" ? "Preparing…" : "Download my data"}
               </button>
@@ -98,13 +98,13 @@ export default function DeleteAccountPage() {
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 autoComplete="off"
-                className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-white"
+                className="w-full rounded-row border border-neutral-700 bg-neutral-900 px-3 py-2 text-white"
               />
             </label>
             <button
               disabled={confirmText !== CONFIRM_WORD || deleteAccount.isPending}
               onClick={() => deleteAccount.mutate()}
-              className="w-full cursor-pointer rounded-md bg-red-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full cursor-pointer rounded-key bg-red-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               {deleteAccount.isPending ? "Deleting…" : "Delete my account"}
             </button>

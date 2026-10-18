@@ -42,7 +42,7 @@ export function TonightList({ drinks, onEdit, onRemove }: TonightListProps) {
                 type="button"
                 onClick={() => onEdit(drink)}
                 aria-label={`Edit ${label} at ${formatClock(drink.finishedAt)}`}
-                className="press flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-xl px-4 text-left hover:bg-white/[0.03]"
+                className="press flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-row px-4 text-left hover:bg-white/[0.03]"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block text-lg font-medium">{label}</span>
@@ -57,7 +57,7 @@ export function TonightList({ drinks, onEdit, onRemove }: TonightListProps) {
                 type="button"
                 onClick={() => onRemove(drink)}
                 aria-label={`Remove ${label} at ${formatClock(drink.finishedAt)}`}
-                className="press min-h-12 shrink-0 rounded-full px-4 text-lg text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
+                className="press min-h-12 shrink-0 rounded-key px-4 text-lg text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
               >
                 Remove
               </button>

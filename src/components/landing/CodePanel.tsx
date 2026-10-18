@@ -92,7 +92,7 @@ function SexSwitch({ sex, onChange }: { sex: DemoSex; onChange: (s: DemoSex) => 
           type="button"
           aria-pressed={sex === s}
           onClick={() => onChange(s)}
-          className={`press min-h-12 rounded-full px-4 text-lg capitalize ${sex === s ? "bg-ink font-medium text-bg" : "text-ink-2 ctl-edge hover:bg-white/5 hover:text-ink"}`}
+          className={`press min-h-12 rounded-key px-4 text-lg capitalize ${sex === s ? "bg-ink font-medium text-bg" : "text-ink-2 ctl-edge hover:bg-white/5 hover:text-ink"}`}
         >
           {s}
         </button>
