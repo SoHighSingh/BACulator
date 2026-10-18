@@ -6,42 +6,43 @@
   "scripts": {
     "shoot": "node scripts/shoot.mjs",
     "build": "next build",
+    "build:worker": "node scripts/check-env-files.js && opennextjs-cloudflare build && node scripts/check-env-files.js --built",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "check": "next lint && tsc --noEmit",
     "db:migrate:local": "wrangler d1 migrations apply baculator --local",
     "db:migrate:remote": "wrangler d1 migrations apply baculator --remote",
     "db:migrations:sql": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
     "db:catalog-sql": "tsx scripts/build-catalog-sql.ts",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "npm run build:worker && opennextjs-cloudflare deploy",
     "dev": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "postinstall": "prisma generate",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "preview": "npm run build:worker && opennextjs-cloudflare preview",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "eval:drinks": "tsx scripts/eval-drinks.ts"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.7.2",
+    "@auth/prisma-adapter": "^2.11.3",
     "@opennextjs/cloudflare": "^1.20.12",
     "@prisma/adapter-d1": "^6.12.0",
     "@prisma/client": "^6.5.0",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-slot": "^1.2.3",
     "@t3-oss/env-nextjs": "^0.12.0",
-    "@tanstack/react-query": "^5.69.0",
-    "@trpc/client": "^11.0.0",
-    "@trpc/react-query": "^11.0.0",
-    "@trpc/server": "^11.0.0",
+    "@tanstack/react-query": "^5.104.3",
+    "@trpc/client": "^11.19.0",
+    "@trpc/react-query": "^11.19.0",
+    "@trpc/server": "^11.19.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.525.0",
     "next": "^15.2.3",
-    "next-auth": "^5.0.0-beta.25",
+    "next-auth": "^5.0.0-beta.32",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "server-only": "^0.0.1",
@@ -73,5 +74,13 @@
   "ct3aMetadata": {
     "initVersion": "7.39.3"
   },
-  "packageManager": "npm@11.3.0"
+  "packageManager": "npm@11.3.0",
+  "overrides": {
+    "@node-minify/core": {
+      "glob": "^10.5.0"
+    },
+    "next": {
+      "postcss": "^8.5.30"
+    }
+  }
 }

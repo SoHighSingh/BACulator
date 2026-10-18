@@ -4,12 +4,25 @@ Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decision
 
 ## Where things are
 - **Repo:** `C:\Users\agams\BACulator`, GitHub `SoHighSingh/BACulator`. Work branch **`cloudflare-d1-migration`** (local, not pushed since `6788199`). `main` on GitHub is older still. Don't push `main` without checking with the migration session (`local_57f76079…`), which owns go-live.
-- **Stack:** Next.js 15 / React 19 / Tailwind 4 / tRPC / Prisma on Cloudflare Workers (OpenNext) + D1, NextAuth Google.
-- **Checks:** `npm run lint`, `npm run typecheck`, `npm test` (573), `SKIP_ENV_VALIDATION=1 npx opennextjs-cloudflare build`.
+- **Stack:** Next.js 15 / React 19 / Tailwind 4 / tRPC / Prisma on **Cloudflare Workers (OpenNext) + D1**. Auth: NextAuth Google. CI: `.github/workflows/ci.yml` (lint, typecheck, vitest, OpenNext build). Vercel auto-deploys are off (`vercel.json`).
+- **Checks:** `npm run lint`, `npm run typecheck`, `npm test` (588 tests), `SKIP_ENV_VALIDATION=1 npm run build:worker`. Local dev: `npm run dev` (local D1 via wrangler; `npm run db:migrate:local` first). Lint and dev need `.dev.vars` (or `SKIP_ENV_VALIDATION=1`).
 - **Look at the UI with `npm run shoot`** (Playwright driving the system Chrome, `scripts/shoot.mjs`). The Claude desktop browser pane renders pages *hidden*, which freezes `requestAnimationFrame` and canvases. That's why earlier screenshots showed empty gauges the user never saw. Example:
   `npm run shoot -- .shots/night http://localhost:3000/dev/night 375 812 '--actions=[{"scroll":400,"wait":600,"shot":1}]'`
   It prints horizontal overflow, canvas pixel coverage and console errors. Check 320×568, 375×812, 430×932 and 1440×900. `RM=1` emulates reduced motion.
 - **Dev-only pages** (404 in production): `/dev/night` (the real night screen with sample drinks; `?empty`, `?noweight`, `?us`, `?metric`) and `/dev/gauges` (gauge experiments). Sign-in doesn't work locally until the OAuth consent screen is published, so use these.
+
+## Secrets and env (read before building or deploying)
+- **Local values live in `.dev.vars`** (gitignored; template `.dev.vars.example`). `wrangler dev` reads it, and `next dev` gets it through `scripts/load-dev-vars.js` (dev only; Next sets NODE_ENV=production before a build, so builds never read it).
+- **Never create `.env`, `.env.local` or any `.env*` file.** OpenNext copies every `.env*` file into `.open-next/cloudflare/next-env.mjs`, and the Worker uses those values for any variable without a Worker secret (`process.env[key] ??=`), so a forgotten `wrangler secret put` silently ships the dev value.
+- `npm run build:worker` (used by `deploy`, `preview` and CI) refuses to start while a `.env*` file exists and fails afterwards if `next-env.mjs` holds any values (it prints key names only).
+- Production values are Worker secrets: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (`npx wrangler secret put <NAME>`). Use a different AUTH_SECRET locally. If a secret is missing the Worker now fails loudly at env validation instead of falling back.
+
+## Security (audit 17 Oct 2026)
+- Fixed: IDOR scoping, fail-closed `protectedProcedure`, zod validation, atomic account deletion, security headers + CSP (`next.config.js`), dev-only request logging, secrets out of the bundle, next-auth/@auth/tRPC/glob/postcss advisories (`npm audit --omit=dev` = 0; overrides in package.json).
+- **AI bartender limits** (`src/lib/drinks/ai-quota.ts`): Workers AI calls take a slot from atomic D1 counters (`AiUsage`): 20/user/hour, 50/user/day, 250/day globally; a quota error from Cloudflare fills the day's global budget; a per-isolate breaker skips the AI for 5 min after 3 failures. A limit reads as "AI unavailable" so the add sheet offers manual entry. `ParseCache` only stores short phrases (<= 48 chars, 8 words, no 5+ digit runs, confidence >= 0.5) and expires rows after 30 days; `src/server/bartender.ts` prunes hourly.
+- **Auth:** Google tokens are no longer stored (`src/server/auth/account.ts`, migration 0005 clears old ones); `/api/auth/session` returns only `expires` and the user's id/name/email/image (it used to include the httpOnly session token).
+- **Migrations 0004 (AiUsage, ParseCache index/cleanup) and 0005 (clear OAuth tokens) are not applied remotely yet**: `npm run db:migrate:remote` before deploying this code, or `analyseDrink` will fall back to manual entry (the AiUsage table is missing, so the limiter fails closed).
+- CSP keeps `script-src 'unsafe-inline'` (App Router inline payload scripts; a nonce would make every page dynamic). If Cloudflare Web Analytics or other injected scripts are turned on, add their origin to the CSP.
 
 ## What this session shipped (on `cloudflare-d1-migration`)
 `7514845` → `e435569`, nine commits:
@@ -175,6 +188,8 @@ Impeccable flags these as overused defaults: Inter-as-display, Space Grotesk, IB
 - `.open-next` is locked by that server, so the OpenNext build fails with EPERM. Build in a throwaway worktree: `git worktree add --detach <dir> HEAD`, `npm ci`, build, then `git worktree remove`.
 - Windows CRLF: scripted edits need `sed -i 's/\r$//'` first. Shell quoting of `\u00a0` and similar escapes mangles them, so use the Edit tool.
 - Region is stored per device in localStorage; the dev page sets it from `?us` / `?metric`.
+- Building inside `.claude/worktrees/*`: Next warns about multiple lockfiles and picks the main checkout as the workspace root. Harmless: OpenNext still read env files only from the worktree (the bundle check found `next-env.mjs` empty).
+- The dev-time Google sign-in won't work until the consent screen is published or the user is added as a test user.
 
 ## Skills installed (`~/.claude/skills`)
 `designing-for-impaired-users`, `impeccable` (instructions only; launcher missing), `taste-skill` (scripts work with Node 22+ and Chrome), `redesign-skill`, `remotion-*`, `seo*`. React Bits via the shadcn registry, only on the landing page or Remotion, and always honour reduced motion.

@@ -5,6 +5,8 @@ import GoogleProvider from "next-auth/providers/google";
 import { env } from "~/env";
 import { db } from "~/server/db";
 
+import { publicSession, withoutTokens } from "./account";
+
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
  * object and keep type safety.
@@ -25,6 +27,8 @@ declare module "next-auth" {
   //   // role: UserRole;
   // }
 }
+
+const prismaAdapter = PrismaAdapter(db);
 
 /**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
@@ -47,16 +51,14 @@ export const authConfig = {
      * @see https://next-auth.js.org/providers/github
      */
   ],
-  adapter: PrismaAdapter(db),
+  adapter: {
+    ...prismaAdapter,
+    // Store who signed in, not their Google tokens (see withoutTokens).
+    linkAccount: (account) => prismaAdapter.linkAccount!(withoutTokens(account)),
+  },
   // Required off Vercel (Cloudflare Workers): trust the incoming Host header for callback URLs.
   trustHost: true,
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    session: ({ session, user }) => publicSession(session, user),
   },
 } satisfies NextAuthConfig;

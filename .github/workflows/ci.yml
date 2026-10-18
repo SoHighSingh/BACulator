@@ -22,5 +22,6 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # Fails if any .env* file exists or the bundle ends up with env values baked in.
       - name: Build Cloudflare Worker bundle
-        run: npx opennextjs-cloudflare build
+        run: npm run build:worker
