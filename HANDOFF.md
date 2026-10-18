@@ -41,6 +41,12 @@ Paste this to continue:
 >    - Keep lint, typecheck, tests and the OpenNext build green. Build in a throwaway worktree, because the `.env` files in the main checkout block `build:worker`.
 >    - Commit locally. Don't push, and check with the migration session before anything touches main.
 >
+> **Budget (as of the evening of 18 Oct 2026):** the user has about 26% of their weekly session limit left and it resets in about 2 hours, so go hard with subagents, as long as it's done correctly:
+> - run independent pieces in parallel: the landing redo, the logo options and the not-safe options;
+> - give each agent its own files or worktree, so no two touch the same file (the logo's red state and the not-safe treatment both touch the night screen, so sequence those two or split them by file);
+> - give each a complete brief;
+> - verify every result yourself in real Chrome before showing the user.
+>
 > Proposed side sessions (cards in the previous session):
 > - **"BAC engine accuracy fixes":**
 >   - the estimate reads ~40% low right after logging;
