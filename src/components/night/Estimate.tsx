@@ -27,11 +27,12 @@ function useChanged(value: string) {
 }
 
 /**
- * The estimate on the light field: one number rounded up, and under it a bar that says the rest
- * without words. The glowing band is the likely range; the white tick is now. Which way it is
- * heading is built in light, like a long exposure, and nothing moves at rest: while it's rising a
- * comet of light leads from the tick (white-hot) and thins toward a hollow ring where it should
- * peak, and the label says "Rising to about X by T"; while it's falling a dimmer white tail trails
+ * The estimate on the light field: one number rounded up (the heading says it is an estimate; "about"
+ * is only spoken), and under it a bar that says the rest without words. The glowing band is the
+ * likely range; the white tick is now. Which way it is heading is built in light, like a long
+ * exposure: while it's rising a comet of light leads from the tick (white-hot), breathing slowly, and
+ * thins toward a hollow ring where it should peak, and the label says "Rising to about X by T";
+ * while it's falling nothing moves and a dimmer white tail trails
  * from the tick back to where it was an hour ago, and the label says "Falling". Tapping the bar
  * spells out the range. Nothing on the bar is a limit: there are no marks but the reading's own.
  */
@@ -62,12 +63,14 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
       </h2>
       {(() => {
         const number = (
-          <span className="mt-2 flex items-baseline gap-3" aria-hidden="true">
-            {about && <span className="text-2xl font-medium">about</span>}
+          // The heading carries "estimated"; the number stands alone, nudged left by its own side
+          // bearing so the glyph's edge, not its box, lines up with the text above (user decision,
+          // 18 Oct 2026 late: no "about" beside the number; it stays in the spoken text).
+          <span className="mt-2 flex items-baseline" aria-hidden="true">
             <span
               key={point}
               data-changed={changed || undefined}
-              className={`num-in inline-block leading-[0.88] font-medium tracking-[-0.055em] ${
+              className={`num-in inline-block -ml-[0.04em] leading-[0.88] font-medium tracking-[-0.055em] ${
                 point.length > 4 ? "text-[clamp(48px,14vw,64px)]" : size === "lg" ? "text-[clamp(96px,10vw,148px)]" : "text-[clamp(88px,27vw,116px)]"
               }`}
             >
@@ -102,9 +105,10 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
           {lightStyle && (
             <>
               {/* The coma: a soft head of light on the tick, tapering the way it is heading. */}
-              <span aria-hidden="true" className={`band-ease momentum-glow absolute top-4 h-5 ${rising ? "" : "momentum-glow-fall"}`} style={lightStyle} />
-              {/* The core: the band itself, white-hot at the tick and thinning away from it. */}
-              <span aria-hidden="true" className={`band-ease momentum-core absolute top-6 h-1 rounded-full ${rising ? "" : "momentum-core-fall"}`} style={lightStyle} />
+              <span aria-hidden="true" className={`band-ease momentum-glow absolute top-4 h-5 ${rising ? "momentum-rise" : "momentum-glow-fall"}`} style={lightStyle} />
+              {/* The core: the band itself, white-hot at the tick and thinning away from it. Rising, both
+                  layers breathe slowly (.momentum-rise); falling, they hold still. */}
+              <span aria-hidden="true" className={`band-ease momentum-core absolute top-6 h-1 rounded-full ${rising ? "momentum-rise" : "momentum-core-fall"}`} style={lightStyle} />
             </>
           )}
           {rising && (

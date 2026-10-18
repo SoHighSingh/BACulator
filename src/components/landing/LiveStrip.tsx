@@ -55,7 +55,7 @@ function useWidths() {
 export function LiveStrip({ demo }: { demo: DemoNight }) {
   const { model } = demo;
   const bac = model.bac ?? 0;
-  const [about, point] = aboutPoint(bac);
+  const [, point] = aboutPoint(bac);
   const changed = useChanged(point);
   const [lo, hi] = formatBand(bac).split("–");
   const rising = model.peak && model.peak.bac > bac + 0.004 ? model.peak : null;
@@ -86,11 +86,12 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
       <div ref={box} className="strip-num-box relative">
         <p
           ref={num}
-          className="strip-move absolute bottom-0 left-0 flex items-baseline gap-[0.14em] whitespace-nowrap"
+          className="strip-move absolute bottom-0 left-0 flex items-baseline whitespace-nowrap"
           style={{ transform: `translateX(${numX}px)`, visibility: boxW ? undefined : "hidden" }}
         >
-          {about && <span className="text-[clamp(22px,2vw,28px)] font-medium text-ink-2">about</span>}
-          <span key={point} data-changed={changed || undefined} className="strip-num num-in inline-block pr-[0.07em] font-medium">
+          {/* No "about" beside the number (user decision, 18 Oct 2026 late); it stays in the spoken
+              copy under the strip. Centred on the tick by its own measured width. */}
+          <span key={point} data-changed={changed || undefined} className="strip-num num-in inline-block font-medium">
             {point}
           </span>
         </p>
@@ -120,8 +121,8 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
             <>
               {/* The momentum light, the night screen's at this scale: a coma of light on the tick
                   tapering the way it is heading, and the band gone white-hot, thinning away. */}
-              <div className={`strip-light momentum-glow strip-coma absolute ${rising ? "" : "momentum-glow-fall"}`} style={lightStyle} />
-              <div className={`strip-light momentum-core absolute inset-y-0 rounded-full ${rising ? "" : "momentum-core-fall"}`} style={lightStyle} />
+              <div className={`strip-light momentum-glow strip-coma absolute ${rising ? "momentum-rise" : "momentum-glow-fall"}`} style={lightStyle} />
+              <div className={`strip-light momentum-core absolute inset-y-0 rounded-full ${rising ? "momentum-rise" : "momentum-core-fall"}`} style={lightStyle} />
             </>
           )}
           {rising && (

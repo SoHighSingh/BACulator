@@ -169,14 +169,15 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Glass material (DESIGN.md). Cards hold everything you read; glass is only for chrome that
-   floats over content (top bar, warning pill, dock, sheets).
+   Glass material (DESIGN.md). Cards hold everything you read (dense glass, `.card`); the lighter
+   glass is for chrome that floats over content (top bar, warning pill, dock, sheets).
    --------------------------------------------------------------------------------------------- */
 :root {
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bloom: cubic-bezier(0.45, 0, 0.25, 1);
   --glass: rgb(24 24 28 / 0.62);
   --glass-strong: rgb(18 18 22 / 0.78);
+  --card: rgb(15 15 18 / 0.68);
 }
 
 /* A still field of light behind the estimate. It never moves. While any drink is counted (the same
@@ -261,11 +262,22 @@
     letter-spacing: -0.03em;
   }
 }
+/* The mark's tick: in the alert tone it steps 6 units right on the 64 grid (still inside the band),
+   as if the needle moved up. Rendered in its final place; it only slides with the morph below. */
+.bm-tick {
+  transform: translateX(0);
+}
+.bm-tick.is-alert {
+  transform: translateX(6px);
+}
 @media (prefers-reduced-motion: no-preference) {
-  /* Calm → not safe (~900ms, timed to the field): the mark reddens (0–250), then the tile opens to
-     the right (250–900) and the words slide out of the mark (330–780). */
+  /* Calm → not safe (~900ms, timed to the field): the mark reddens and its tick slides right (0–250),
+     then the tile opens to the right (250–900) and the words slide out of the mark (330–780). */
   .night-status.is-anim .bm-tone {
     transition: opacity 250ms var(--ease-out);
+  }
+  .night-status.is-anim .bm-tick {
+    transition: transform 250ms var(--ease-out);
   }
   .night-status.is-anim {
     transition: clip-path 650ms var(--ease-out) 250ms;
@@ -287,6 +299,9 @@
   }
   .night-status.is-anim:not(.is-alert) .bm-tone {
     transition: opacity 250ms var(--ease-out) 400ms;
+  }
+  .night-status.is-anim:not(.is-alert) .bm-tick {
+    transition: transform 250ms var(--ease-out) 400ms;
   }
 }
 
@@ -333,10 +348,31 @@
   }
 }
 
+/* Content cards: the dock's glass, a little denser, so the light field shows faintly through what you
+   read (user decision, 18 Oct 2026 late). `--card` over the brightest red the field reaches
+   (rgb 95 27 21) composites to about rgb(41 19 19): ink 16.8:1, ink-2 6.8:1. The blur is kept
+   modest because several cards stack on one screen. Solid under reduced transparency / more contrast. */
 .card {
-  background: var(--color-surface);
+  background: var(--card);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
   border: 1px solid var(--color-edge);
   border-radius: 14px;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .card {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .card {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--color-ink-2);
+  }
 }
 
 /* The white key: the one filled action colour. */
@@ -394,6 +430,29 @@
 }
 .momentum-core-fall {
   background: linear-gradient(to right, rgb(250 250 250 / 0.7), rgb(250 250 250 / 0.3) 50%, rgb(250 250 250 / 0));
+}
+/* While it is rising, and only then, the light breathes: a slow 4s ease-in-out, opacity 1 → 0.55 → 1
+   with a hair of lengthening toward the ring (scaleX from the tick, so it never passes the ring). The
+   band, the tick, the ring and the number hold still. User decision, 18 Oct 2026 (late): the one
+   ambient motion besides the live mic. Off under reduced motion, where it sits at full strength. */
+.momentum-rise {
+  transform-origin: 0% 50%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .momentum-rise {
+    animation: momentum-breathe 4s ease-in-out infinite;
+  }
+}
+@keyframes momentum-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scaleX(0.96);
+  }
 }
 
 /* App feel on the night screen: no rubber-band page, no grey tap flash, no text selection on controls. */
