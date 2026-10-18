@@ -6,8 +6,8 @@ import { formatPoint } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
 import type { Drink } from "~/types/bac";
 
-import { InstrumentChart, type Look } from "./chart/InstrumentChart";
 import { valueAt } from "./chart/geometry";
+import { SignalChart } from "./chart/SignalChart";
 
 export { valueAt };
 
@@ -15,18 +15,17 @@ interface ChartProps {
   simulation: NightSimulation;
   now: Date;
   height: number;
-  /** Accepted for the bigger graph's existing call; value labels are always drawn now. */
+  /** The bigger graph: shows a time · value tag at the cursor while scrubbing. */
   axes?: boolean;
-  /** Drink times (ms), marked on the time axis. */
+  /** Drink times (ms), marked on the baseline. */
   events?: number[];
   /** Reports the scrubbed time (null at rest), so a header can read it. */
   onPick?: (t: number | null, bac: number) => void;
-  look?: Partial<Look>;
 }
 
-/** Tonight's curve, drawn as an instrument (see chart/InstrumentChart). The bigger graph uses it too. */
-export function TimelineChart({ simulation, now, height, events, onPick, look }: ChartProps) {
-  return <InstrumentChart simulation={simulation} now={now} height={height} events={events} onPick={onPick} look={look} />;
+/** Tonight's curve (see chart/SignalChart). The bigger graph uses it too, with a readout. */
+export function TimelineChart({ simulation, now, height, axes = false, events, onPick }: ChartProps) {
+  return <SignalChart simulation={simulation} now={now} height={height} events={events} onPick={onPick} readout={axes} />;
 }
 
 interface TimelineCardProps {
@@ -35,7 +34,7 @@ interface TimelineCardProps {
   onExpand: () => void;
   /**
    * When the drinks and body details are passed, the curve is re-simulated at one-minute resolution
-   * (the screen's own simulation samples every 5 min) and each drink is marked on the time axis.
+   * (the screen's own simulation samples every 5 min) and each drink is marked on the baseline.
    */
   drinks?: Drink[];
   weight?: number | null;
@@ -44,11 +43,11 @@ interface TimelineCardProps {
 
 /** Tonight's curve on the main screen; the header reads whatever time is being scrubbed. */
 export function TimelineCard({ simulation, now, onExpand, drinks, weight, sex }: TimelineCardProps) {
-  const [picked, setPicked] = useState<{ t: number | null; bac: number } | null>(null);
-  const fine = useMemo(
-    () => (drinks && drinks.length > 0 && weight && sex ? simulateNight(drinks, weight, sex, now, 1) : null),
-    [drinks, weight, sex, now],
-  );
+  const [picked, setPicked] = useState<{
+    t: number | null;
+    bac: number;
+  } | null>(null);
+  const fine = useMemo(() => (drinks && drinks.length > 0 && weight && sex ? simulateNight(drinks, weight, sex, now, 1) : null), [drinks, weight, sex, now]);
   const sim = fine ?? simulation;
   const events = useMemo(() => (drinks ?? []).map((d) => new Date(d.finishedAt).getTime()).filter((t) => t <= now.getTime()), [drinks, now]);
   if (!sim || sim.samples.length < 2) return null;
@@ -66,7 +65,7 @@ export function TimelineCard({ simulation, now, onExpand, drinks, weight, sex }:
       >
         <h2 id="curve-heading" className="flex items-center gap-1.5 text-lg font-semibold">
           Tonight
-          <Maximize2 aria-hidden="true" className="size-4 text-ink-2" strokeWidth={2} />
+          <Maximize2 aria-hidden="true" className="text-ink-2 size-4" strokeWidth={2} />
         </h2>
         <span className="text-lg" aria-live="off">
           <span className="text-ink-2">{picked?.t ? formatClock(picked.t) : "Now"} · </span>
@@ -75,18 +74,12 @@ export function TimelineCard({ simulation, now, onExpand, drinks, weight, sex }:
       </button>
       <p className="sr-only">
         Estimated blood alcohol through the night, from {formatClock(sim.samples[0]!.t)}. Now about {formatPoint(nowBac)}. Peak about{" "}
-        {formatPoint(sim.peak.bac)} at {formatClock(sim.peak.t)}.{zero ? ` Back to zero around ${formatClock(zero)} by the model, later for slow eliminators.` : ""}{" "}
-        Estimate only; the likely range is drawn as a band around the line.
+        {formatPoint(sim.peak.bac)} at {formatClock(sim.peak.t)}.
+        {zero ? ` Back to zero around ${formatClock(zero)} by the model, later for slow eliminators.` : ""} Estimate only: the true value could be a quarter
+        lower or 40% higher.
       </p>
       <div className="mt-3">
-        <InstrumentChart
-          simulation={sim}
-          now={now}
-          height={168}
-          events={events}
-          readout={false}
-          onPick={(t, b) => setPicked(t === null ? null : { t, bac: b })}
-        />
+        <SignalChart simulation={sim} now={now} height={168} events={events} onPick={(t, b) => setPicked(t === null ? null : { t, bac: b })} />
       </div>
     </section>
   );

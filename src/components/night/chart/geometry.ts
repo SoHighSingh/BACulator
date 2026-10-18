@@ -1,5 +1,4 @@
 import type { NightSimulation } from "~/lib/bac-calculator";
-import { BAND_HIGH, BAND_LOW } from "~/lib/estimate-display";
 
 export type Sample = { t: number; bac: number };
 
@@ -23,26 +22,19 @@ export function valueAt(samples: Sample[], t: number): number {
 export interface ChartWindow {
   t0: number;
   t1: number;
-  /** Top of the y scale: a clean multiple of `step` above the highest value drawn (band included). */
+  /** Top of the y scale: the highest value drawn (the plot's own padding is the headroom). */
   top: number;
-  /** Clean y step (0.01, 0.02, 0.05, 0.1) giving at most five rows. */
-  step: number;
   /** Every sample inside the window, at the simulation's own resolution. */
   shown: Sample[];
   /** Hour marks with labels. */
   hours: number[];
-  /** Finer time ticks (15 or 30 min) without labels. */
-  minors: number[];
-  /** Horizontal rows at each clean step (0 excluded). */
-  rows: number[];
 }
 
 /**
  * The time window: from the first drink, looking ahead as far as has already passed (at least 3 h),
- * so tonight isn't squashed into a corner by the long tail. The y scale ends on a clean step above
- * the upper edge of the likely band, so axis labels are honest numbers rather than a padded max.
+ * so tonight isn't squashed into a corner by the long tail.
  */
-export function chartWindow(sim: NightSimulation, now: Date, { band = true } = {}): ChartWindow {
+export function chartWindow(sim: NightSimulation, now: Date): ChartWindow {
   const { samples } = sim;
   const nowT = now.getTime();
   const t0 = samples[0]?.t ?? nowT;
@@ -51,28 +43,15 @@ export function chartWindow(sim: NightSimulation, now: Date, { band = true } = {
   const t1 = Math.max(nowT + 30 * MINUTE, Math.min(last, nowT + ahead));
   const end = samples.findIndex((s) => s.t > t1);
   const shown = end === -1 ? samples : samples.slice(0, end + 1);
-
-  const peak = Math.max(0.02, ...shown.map((s) => s.bac)) * (band ? BAND_HIGH : 1);
-  let step = 0.01;
-  for (const s of [0.01, 0.02, 0.05, 0.1, 0.2]) {
-    step = s;
-    if (peak / s <= 5) break;
-  }
-  // The plot's own top padding is the headroom, so the top row is the first clean step at or above the peak.
-  const top = Math.max(step, Math.ceil(peak / step - 1e-6) * step);
-  const rows: number[] = [];
-  for (let v = step; v <= top + 1e-9; v += step) rows.push(+v.toFixed(3));
+  const top = Math.max(0.02, ...shown.map((s) => s.bac));
 
   const span = (t1 - t0) / HOUR;
   const every = span > 12 ? 3 : span > 6 ? 2 : 1;
-  const minor = span > 6 ? 30 * MINUTE : 15 * MINUTE;
   const hours: number[] = [];
   const first = new Date(t0);
   first.setMinutes(0, 0, 0);
   for (let t = first.getTime() + HOUR; t < t1; t += HOUR * every) hours.push(t);
-  const minors: number[] = [];
-  for (let t = Math.ceil(t0 / minor) * minor; t < t1; t += minor) if (!hours.includes(t)) minors.push(t);
-  return { t0, t1, top, step, shown, hours, minors, rows };
+  return { t0, t1, top, shown, hours };
 }
 
 /** Pixel on a half-pixel so a 1px stroke stays one crisp device row. */
@@ -83,13 +62,61 @@ export function polyline(pts: [number, number][]): string {
   return pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
 }
 
-/** The likely-range band around the model, as a closed polygon (upper edge forward, lower back). */
-export function bandPath(shown: Sample[], x: (t: number) => number, y: (b: number) => number): string {
-  if (shown.length === 0) return "";
-  const upper = shown.map((s): [number, number] => [x(s.t), y(s.bac * BAND_HIGH)]);
-  const lower = [...shown].reverse().map((s): [number, number] => [x(s.t), y(s.bac * BAND_LOW)]);
-  return `${polyline(upper)} ${lower.map(([px, py]) => `L${px.toFixed(2)} ${py.toFixed(2)}`).join(" ")} Z`;
+/**
+ * A smooth path through the points that never overshoots them: monotone cubic Hermite (Fritsch–
+ * Carlson) tangents, written as cubic Béziers. Between two samples the curve stays within their
+ * values, so a peak is exactly the peak sample and an absorption step still rises where it rose;
+ * the smoothing only rounds off the sampling corners. Points must be sorted by x.
+ */
+export function monotonePath(pts: [number, number][]): string {
+  const n = pts.length;
+  if (n < 3) return polyline(pts);
+  const dx: number[] = [];
+  const slope: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const h = pts[i + 1]![0] - pts[i]![0];
+    dx.push(h);
+    slope.push(h > 0 ? (pts[i + 1]![1] - pts[i]![1]) / h : 0);
+  }
+  const m: number[] = new Array<number>(n).fill(0);
+  m[0] = slope[0]!;
+  m[n - 1] = slope[n - 2]!;
+  for (let i = 1; i < n - 1; i++) {
+    const a = slope[i - 1]!;
+    const b = slope[i]!;
+    // A flat or turning point gets a flat tangent, so the curve never pokes past a sample.
+    if (a === 0 || b === 0 || a * b < 0) m[i] = 0;
+    else {
+      const w1 = 2 * dx[i]! + dx[i - 1]!;
+      const w2 = dx[i]! + 2 * dx[i - 1]!;
+      m[i] = (w1 + w2) / (w1 / a + w2 / b);
+    }
+  }
+  let d = `M${pts[0]![0].toFixed(2)} ${pts[0]![1].toFixed(2)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = pts[i]!;
+    const [x1, y1] = pts[i + 1]!;
+    const h = dx[i]! / 3;
+    d += ` C${(x0 + h).toFixed(2)} ${(y0 + m[i]! * h).toFixed(2)} ${(x1 - h).toFixed(2)} ${(y1 - m[i + 1]! * h).toFixed(2)} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  }
+  return d;
 }
 
-/** Format a y-axis step label: "0.05", or "0.1" never (always two places, tabular). */
-export const axisValue = (v: number) => v.toFixed(2);
+/**
+ * Thin a minute-sampled line to roughly one point per `minPx` of width, keeping the first and
+ * last points and every local peak or trough, so the drawn curve is lighter but turns where the
+ * model turns.
+ */
+export function thin(pts: [number, number][], minPx: number): [number, number][] {
+  if (pts.length < 3) return pts;
+  const out: [number, number][] = [pts[0]!];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p = pts[i]!;
+    const prev = pts[i - 1]![1];
+    const next = pts[i + 1]![1];
+    const turn = (p[1] - prev) * (next - p[1]) < 0;
+    if (turn || p[0] - out[out.length - 1]![0] >= minPx) out.push(p);
+  }
+  out.push(pts[pts.length - 1]!);
+  return out;
+}
