@@ -56,6 +56,8 @@ model User {
     tabs          Tab[]
 }
 
+// At most one open tab (finishedAt null) per user: a partial unique index in migrations/0004_offline_adds.sql
+// (Prisma can't express it here).
 model Tab {
   id         String   @id @default(cuid())
   name       String
@@ -87,6 +89,7 @@ model Drink {
   source     String?  // recent | cache | catalog | ai | manual | edited
   confidence Float?   // 0-1, from the parser
   rawText    String?  // what the user typed; normalised to look up recents
+  clientId   String?  @unique // id the phone gave the drink, so an offline add replayed twice is saved once
 
   @@index([tabId])
 }

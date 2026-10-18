@@ -6,7 +6,10 @@
 import "./scripts/load-dev-vars.js";
 import "./src/env.js";
 
+import { randomUUID } from "node:crypto";
+
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+import withSerwistInit from "@serwist/next";
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 
 /**
@@ -44,6 +47,16 @@ const securityHeaders = (dev) => [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
 ];
 
+// The service worker that lets the installed app open with no signal (src/app/sw.ts). Built into
+// public/sw.js by production builds only: `next dev --turbo` doesn't run webpack plugins.
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  // The app shell, for opening offline; a new revision each build so it never goes stale.
+  additionalPrecacheEntries: [{ url: "/", revision: randomUUID() }],
+  reloadOnOnline: false, // a reload would throw away whatever the person is doing
+});
+
 /** @param {string} phase */
 export default function nextConfig(phase) {
   // Exposes Cloudflare bindings (local D1 via Miniflare) to `next dev` through getCloudflareContext().
@@ -51,7 +64,7 @@ export default function nextConfig(phase) {
   const dev = phase === PHASE_DEVELOPMENT_SERVER;
   if (dev) void initOpenNextCloudflareForDev();
   /** @type {import("next").NextConfig} */
-  return {
+  const config = {
     // Keep Prisma out of the Next bundle so OpenNext can wire up its Workers (wasm) build.
     serverExternalPackages: ["@prisma/client", ".prisma/client"],
     // The floating dev badge sits over the dock's buttons on phone-size previews.
@@ -60,4 +73,5 @@ export default function nextConfig(phase) {
       return [{ source: "/:path*", headers: securityHeaders(dev) }];
     },
   };
+  return dev ? config : withSerwist(config);
 }

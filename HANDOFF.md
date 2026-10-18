@@ -24,6 +24,9 @@ Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decision
 - **Migrations 0004 (AiUsage, ParseCache index/cleanup) and 0005 (clear OAuth tokens) are not applied remotely yet**: `npm run db:migrate:remote` before deploying this code, or `analyseDrink` will fall back to manual entry (the AiUsage table is missing, so the limiter fails closed).
 - CSP keeps `script-src 'unsafe-inline'` (App Router inline payload scripts; a nonce would make every page dynamic). If Cloudflare Web Analytics or other injected scripts are turned on, add their origin to the CSP.
 
+## Offline
+- **Offline (merged 18 Oct 2026):** every add/remove goes through an IndexedDB outbox (`src/lib/outbox.ts`, rules in `lib/night-model.ts`), shown at once and marked "Saved on this phone, will sync" while there's no signal; flushed on `online` / `visibilitychange` / retry. `Drink.clientId` (unique) makes `addDrink` idempotent; `deleteDrink` takes a drinkId or clientId; one open Tab per user is enforced by a partial unique index. Tonight's queries persist to localStorage (`src/trpc/offline-cache.ts`, cleared on sign-out). Serwist service worker (`src/app/sw.ts`, production builds only) precaches the shell and reuses the last `/api/auth/session`. **Deploy needs `npm run db:migrate:remote` for `migrations/0006_offline_adds.sql` before the code.** If a CSP is added, allow `worker-src 'self'`.
+
 ## What this session shipped (on `cloudflare-d1-migration`)
 `7514845` → `e435569`, nine commits:
 - **Night screen as an app:**

@@ -101,9 +101,9 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
     );
   }
 
-  async function remove(drink: LoggedDrink) {
+  function remove(drink: LoggedDrink) {
     setNotice({ kind: "removed", drink, at: Date.now(), count: 1 });
-    if (!(await night.remove(drink.id))) setNotice(null);
+    night.remove(drink.id);
   }
 
   // Undo removes the latest add; Add back restores the latest removal. Each mirrors the other,
@@ -112,7 +112,7 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
     if (!notice) return;
     const { drink } = notice;
     if (notice.kind === "added") {
-      void night.remove(drink.id);
+      night.remove(drink.id);
       setNotice(
         notice.count > 1
           ? { ...notice, count: notice.count - 1, at: Date.now() }
@@ -145,12 +145,13 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         notice={notice}
         now={now}
         error={night.error}
+        unsyncedCount={night.unsyncedCount}
         userWeight={userWeight}
         userSex={userSex}
         onAdd={quickAdd}
         onOpenAdd={() => setAddOpen(true)}
         onUndo={undo}
-        onRemove={(d) => void remove(d)}
+        onRemove={remove}
         onAddDetails={onOpenUserInfo}
         onShowTimeline={() => setTimelineOpen(true)}
       />

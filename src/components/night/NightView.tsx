@@ -18,6 +18,8 @@ export interface NightViewProps {
   notice: Notice | null;
   now: Date;
   error: string | null;
+  /** Drinks saved on this phone that haven't reached the account yet (no signal). */
+  unsyncedCount?: number;
   userWeight: number | null;
   userSex: string | null;
   onAdd: (drink: QuickDrink) => void;
@@ -116,6 +118,7 @@ export function NightView(props: NightViewProps) {
           lastDrink={props.lastDrink}
           notice={props.notice}
           now={now}
+          unsynced={props.unsyncedCount ?? 0}
           onAdd={props.onAdd}
           onOpenAdd={props.onOpenAdd}
           onUndo={props.onUndo}

@@ -14,7 +14,8 @@ import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
 /**
  * Dev-only: the real NightView, AddSheet and curve with sample drinks and no sign-in, for checking
  * the design at phone size. Only reachable outside production (see page.tsx).
- * `?empty` starts with no drinks; `?noweight` hides the estimate; `?us` / `?metric` set the region.
+ * `?empty` starts with no drinks; `?noweight` hides the estimate; `?us` / `?metric` set the region;
+ * `?offline` shows the latest drink as saved on this phone only.
  */
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 const SAMPLE: LoggedDrink[] = [
@@ -35,6 +36,7 @@ export function DevNight() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [weight, setWeight] = useState<number | null>(75);
+  const [offline, setOffline] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
   const lastTap = useRef<{ key: string; at: number } | null>(null);
@@ -46,11 +48,14 @@ export function DevNight() {
     if (q.includes("noweight")) setWeight(null);
     if (q.includes("us")) setRegion("us");
     else if (q.includes("metric")) setRegion("metric");
+    if (q.includes("offline")) setOffline(true);
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, [setRegion]);
 
   const model = useMemo(() => describeNight(drinks, weight, "female", now), [drinks, weight, now]);
+  const latestId = drinks.at(-1)?.id;
+  const shown = offline ? drinks.map((d) => (d.id === latestId ? { ...d, unsynced: true } : d)) : drinks;
   const last = drinks.reduce<LoggedDrink | null>((l, d) => (!l || d.finishedAt > l.finishedAt ? d : l), null);
   const { repeat, others } = pickRepeatAndRecents<QuickDrink>(last, RECENTS, 4);
 
@@ -82,13 +87,14 @@ export function DevNight() {
     <>
       <NightView
         model={model}
-        drinks={drinks}
+        drinks={shown}
         repeat={repeat}
         recents={others}
         lastDrink={last}
         notice={notice}
         now={now}
         error={null}
+        unsyncedCount={offline && drinks.length > 0 ? 1 : 0}
         userWeight={weight}
         userSex="female"
         onAdd={(q) =>

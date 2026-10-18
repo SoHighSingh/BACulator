@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { analyseDrinkText } from "~/server/bartender";
 
@@ -53,7 +53,6 @@ const drinkTime = z
     const t = Date.parse(iso);
     return t <= Date.now() + 5 * 60 * 1000 && t >= Date.now() - NIGHT_WINDOW_MS;
   }, "Drink time must be within the last 48 hours");
-const drinkId = z.string().min(1).max(64);
 
 // Drinks that can still affect the estimate: everything finished in the window,
 // whatever session it was logged in, so stopping a session never hides alcohol still in the body.
@@ -61,11 +60,36 @@ function nightDrinksWhere(userId: string) {
   return { tab: { userId }, finishedAt: { gte: new Date(Date.now() - NIGHT_WINDOW_MS) } };
 }
 
+const drinkId = z.string().min(1).max(64);
+// The id the phone gave a drink when it was added, possibly offline (crypto.randomUUID()).
+const clientId = z.string().uuid();
+
+const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+
+// The database allows one open tab per user (see migrations/0004_offline_adds.sql). Queued drinks
+// replayed in a burst can race to start one: the loser of the race uses the winner's.
 async function findOrStartTab(db: PrismaClient, userId: string) {
   const open = await db.tab.findFirst({ where: { userId, finishedAt: null } });
   if (open) return open;
   await cleanupOldTabs(db, userId);
-  return db.tab.create({ data: { userId, name: `Session ${new Date().toLocaleString()}` } });
+  try {
+    return await db.tab.create({ data: { userId, name: `Session ${new Date().toLocaleString()}` } });
+  } catch (e) {
+    if (!isUniqueViolation(e)) throw e;
+    const winner = await db.tab.findFirst({ where: { userId, finishedAt: null } });
+    if (!winner) throw e;
+    return winner;
+  }
+}
+
+// A drink this phone already saved under clientId, or null. Someone else's clientId is refused
+// rather than revealed.
+async function findByClientId(db: PrismaClient, userId: string, id: string) {
+  const drink = await db.drink.findUnique({ where: { clientId: id } });
+  if (!drink) return null;
+  const owner = await db.tab.findFirst({ where: { id: drink.tabId, userId }, select: { id: true } });
+  if (!owner) throw new TRPCError({ code: "CONFLICT", message: "Drink id already used" });
+  return drink;
 }
 
 async function findOwnDrink(db: PrismaClient, userId: string, drinkId: string) {
@@ -122,18 +146,33 @@ export const postRouter = createTRPCRouter({
       finishedAt: drinkTime,
       // What the bartender parsed, if the drink came from text (all optional for manual entry)
       details: drinkDetailsSchema.optional(),
+      // Set by the phone so a retried or replayed add is saved once: the saved row comes back.
+      clientId: clientId.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const tab = await findOrStartTab(ctx.db, ctx.session.user.id);
-      return ctx.db.drink.create({
-        data: {
-          tabId: tab.id,
-          standards: input.standards,
-          finishedAt: new Date(input.finishedAt),
-          source: "manual",
-          ...input.details,
-        },
-      });
+      const userId = ctx.session.user.id;
+      if (input.clientId) {
+        const saved = await findByClientId(ctx.db, userId, input.clientId);
+        if (saved) return saved;
+      }
+      const tab = await findOrStartTab(ctx.db, userId);
+      try {
+        return await ctx.db.drink.create({
+          data: {
+            tabId: tab.id,
+            standards: input.standards,
+            finishedAt: new Date(input.finishedAt),
+            source: "manual",
+            ...input.details,
+            clientId: input.clientId,
+          },
+        });
+      } catch (e) {
+        // The same add arrived twice at once: the other request saved it.
+        const saved = input.clientId && isUniqueViolation(e) ? await findByClientId(ctx.db, userId, input.clientId) : null;
+        if (!saved) throw e;
+        return saved;
+      }
     }),
   updateDrink: protectedProcedure
     .input(z.object({
@@ -151,13 +190,15 @@ export const postRouter = createTRPCRouter({
         },
       });
     }),
+  // By server id, or by the phone's clientId so Undo works on a drink that hasn't synced yet.
   deleteDrink: protectedProcedure
-    .input(z.object({ drinkId }))
+    .input(z.union([z.object({ drinkId }), z.object({ clientId })]))
     .mutation(async ({ ctx, input }) => {
-      await findOwnDrink(ctx.db, ctx.session.user.id, input.drinkId);
-      return ctx.db.drink.delete({
-        where: { id: input.drinkId },
-      });
+      const userId = ctx.session.user.id;
+      const drink =
+        "drinkId" in input ? await findOwnDrink(ctx.db, userId, input.drinkId) : await findByClientId(ctx.db, userId, input.clientId);
+      if (!drink) throw new TRPCError({ code: "NOT_FOUND", message: "Drink not found" });
+      return ctx.db.drink.delete({ where: { id: drink.id } });
     }),
   getNight: protectedProcedure.query(({ ctx }) =>
     ctx.db.drink.findMany({
