@@ -28,10 +28,11 @@ function useChanged(value: string) {
 
 /**
  * The estimate on the light field: one number rounded up, and under it a bar that says the rest
- * without words. The glowing band is the likely range; the white tick is now; while it's rising an
- * ink arrow runs from the tick to a chevron where it should peak (drawn over the band, since the
- * peak is usually inside it) and the label says "Rising to about X by T"; while it's falling a
- * fading trail runs back to where it was an hour ago and the label says "Falling". Tapping the bar
+ * without words. The glowing band is the likely range; the white tick is now. Which way it is
+ * heading is built in light, like a long exposure, and nothing moves at rest: while it's rising a
+ * comet of light leads from the tick (white-hot) and thins toward a hollow ring where it should
+ * peak, and the label says "Rising to about X by T"; while it's falling a dimmer white tail trails
+ * from the tick back to where it was an hour ago, and the label says "Falling". Tapping the bar
  * spells out the range. Nothing on the bar is a limit: there are no marks but the reading's own.
  */
 export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpenDetails, ref }: EstimateProps) {
@@ -50,8 +51,9 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
   const peakText = rising ? `about ${aboutPoint(rising.bac)[1]} by ${formatClock(rising.at)}` : null;
   const headingText = rising ? `Rising to ${peakText}` : falling !== null ? "Falling" : null;
   const HeadingIcon = rising ? TrendingUp : TrendingDown;
-  // The arrow's shaft stops 6px short of the chevron; with the peak this close, the chevron alone says it.
-  const shaft = rising && pos(rising.bac) - pos(bac) > 4;
+  // The momentum light: from the tick ahead to the ring (rising) or back to an hour ago (falling).
+  const lightTo = rising ? rising.bac : falling;
+  const lightStyle = lightTo !== null ? { left: pct(bac), width: `calc(${pct(lightTo)} - ${pct(bac)})` } : null;
 
   return (
     <section ref={ref} aria-labelledby="estimate-heading" className="px-1 pt-6 pb-1">
@@ -92,47 +94,31 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
         >
           {/* The bar sits in the upper half of a 72px target; labels hang under it. */}
           <span aria-hidden="true" className="absolute inset-x-0 top-6 h-1 rounded-full bg-white/10" />
-          {falling !== null && (
-            <span
-              aria-hidden="true"
-              className="band-ease absolute top-6 h-1 rounded-full"
-              style={{
-                left: pct(bac),
-                width: `calc(${pct(falling)} - ${pct(bac)})`,
-                background: "linear-gradient(to right, rgb(250 250 250 / 0.55), rgb(250 250 250 / 0))",
-              }}
-            />
-          )}
           <span
             aria-hidden="true"
             className="band-ease absolute top-6 h-1 rounded-full bg-signal shadow-[0_0_16px_2px_rgb(124_180_255/0.55)]"
             style={{ left: pct(bac * BAND_LOW), width: `calc(${pct(bac * BAND_HIGH)} - ${pct(bac * BAND_LOW)})` }}
           />
-          {rising && (
+          {lightStyle && (
             <>
-              {shaft && (
-                <span
-                  aria-hidden="true"
-                  className="band-ease absolute top-[25px] h-0.5 rounded-full bg-ink/80"
-                  style={{ left: pct(bac), width: `calc(${pct(rising.bac)} - ${pct(bac)} - 6px)` }}
-                />
-              )}
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 10 14"
-                className="band-ease absolute top-[19px] h-3.5 w-2.5 -translate-x-[6px]"
-                style={{ left: pct(rising.bac) }}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M2 2l6 5-6 5" />
-              </svg>
+              {/* The coma: a soft head of light on the tick, tapering the way it is heading. */}
+              <span aria-hidden="true" className={`band-ease momentum-glow absolute top-4 h-5 ${rising ? "" : "momentum-glow-fall"}`} style={lightStyle} />
+              {/* The core: the band itself, white-hot at the tick and thinning away from it. */}
+              <span aria-hidden="true" className={`band-ease momentum-core absolute top-6 h-1 rounded-full ${rising ? "" : "momentum-core-fall"}`} style={lightStyle} />
             </>
           )}
-          <span aria-hidden="true" className="band-ease absolute top-4 h-5 w-0.5 -translate-x-1/2 rounded-full bg-ink" style={{ left: pct(bac) }} />
+          {rising && (
+            <span
+              aria-hidden="true"
+              className="band-ease absolute top-[19px] size-3.5 -translate-x-1/2 rounded-full border-2 border-ink bg-bg/50"
+              style={{ left: pct(rising.bac) }}
+            />
+          )}
+          <span
+            aria-hidden="true"
+            className="band-ease absolute top-4 h-5 w-0.5 -translate-x-1/2 rounded-full bg-ink shadow-[0_0_10px_1px_rgb(250_250_250/0.45)]"
+            style={{ left: pct(bac) }}
+          />
 
           {showRange ? (
             <span aria-hidden="true" className="compose-in absolute inset-x-0 top-10 flex items-baseline justify-between text-lg">

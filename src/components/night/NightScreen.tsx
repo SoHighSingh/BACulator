@@ -161,6 +161,8 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
   return (
     <>
       <NightView
+        weight={userWeight}
+        sex={userSex}
         model={model}
         drinks={drinks}
         repeat={repeat}
@@ -182,7 +184,14 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         onSignIn={night.error === SIGNED_OUT ? () => void signIn("google") : undefined}
       />
 
-      <AddSheet open={addOpen} now={now} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
+      <AddSheet
+        open={addOpen}
+        now={now}
+        onClose={() => setAddOpen(false)}
+        onAdd={(d) => add(d, false)}
+        recents={repeat ? [repeat, ...others] : others}
+        onAddRecent={quickAdd}
+      />
       <EditDrinkSheet drink={editing} now={now} onClose={() => setEditing(null)} onSave={saveEdit} />
 
       <BACGraphModal open={timelineOpen} onOpenChange={setTimelineOpen} drinks={drinks} userWeight={userWeight} userSex={userSex} />

@@ -20,13 +20,13 @@ export function NightNumbers({ model, drinkCount, totalStandards }: NightNumbers
     <section aria-label="Tonight's numbers" className="card overflow-hidden">
       <dl className="divide-y divide-edge">
         {rows.map(([k, v]) => (
-          <div key={k} className="flex min-h-14 items-center justify-between gap-4 px-5 py-2 text-lg">
-            <dt className="text-ink-2">{k}</dt>
+          <div key={k} className="flex min-h-12 items-center justify-between gap-4 px-4 py-1 text-lg leading-snug">
+            <dt className="shrink-0 text-ink-2">{k}</dt>
             <dd className="text-right font-medium">{v}</dd>
           </div>
         ))}
       </dl>
-      <p className="border-t border-edge px-5 py-3.5 text-lg text-ink-2">Estimate only. Bodies and pours vary.</p>
+      <p className="border-t border-edge px-4 py-2.5 text-lg leading-snug text-ink-2">Estimate only. Bodies and pours vary.</p>
     </section>
   );
 }

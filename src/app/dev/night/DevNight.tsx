@@ -92,6 +92,8 @@ export function DevNight() {
   return (
     <>
       <NightView
+        weight={weight}
+        sex="female"
         model={model}
         drinks={shown}
         repeat={repeat}
@@ -127,7 +129,16 @@ export function DevNight() {
         onAddDetails={() => setWeight(75)}
         onShowTimeline={() => setGraphOpen(true)}
       />
-      <AddSheet open={addOpen} now={now} onClose={() => setAddOpen(false)} onAdd={(d) => add(d, false)} />
+      <AddSheet
+        open={addOpen}
+        now={now}
+        onClose={() => setAddOpen(false)}
+        onAdd={(d) => add(d, false)}
+        recents={repeat ? [repeat, ...others] : others}
+        onAddRecent={(q) =>
+          add({ standards: q.standards, finishedAt: new Date(), details: { name: q.name ?? undefined, volumeMl: q.volumeMl ?? undefined, abv: q.abv ?? undefined } }, true)
+        }
+      />
       <EditDrinkSheet
         drink={editing}
         now={now}

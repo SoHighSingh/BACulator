@@ -5,10 +5,12 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 import { aboutPoint, BAND_HIGH, BAND_LOW } from "~/lib/estimate-display";
 
 /**
- * Dev-only: three ways to say "still rising, to about X by T" on the range bar, on the calm and the
- * red field. Rising and falling for each; nothing moves. The chosen one ships in Estimate.tsx.
+ * Dev-only: three ways to build momentum into the range bar with light alone. The thin glowing
+ * band, the white now tick and the hollow ring at the coming peak are fixed; what changes is the
+ * light between the tick and the ring (rising) or behind the tick (falling). Nothing moves. The
+ * chosen one (comet) ships in Estimate.tsx and, at hero scale, LiveStrip.tsx.
  */
-type Variant = "arrow" | "dash" | "hollow";
+type Variant = "comet" | "streak" | "ghosts";
 
 interface Reading {
   bac: number;
@@ -20,11 +22,68 @@ const RISING_FAR: Reading = { bac: 0.1, peak: 0.16, hourAgo: null };
 const FALLING: Reading = { bac: 0.08, peak: null, hourAgo: 0.1 };
 const WHEN = "6:45 pm";
 
-function Chevron({ left, color = "#fafafa", width = 2 }: { left: string; color?: string; width?: number }) {
+const INK = "250 250 250";
+const SIGNAL = "124 180 255";
+
+/** The light from the tick outward: ahead to the ring (rising, blue-white) or back to an hour ago (falling, white). */
+function Light({ v, from, to, rising }: { v: Variant; from: string; to: string; rising: boolean }) {
+  const w = `calc(${to} - ${from})`;
+  const tint = rising ? SIGNAL : INK;
+  const a = rising ? 1 : 0.6;
+  if (v === "comet") {
+    return (
+      <>
+        <span
+          className="absolute top-[16px] h-5"
+          style={{
+            left: from,
+            width: w,
+            background: `radial-gradient(100% 50% at 0% 50%, rgb(${INK} / ${0.95 * a}) 0%, rgb(${INK} / ${0.6 * a}) 18%, rgb(${tint} / ${0.5 * a}) 40%, rgb(${tint} / 0) 100%)`,
+            filter: "blur(3px)",
+          }}
+        />
+        <span
+          className="absolute top-6 h-1 rounded-full"
+          style={{
+            left: from,
+            width: w,
+            background: rising
+              ? `linear-gradient(to right, rgb(${INK} / 1), rgb(${INK} / 0.85) 30%, rgb(${tint} / 0.4) 70%, rgb(${tint} / 0))`
+              : `linear-gradient(to right, rgb(${INK} / 0.7), rgb(${INK} / 0.3) 50%, rgb(${INK} / 0))`,
+          }}
+        />
+      </>
+    );
+  }
+  if (v === "streak") {
+    return (
+      <>
+        <span
+          className="absolute top-[19px] h-[14px]"
+          style={{ left: from, width: w, background: `linear-gradient(to right, rgb(${INK} / ${0.7 * a}), rgb(${tint} / ${0.5 * a}) 35%, rgb(${tint} / 0))`, filter: "blur(6px)" }}
+        />
+        <span className="absolute top-6 h-1 rounded-full" style={{ left: from, width: w, background: `linear-gradient(to right, rgb(${INK} / ${a}), rgb(${INK} / ${0.9 * a}) 40%, rgb(${tint} / 0))` }} />
+      </>
+    );
+  }
+  // ghosts: fading copies of the now tick, strobed along the way, over a faint streak.
+  const ghosts = [0.2, 0.4, 0.6, 0.8];
   return (
-    <svg aria-hidden="true" viewBox="0 0 10 14" className="absolute top-[19px] h-3.5 w-2.5 -translate-x-[6px]" style={{ left }} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 2l6 5-6 5" />
-    </svg>
+    <>
+      <span className="absolute top-6 h-1 rounded-full" style={{ left: from, width: w, background: `linear-gradient(to right, rgb(${INK} / ${0.45 * a}), rgb(${tint} / 0))` }} />
+      {ghosts.map((g, i) => (
+        <span
+          key={g}
+          className="absolute w-0.5 -translate-x-1/2 rounded-full"
+          style={{
+            left: `calc(${from} + ${w} * ${g})`,
+            top: `${16 + i}px`,
+            height: `${20 - i * 2}px`,
+            background: `rgb(${INK} / ${(0.6 - i * 0.13) * a})`,
+          }}
+        />
+      ))}
+    </>
   );
 }
 
@@ -42,36 +101,14 @@ function Bar({ r, v }: { r: Reading; v: Variant }) {
   return (
     <div className="relative mt-3 block h-[72px] w-full text-left">
       <span className="absolute inset-x-0 top-6 h-1 rounded-full bg-white/10" />
-      {falling !== null && (
-        <span
-          className="absolute top-6 h-1 rounded-full"
-          style={{ left: pct(bac), width: `calc(${pct(falling)} - ${pct(bac)})`, background: "linear-gradient(to right, rgb(250 250 250 / 0.55), rgb(250 250 250 / 0))" }}
-        />
-      )}
       <span
         className="absolute top-6 h-1 rounded-full bg-signal shadow-[0_0_16px_2px_rgb(124_180_255/0.55)]"
         style={{ left: pct(bac * BAND_LOW), width: `calc(${pct(bac * BAND_HIGH)} - ${pct(bac * BAND_LOW)})` }}
       />
-      {/* Over the band: the way ahead, from now to the peak. */}
-      {rising !== null && v === "arrow" && (
-        <>
-          <span className="absolute top-[25px] h-0.5 rounded-full bg-ink/80" style={{ left: pct(bac), width: `calc(${pct(rising)} - ${pct(bac)} - 4px)` }} />
-          <Chevron left={pct(rising)} />
-        </>
-      )}
-      {rising !== null && v === "dash" && (
-        <>
-          <span className="absolute top-[25px] h-0 border-t-2 border-dashed border-ink/70" style={{ left: pct(bac), width: `calc(${pct(rising)} - ${pct(bac)} - 4px)` }} />
-          <Chevron left={pct(rising)} />
-        </>
-      )}
-      {rising !== null && v === "hollow" && (
-        <>
-          <span className="absolute top-[25px] h-0.5 rounded-full bg-ink/80" style={{ left: pct(bac), width: `calc(${pct(rising)} - ${pct(bac)})` }} />
-          <span className="absolute top-[17px] h-[18px] w-1.5 -translate-x-1/2 rounded-full border-[1.5px] border-ink bg-bg/60" style={{ left: pct(rising) }} />
-        </>
-      )}
-      <span className="absolute top-4 h-5 w-0.5 -translate-x-1/2 rounded-full bg-ink" style={{ left: pct(bac) }} />
+      {rising !== null && <Light v={v} from={pct(bac)} to={pct(rising)} rising />}
+      {falling !== null && <Light v={v} from={pct(bac)} to={pct(falling)} rising={false} />}
+      {rising !== null && <span className="absolute top-[19px] size-3.5 -translate-x-1/2 rounded-full border-2 border-ink bg-bg/50" style={{ left: pct(rising) }} />}
+      <span className="absolute top-4 h-5 w-0.5 -translate-x-1/2 rounded-full bg-ink shadow-[0_0_10px_1px_rgb(250_250_250/0.45)]" style={{ left: pct(bac) }} />
 
       {label && (
         <span className="absolute top-10 left-0 flex items-center gap-1.5 text-lg whitespace-nowrap text-ink-2">
@@ -98,15 +135,16 @@ function Panel({ v, r, red }: { v: Variant; r: Reading; red: boolean }) {
 }
 
 const VARIANTS: { v: Variant; name: string; why: string }[] = [
-  { v: "arrow", name: "Arrow over the band", why: "A solid ink line from the now tick to a chevron at the coming peak, drawn over the band (the peak is usually inside it). Reads as an arrow: from here, to there." },
-  { v: "dash", name: "Dashed track to a chevron", why: "Today's dashed hairline, with the ring swapped for a chevron." },
-  { v: "hollow", name: "Line to a hollow tick", why: "A solid line to an outlined copy of the now tick: the mark it will become." },
+  { v: "comet", name: "Comet (shipped)", why: "A soft head of light on the tick that tapers toward the ring (an elliptical glow plus the band gone white-hot, thinning away). Brightest where it is, thinning to where it is going." },
+  { v: "streak", name: "Long exposure", why: "The band itself smears forward: a white-hot streak at the band's own height fading to nothing before the ring, with a uniform soft bloom under it. One shape, stretched by light; boxier than the comet." },
+  { v: "ghosts", name: "Ghost ticks", why: "Strobed, fading copies of the now tick along the way, over a faint streak. A motion trail read frame by frame; rejected because it reads as ruler marks." },
 ];
 
 export function RisingLab() {
   return (
     <main className="min-h-dvh bg-bg px-8 py-10 text-ink">
-      <h1 className="text-3xl font-semibold tracking-[-0.03em]">Which way it is heading</h1>
+      <h1 className="text-3xl font-semibold tracking-[-0.03em]">Momentum, built in light</h1>
+      <p className="mt-2 max-w-[70ch] text-lg text-ink-2">Rising near the peak, rising far from it, falling; on the calm field and the red one. Nothing moves.</p>
       <div className="mt-8 flex flex-col gap-12">
         {VARIANTS.map(({ v, name, why }) => (
           <section key={v} data-variant={v}>
@@ -114,6 +152,11 @@ export function RisingLab() {
             <p className="mt-1 max-w-[70ch] text-lg text-ink-2">{why}</p>
             <div className="mt-4 flex gap-4">
               <Panel v={v} r={RISING} red={false} />
+              <Panel v={v} r={RISING_FAR} red={false} />
+              <Panel v={v} r={FALLING} red={false} />
+            </div>
+            <div className="mt-4 flex gap-4">
+              <Panel v={v} r={RISING} red />
               <Panel v={v} r={RISING_FAR} red />
               <Panel v={v} r={FALLING} red />
             </div>

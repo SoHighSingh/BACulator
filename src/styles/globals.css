@@ -232,75 +232,51 @@
    pill, the tile shrinks into the warning disc and the words slide in. Only clip-path, transform and
    opacity move; the pill's box (and so the blur) never changes size, and the keys never move. */
 .night-status {
+  /* Calm: clipped to the mark's tile. Not safe: the same tile extends to the right to hold the
+     words, keeping the tile's corners (11px + the 2px inset), so it reads as the logo opening up. */
+  border-radius: 13px;
   clip-path: inset(2px calc(100% - 46px) 2px 2px round 11px);
 }
 .night-status.is-alert {
-  clip-path: inset(0 round 24px);
-}
-.night-status-mark {
-  transform-origin: 24px 24px;
-}
-.night-status-disc {
-  transform-origin: 24px 24px;
-  transform: scale(1.375);
-  opacity: 0;
+  clip-path: inset(0 round 13px);
 }
 .night-status-word {
   opacity: 0;
-  transform: translateX(-8px);
-}
-.night-status.is-alert .night-status-mark {
-  transform: scale(0.727);
-  opacity: 0;
-}
-.night-status.is-alert .night-status-disc {
-  transform: none;
-  opacity: 1;
+  transform: translateX(-10px);
 }
 .night-status.is-alert .night-status-word {
   opacity: 1;
   transform: none;
 }
-/* 320-wide phones: the slot left of the two keys is 176px, the pill 210. The disc drops its ring and
-   fill (the icon stays, 15px from the pill's top, left and bottom), the header takes 8px gutters and
-   the words tighten, still 18px. */
+/* 320-wide phones: the slot left of the two keys is narrow. The header takes 8px gutters and the
+   words tighten, still 18px. */
 @media (max-width: 359px) {
   .night-header {
     margin-inline: -8px;
   }
-  .night-status-disc {
-    background: none;
-    box-shadow: none;
-  }
   .night-status-word {
-    margin-left: -8px;
-    padding-right: 12px;
+    padding-left: 2px;
+    padding-right: 8px;
     font-weight: 500;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  /* Calm → not safe (~800ms): the mark reddens (0–250), then the tile grows into the pill while it
-     folds into the disc (250–800), and the words follow (450–800). Timed to the field's 900ms. */
+  /* Calm → not safe (~900ms, timed to the field): the mark reddens (0–250), then the tile opens to
+     the right (250–900) and the words slide out of the mark (330–780). */
   .night-status.is-anim .bm-tone {
     transition: opacity 250ms var(--ease-out);
   }
   .night-status.is-anim {
     transition: clip-path 650ms var(--ease-out) 250ms;
   }
-  .night-status.is-anim .night-status-mark,
-  .night-status.is-anim .night-status-disc {
-    transition:
-      transform 500ms var(--ease-out) 250ms,
-      opacity 380ms var(--ease-out) 300ms;
-  }
   .night-status.is-anim .night-status-word {
     transition:
       opacity 450ms var(--ease-out) 330ms,
       transform 450ms var(--ease-out) 330ms;
   }
-  /* Not safe → calm (~650ms), faster: the words go first, the pill closes to the tile, and the
-     band goes blue as it lands. */
+  /* Not safe → calm (~650ms): the words go first, the tile closes back to the mark, and the band
+     goes blue as it lands. */
   .night-status.is-anim:not(.is-alert) .night-status-word {
     transition:
       opacity 180ms var(--ease-out),
@@ -308,12 +284,6 @@
   }
   .night-status.is-anim:not(.is-alert) {
     transition: clip-path 450ms var(--ease-out) 100ms;
-  }
-  .night-status.is-anim:not(.is-alert) .night-status-mark,
-  .night-status.is-anim:not(.is-alert) .night-status-disc {
-    transition:
-      transform 400ms var(--ease-out) 150ms,
-      opacity 280ms var(--ease-out) 200ms;
   }
   .night-status.is-anim:not(.is-alert) .bm-tone {
     transition: opacity 250ms var(--ease-out) 400ms;
@@ -404,6 +374,26 @@
 }
 .press:active:not(:disabled) {
   transform: scale(0.975);
+}
+
+/* The range bar's momentum light (Estimate, and the landing strip at its own scale): which way the
+   reading is heading, built in light like a long exposure. The glow is a comet's coma, brightest on
+   the now tick and tapering the way it is going; the core is the band gone white-hot at the tick,
+   thinning to the ring (rising, blue-white) or to where it was an hour ago (falling, dimmer, white
+   only). Static: it never moves at rest; .band-ease carries it when the value changes. */
+.momentum-glow {
+  background: radial-gradient(100% 50% at 0% 50%, rgb(250 250 250 / 0.95) 0%, rgb(250 250 250 / 0.6) 18%, rgb(124 180 255 / 0.5) 40%, rgb(124 180 255 / 0) 100%);
+  filter: blur(3px);
+  pointer-events: none;
+}
+.momentum-glow-fall {
+  background: radial-gradient(100% 50% at 0% 50%, rgb(250 250 250 / 0.55) 0%, rgb(250 250 250 / 0.3) 25%, rgb(250 250 250 / 0) 100%);
+}
+.momentum-core {
+  background: linear-gradient(to right, rgb(250 250 250 / 1), rgb(250 250 250 / 0.85) 30%, rgb(124 180 255 / 0.4) 70%, rgb(124 180 255 / 0));
+}
+.momentum-core-fall {
+  background: linear-gradient(to right, rgb(250 250 250 / 0.7), rgb(250 250 250 / 0.3) 50%, rgb(250 250 250 / 0));
 }
 
 /* App feel on the night screen: no rubber-band page, no grey tap flash, no text selection on controls. */

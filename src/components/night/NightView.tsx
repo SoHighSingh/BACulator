@@ -17,6 +17,9 @@ import { TonightList } from "./TonightList";
 export interface NightViewProps {
   model: NightModel;
   drinks: LoggedDrink[];
+  /** For the curve's minute-by-minute line and drink marks; without them it uses the model's samples. */
+  weight?: number | null;
+  sex?: string | null;
   repeat: QuickDrink | null;
   recents: QuickDrink[];
   lastDrink: LoggedDrink | null;
@@ -144,7 +147,7 @@ export function NightView(props: NightViewProps) {
                 </div>
               )}
 
-              <TimelineCard simulation={model.simulation} now={now} onExpand={props.onShowTimeline} />
+              <TimelineCard simulation={model.simulation} now={now} onExpand={props.onShowTimeline} drinks={drinks} weight={props.weight} sex={props.sex} />
               {model.hasDrinks && <NightNumbers model={model} drinkCount={drinks.length} totalStandards={total} />}
             </div>
 

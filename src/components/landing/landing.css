@@ -2,7 +2,7 @@
 
 .landing {
   --gutter: clamp(16px, 3.4vw, 56px);
-  --strip-h: clamp(36px, 3vw, 48px);
+  --strip-h: clamp(6px, 0.6vw, 9px);
   --num: clamp(118px, 16vw, 256px);
   --bar-h: clamp(84px, 9vw, 132px);
   --gap: clamp(64px, 10vh, 160px);
@@ -46,17 +46,29 @@
   overflow-x: clip;
   overflow-y: visible;
 }
-/* Heading up: the shaft and chevron, ink over the band, the night screen's cue at strip scale. */
-.strip-shaft {
-  height: 3px;
-  margin-top: -1.5px;
-  border-radius: 2px;
-  background: rgb(250 250 250 / 0.8);
+/* The band glows as one shape (a filter on the wrapper, so the scaled body and the caps share it). */
+.strip-glow {
+  filter: drop-shadow(0 0 calc(var(--strip-h) * 1.6) rgb(124 180 255 / 0.65)); /* taste-skill-ignore: the instrument's glow (DESIGN.md) */
 }
-.strip-chev {
-  height: calc(var(--strip-h) * 0.5);
-  width: auto;
-  transform: translate(-80%, -50%);
+/* The momentum light at strip scale: the coma spans five band heights; the core is the band's own. */
+.strip-coma {
+  top: calc(var(--strip-h) * -2);
+  height: calc(var(--strip-h) * 5);
+  filter: blur(calc(var(--strip-h) * 0.5));
+}
+/* The hollow ring at the coming peak and the now tick, both centred on the band. */
+.strip-ring {
+  width: calc(var(--strip-h) * 2.6);
+  height: calc(var(--strip-h) * 2.6);
+  border-width: 2.5px;
+  transform: translate(-50%, -50%);
+}
+.strip-tick {
+  top: calc(var(--strip-h) * -1.25);
+  bottom: calc(var(--strip-h) * -1.25);
+  width: 3px;
+  margin-left: -1.5px;
+  box-shadow: 0 0 12px 1px rgb(250 250 250 / 0.45); /* taste-skill-ignore: the tick's hot head */
 }
 
 /* The light field behind the hero's reading: still, never animated on its own. Once the visitor
@@ -192,6 +204,12 @@
     transition:
       transform 620ms var(--ease-out),
       flex-grow 620ms var(--ease-out);
+  }
+  /* The light rides with the tick: its left and width ease on the same clock. */
+  .strip-light {
+    transition:
+      left 620ms var(--ease-out),
+      width 620ms var(--ease-out);
   }
   /* The band brightens once as a drink lands, then settles. */
   .strip-land {

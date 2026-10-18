@@ -1,4 +1,4 @@
-import { Mic, Plus, Search, Sparkles, Square, X } from "lucide-react";
+import { List, Mic, Plus, Sparkles, Square, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useRegion } from "~/hooks/useRegion";
@@ -187,7 +187,9 @@ export function AddDock(props: AddDockProps) {
   return (
     <div className="flex flex-col gap-2.5">
       {!open && (
-        <div className="flex min-h-12 items-center gap-3 px-2">
+        // At rest the line is for screen readers only (the white pill already names the drink and
+        // Your tab lists it); it shows when a change lands, with its Undo / Add back.
+        <div className={live ? "flex min-h-12 items-center gap-3 px-2" : "sr-only"}>
           {/* One persistent live region: screen readers announce text changes, not remounts. */}
           <p aria-live="polite" className="min-w-0 flex-1 truncate text-lg">
             <span key={live?.at ?? "idle"} className="snack inline">
@@ -210,7 +212,7 @@ export function AddDock(props: AddDockProps) {
           <button
             type="button"
             onClick={() => props.onAdd(repeat)}
-            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2.5 rounded-full bg-ink px-6 text-xl font-medium text-bg"
+            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-full bg-ink px-4 text-lg font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6 min-[360px]:text-xl"
           >
             <Plus aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.5} />
             <span className="truncate">{lastDrink ? "Add another" : "Add"} {drinkLabel(repeat, std).toLowerCase()}</span>
@@ -219,18 +221,44 @@ export function AddDock(props: AddDockProps) {
           <button
             type="button"
             onClick={props.onOpenAdd}
-            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2.5 rounded-full bg-ink px-6 text-xl font-medium text-bg"
+            className="press key-glow dock-pill flex min-h-[72px] items-center justify-center gap-2 rounded-full bg-ink px-4 text-lg font-medium text-bg min-[360px]:gap-2.5 min-[360px]:px-6 min-[360px]:text-xl"
           >
             <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
             Add a drink
           </button>
         ))}
 
+      {/* The second way in is unmistakably an add: a bordered pill that says so, with the mic as its
+          own key. The type-or-say field only appears once one of them is tapped. */}
+      {!open && (
+        <div className="flex items-stretch gap-2">
+          <button
+            type="button"
+            onClick={() => setMode("typing")}
+            className="press flex min-h-14 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-white/[0.05] px-4 text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/10"
+          >
+            <Plus aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.5} />
+            <span className="truncate">{repeat ? "Add a different drink" : "Type or say a drink"}</span>
+          </button>
+          {/* Under 360px the label needs the width; the mic is still inside the composer. */}
+          {hasVoice && (
+            <button
+              type="button"
+              onClick={listen}
+              aria-label="Say a drink"
+              className="press hidden size-14 shrink-0 place-items-center rounded-full bg-white/[0.05] shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/10 min-[360px]:grid"
+            >
+              <Mic aria-hidden="true" className="size-6" strokeWidth={2.25} />
+            </button>
+          )}
+        </div>
+      )}
+
       {open && (
         <div className="compose-in flex flex-col gap-2.5">
           <div className={`flex items-center justify-between px-2 ${focused ? "sr-only" : ""}`}>
             <p className="text-lg text-ink-2" aria-live="polite">
-              {mode === "listening" ? "Listening…" : result?.items.length ? "Check it, then add" : "Pick one, or type it"}
+              {mode === "listening" ? "Listening…" : result?.items.length ? "Check it, then add" : "Tap one, or type it"}
             </p>
             <button type="button" onClick={close} aria-label="Close" className="press grid size-12 place-items-center rounded-full bg-white/10 hover:bg-white/15">
               <X aria-hidden="true" className="size-5" strokeWidth={2.25} />
@@ -291,7 +319,7 @@ export function AddDock(props: AddDockProps) {
           ) : unread ? (
             <div className="flex flex-col gap-2 px-1">
               <p className="text-lg text-ink-2">
-                {server?.result.status === "unavailable" ? "The bartender is unavailable right now. Choose it from the list instead." : "Not in our drink list yet."}
+                {server?.result.status === "unavailable" ? "The bartender is unavailable right now. Pick it from the list instead." : "Not in our drink list yet."}
               </p>
               <div className="flex flex-wrap gap-2">
                 {server?.result.status !== "unavailable" && (
@@ -305,8 +333,9 @@ export function AddDock(props: AddDockProps) {
                     {analyse.isPending ? "Reading it…" : "Ask the bartender"}
                   </button>
                 )}
-                <button type="button" onClick={props.onOpenAdd} className="press min-h-12 rounded-full px-4 text-lg shadow-[inset_0_0_0_1px_var(--color-line)]">
-                  Choose from the list
+                <button type="button" onClick={props.onOpenAdd} className="press flex min-h-12 items-center gap-2 rounded-full px-4 text-lg shadow-[inset_0_0_0_1px_var(--color-line)]">
+                  <List aria-hidden="true" className="size-5" strokeWidth={2} />
+                  All drinks
                 </button>
               </div>
             </div>
@@ -333,8 +362,8 @@ export function AddDock(props: AddDockProps) {
                 onClick={props.onOpenAdd}
                 className="press flex min-h-12 shrink-0 items-center gap-2 rounded-full px-4 text-lg whitespace-nowrap shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
               >
-                <Plus aria-hidden="true" className="size-5" strokeWidth={2} />
-                Choose a drink
+                <List aria-hidden="true" className="size-5" strokeWidth={2} />
+                All drinks
               </button>
             </div>
           )}
@@ -342,49 +371,50 @@ export function AddDock(props: AddDockProps) {
         </div>
       )}
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          // Done drops the keyboard so the full card (with its time control) has the screen.
-          if (unread) void askBartender();
-          inputRef.current?.blur();
-        }}
-        className={`compose-bar flex min-h-14 items-center gap-2 rounded-full bg-white/[0.06] py-1 pr-1 pl-4 shadow-[inset_0_0_0_1px_var(--color-line)] focus-within:shadow-[inset_0_0_0_2px_var(--color-signal)] ${mode === "listening" ? "listening" : ""}`}
-      >
-        <Search aria-hidden="true" className="size-5 shrink-0 text-ink-2" strokeWidth={2} />
-        <label className="sr-only" htmlFor="compose-drink">
-          Type a drink
-        </label>
-        <input
-          id="compose-drink"
-          ref={inputRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onFocus={() => {
-            setFocused(true);
-            if (mode === "idle") setMode("typing");
+      {open && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            // Done drops the keyboard so the full card (with its time control) has the screen.
+            if (unread) void askBartender();
+            inputRef.current?.blur();
           }}
-          onBlur={() => setFocused(false)}
-          placeholder={mode === "listening" ? "Say it like you'd order it" : "Type or say a drink"}
-          autoComplete="off"
-          enterKeyHint="done"
-          maxLength={200}
-          className="min-h-12 min-w-0 flex-1 bg-transparent text-lg text-ink placeholder:text-ink-2 focus:outline-none"
-        />
-        {hasVoice && (
-          <button
-            type="button"
-            onClick={listen}
-            aria-label={mode === "listening" ? "Stop listening" : "Say a drink"}
-            aria-pressed={mode === "listening"}
-            className={`press relative grid size-12 shrink-0 place-items-center rounded-full ${
-              mode === "listening" ? "mic-live bg-ink text-bg" : "bg-white/10 hover:bg-white/15"
-            }`}
-          >
-            {mode === "listening" ? <Square aria-hidden="true" className="size-4" fill="currentColor" /> : <Mic aria-hidden="true" className="size-5" strokeWidth={2.25} />}
-          </button>
-        )}
-      </form>
+          className={`compose-bar flex min-h-14 items-center gap-2 rounded-full bg-white/[0.06] py-1 pr-1 pl-5 shadow-[inset_0_0_0_1px_var(--color-line)] focus-within:shadow-[inset_0_0_0_2px_var(--color-signal)] ${mode === "listening" ? "listening" : ""}`}
+        >
+          <label className="sr-only" htmlFor="compose-drink">
+            Type a drink
+          </label>
+          <input
+            id="compose-drink"
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            // Mounted by the add key's tap, so focusing here still brings the keyboard up on iOS.
+            // While listening the mic has the floor and the keyboard stays down.
+            autoFocus={mode === "typing"}
+            placeholder={mode === "listening" ? "Say it like you'd order it" : hasVoice ? "Type or say a drink" : "Type a drink"}
+            autoComplete="off"
+            enterKeyHint="done"
+            maxLength={200}
+            className="min-h-12 min-w-0 flex-1 bg-transparent text-lg text-ink placeholder:text-ink-2 focus:outline-none"
+          />
+          {hasVoice && (
+            <button
+              type="button"
+              onClick={listen}
+              aria-label={mode === "listening" ? "Stop listening" : "Say a drink"}
+              aria-pressed={mode === "listening"}
+              className={`press relative grid size-12 shrink-0 place-items-center rounded-full ${
+                mode === "listening" ? "mic-live bg-ink text-bg" : "bg-white/10 hover:bg-white/15"
+              }`}
+            >
+              {mode === "listening" ? <Square aria-hidden="true" className="size-4" fill="currentColor" /> : <Mic aria-hidden="true" className="size-5" strokeWidth={2.25} />}
+            </button>
+          )}
+        </form>
+      )}
     </div>
   );
 }

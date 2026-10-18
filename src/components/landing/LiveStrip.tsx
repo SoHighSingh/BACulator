@@ -5,6 +5,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import { aboutPoint, BAND_HIGH, BAND_LOW, formatBand } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
+import { valueAt } from "~/components/night/TimelineCard";
 import type { useDemoNight } from "./useDemoNight";
 
 export type DemoNight = ReturnType<typeof useDemoNight>;
@@ -44,11 +45,12 @@ function useWidths() {
 }
 
 /**
- * The night screen's range strip, blown up to the width of the window: a band of likely range,
- * a white tick at the model's point. While it is still rising, an ink shaft runs over the band from
- * the tick to a chevron at the coming peak (the night screen's cue, at this scale). The big
- * number sits centred over the tick and travels with it. Everything moves by transform only.
- * No marks but the reading's own: nothing on the strip is a limit.
+ * The night screen's range strip, blown up to the width of the window: the same thin glowing band
+ * of likely range, the white tick at the model's point, and the same momentum light (a comet from
+ * the tick toward a hollow ring at the coming peak while it is rising; a dimmer tail behind it while
+ * it is falling). The big number sits centred over the tick and travels with it. The band and the
+ * marks move by transform; the light eases its left/width like the night screen. Nothing moves at
+ * rest. No marks but the reading's own: nothing on the strip is a limit.
  */
 export function LiveStrip({ demo }: { demo: DemoNight }) {
   const { model } = demo;
@@ -58,8 +60,11 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
   const [lo, hi] = formatBand(bac).split("–");
   const rising = model.peak && model.peak.bac > bac + 0.004 ? model.peak : null;
   const falling = !rising && bac > 0.004;
-  // The ruler: zero at the left margin, the furthest thing on it (band or peak) near the right.
-  const top = Math.max(bac * BAND_HIGH, rising?.bac ?? 0);
+  // Where the model was an hour ago: the falling tail runs back to it.
+  const hourAgo = model.simulation ? valueAt(model.simulation.samples, demo.now.getTime() - 3_600_000) : 0;
+  const tailTo = falling && hourAgo > bac + 0.004 ? hourAgo : null;
+  // The ruler: zero at the left margin, the furthest thing on it (band, peak or tail) near the right.
+  const top = Math.max(bac * BAND_HIGH, rising?.bac ?? 0, tailTo ?? 0);
   const scale = useRatchet(Math.max(0.05, top * 1.02));
   const pos = (v: number) => Math.min(100, (v / scale) * 100);
   const loP = pos(bac * BAND_LOW);
@@ -71,11 +76,10 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
   // Centre the number on the tick, held inside the gutters.
   const numX = boxW ? Math.max(0, Math.min(boxW - numW, (nowP / 100) * boxW - numW / 2)) : 0;
   const peakText = rising ? `about ${aboutPoint(rising.bac)[1]} by ${formatClock(rising.at)}` : null;
-  // The shaft runs from the now tick to just short of the chevron; when the peak is under 4% of
-  // the bar away the chevron alone says it (the same rule as the night screen).
-  const ahead = peakP - nowP;
-  const shaft = ahead > 4;
-  const gapP = boxW ? (22 / boxW) * 100 : 0;
+  // The momentum light runs from the now tick to the ring (rising) or back to where the model was
+  // an hour ago (falling), the same way the night screen draws it.
+  const lightTo = rising ? peakP : tailTo !== null ? pos(tailTo) : null;
+  const lightStyle = lightTo !== null && lightTo > nowP ? { left: `${nowP}%`, width: `${lightTo - nowP}%` } : null;
 
   return (
     <div className="relative" aria-hidden="true">
@@ -96,41 +100,39 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
       <div className="strip-bleed relative mt-[clamp(14px,1.6vw,26px)]">
         <div className="absolute inset-0 bg-white/[0.07]" />
         <div className="absolute inset-y-0 right-[var(--gutter)] left-[var(--gutter)]">
-          {/* Likely range: two round caps and a body, each placed by transform. */}
-          <div className="strip-move absolute inset-0" style={slide(loP)}>
-            <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
+          {/* Likely range: two round caps and a body, each placed by transform, glowing as one. */}
+          <div className="strip-glow absolute inset-0">
+            <div className="strip-move absolute inset-0" style={slide(loP)}>
+              <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
+            </div>
+            <div className="strip-move absolute inset-0" style={slide(hiP)}>
+              <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
+            </div>
+            <div
+              className="strip-move absolute inset-0 origin-left bg-signal"
+              style={{ transform: `translateX(${loP}%) scaleX(${Math.max(0, hiP - loP) / 100})` }}
+            >
+              {/* A drink landing brightens the band once, then it settles. Never on first paint. */}
+              {demo.touched && <span key={demo.drinks.length} className="strip-land absolute inset-0 bg-white" />}
+            </div>
           </div>
-          <div className="strip-move absolute inset-0" style={slide(hiP)}>
-            <span className="absolute inset-y-0 -left-[calc(var(--strip-h)/2)] w-[var(--strip-h)] rounded-full bg-signal" />
-          </div>
-          <div
-            className="strip-move absolute inset-0 origin-left bg-signal"
-            style={{ transform: `translateX(${loP}%) scaleX(${Math.max(0, hiP - loP) / 100})` }}
-          >
-            {/* A drink landing brightens the band once, then it settles. Never on first paint. */}
-            {demo.touched && <span key={demo.drinks.length} className="strip-land absolute inset-0 bg-white" />}
-          </div>
-          {rising && (
+          {lightStyle && (
             <>
-              {/* Which way it is heading, in the night screen's language: an ink shaft from the now
-                  tick to a chevron whose point sits on the coming peak. Drawn over the band. */}
-              {shaft && (
-                <div
-                  className="strip-move strip-shaft absolute inset-x-0 top-1/2 origin-left"
-                  style={{ transform: `translateX(${nowP}%) scaleX(${Math.max(0, peakP - nowP - gapP) / 100})` }}
-                />
-              )}
-              <div className="strip-move absolute inset-0" style={slide(peakP)}>
-                <svg viewBox="0 0 10 14" className="strip-chev absolute top-1/2 left-0" fill="none" aria-hidden="true">
-                  <path d="M2 2l6 5-6 5" stroke="var(--color-bg)" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 2l6 5-6 5" stroke="var(--color-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
+              {/* The momentum light, the night screen's at this scale: a coma of light on the tick
+                  tapering the way it is heading, and the band gone white-hot, thinning away. */}
+              <div className={`strip-light momentum-glow strip-coma absolute ${rising ? "" : "momentum-glow-fall"}`} style={lightStyle} />
+              <div className={`strip-light momentum-core absolute inset-y-0 rounded-full ${rising ? "" : "momentum-core-fall"}`} style={lightStyle} />
             </>
           )}
+          {rising && (
+            // The hollow ring at the coming peak.
+            <div className="strip-move absolute inset-0" style={slide(peakP)}>
+              <span className="strip-ring absolute top-1/2 left-0 rounded-full border-ink bg-bg/50" />
+            </div>
+          )}
           {/* Now: a white tick through the band. */}
-          <div className="strip-move absolute -inset-y-3 inset-x-0" style={slide(nowP)}>
-            <span className="absolute inset-y-0 -left-[3px] w-[6px] rounded-full bg-ink tick-cut" />
+          <div className="strip-move absolute inset-0" style={slide(nowP)}>
+            <span className="strip-tick absolute left-0 rounded-full bg-ink" />
           </div>
         </div>
       </div>
