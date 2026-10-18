@@ -4,11 +4,20 @@ import { Minus, Plus } from "lucide-react";
 import { useId, useState } from "react";
 
 import { formatClock } from "~/lib/format-clock";
+import { minutesAgoScale } from "~/lib/log-scale";
 
 const CHIPS = [0, 10, 20, 30, 60];
-const STEP = 5;
-// The night window is 48 h; a drink further back than this wouldn't count anyway.
-export const MAX_MINUTES_AGO = 12 * 60;
+/** 12 h back; the night window is 48 h but a drink further back than this wouldn't count anyway. */
+export const MAX_MINUTES_AGO = minutesAgoScale.max;
+const LAST = minutesAgoScale.values.length - 1;
+/** Rungs named under the track, so the eased scale can be read before it is dragged; the middle two hide under 360px. */
+const GUIDES: { m: number; narrow: boolean }[] = [
+  { m: 720, narrow: true },
+  { m: 360, narrow: false },
+  { m: 180, narrow: false },
+  { m: 60, narrow: true },
+  { m: 0, narrow: true },
+];
 
 export function agoLabel(minutes: number): string {
   if (minutes <= 0) return "now";
@@ -17,6 +26,10 @@ export function agoLabel(minutes: number): string {
   if (h === 0) return `${m} min ago`;
   return m === 0 ? `${h} h ago` : `${h} h ${m} min ago`;
 }
+
+const guideLabel = (m: number) =>
+  m === 0 ? "now" : m < 60 ? `${m} min` : `${m / 60} h`;
+const stepLabel = (m: number) => (m === 1 ? "1 minute" : `${m} minutes`);
 
 interface TimeControlProps {
   /** Minutes before now the drink was finished. */
@@ -30,21 +43,42 @@ interface TimeControlProps {
 }
 
 /**
- * When a drink was finished: one tap for the common answers, then an "Earlier" slider in 5-minute
- * steps with large −5 / +5 minute buttons, so dragging is never the only way. The read-out says the
+ * When a drink was finished: one tap for the common answers, then an "Earlier" slider with large
+ * −/+ buttons, so dragging is never the only way. The slider is eased (`minutesAgoScale`): one
+ * position per rung, so the same thumb travel covers a minute near now and half an hour at 12 h
+ * back, and every stop is a round value. The buttons step one rung on the same ladder (1 min near
+ * now, 5 within the hour, up to 30 far back); their labels say how far. The read-out says the
  * clock time and how long ago, in words.
  */
-export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap = false }: TimeControlProps) {
+export function TimeControl({
+  minutesAgo,
+  onChange,
+  now,
+  startOpen = false,
+  wrap = false,
+}: TimeControlProps) {
   const id = useId();
   const [open, setOpen] = useState(startOpen || !CHIPS.includes(minutesAgo));
-  const clamp = (m: number) => Math.min(MAX_MINUTES_AGO, Math.max(0, Math.round(m / STEP) * STEP));
   const at = new Date(now.getTime() - minutesAgo * 60_000);
-  const chip = (m: number) => (m === 0 ? "Now" : m < 60 ? `${m} min` : "1 hour");
+  const chip = (m: number) =>
+    m === 0 ? "Now" : m < 60 ? `${m} min` : "1 hour";
+  // Left is earlier, right is now, like a timeline: position 0 is 12 h ago, LAST is now.
+  const position = LAST - minutesAgoScale.indexOf(minutesAgo);
+  const earlierBy = minutesAgoScale.delta(minutesAgo, 1);
+  const laterBy = -minutesAgoScale.delta(minutesAgo, -1);
 
   return (
     <div className="flex flex-col gap-3">
       {/* In a sheet the chips wrap; above a keyboard they scroll on one row to stay one line tall. */}
-      <div className={wrap ? "flex flex-wrap gap-2" : "-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5"} role="group" aria-label="When you finished it">
+      <div
+        className={
+          wrap
+            ? "flex flex-wrap gap-2"
+            : "-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5"
+        }
+        role="group"
+        aria-label="When you finished it"
+      >
         {CHIPS.map((m) => (
           <button
             key={m}
@@ -55,7 +89,9 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
             }}
             aria-pressed={!open && minutesAgo === m}
             className={`press min-h-12 shrink-0 rounded-full px-4 text-lg ${
-              !open && minutesAgo === m ? "bg-ink font-medium text-bg" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
+              !open && minutesAgo === m
+                ? "bg-ink text-bg font-medium"
+                : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
             }`}
           >
             {chip(m)}
@@ -66,14 +102,21 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
           onClick={() => setOpen(true)}
           aria-expanded={open}
           aria-controls={id}
-          className={`press min-h-12 shrink-0 rounded-full px-4 text-lg ${open ? "bg-ink font-medium text-bg" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"}`}
+          className={`press min-h-12 shrink-0 rounded-full px-4 text-lg ${open ? "bg-ink text-bg font-medium" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"}`}
         >
           Earlier…
         </button>
       </div>
 
       {open && (
-        <div id={id} className="compose-in rounded-2xl bg-white/[0.04] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+        <div
+          id={id}
+          // Opened by a tap, the slider brings itself into view, clear of a sheet's sticky Add button.
+          ref={(el) => {
+            if (el && !startOpen) el.scrollIntoView({ block: "nearest" });
+          }}
+          className="compose-in scroll-mb-28 rounded-2xl bg-white/[0.04] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]"
+        >
           <p className="text-center text-lg" aria-live="polite">
             <span className="font-medium">{formatClock(at)}</span>
             <span className="text-ink-2"> · {agoLabel(minutesAgo)}</span>
@@ -81,30 +124,66 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
           <div className="mt-1 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => onChange(clamp(minutesAgo + 5))}
-              aria-label="5 minutes earlier"
-              className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/15"
+              onClick={() => onChange(minutesAgoScale.move(minutesAgo, 1))}
+              disabled={earlierBy === 0}
+              aria-label={
+                earlierBy === 0
+                  ? "Earlier (at the start)"
+                  : `${stepLabel(earlierBy)} earlier`
+              }
+              className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-40"
             >
               <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
             </button>
-            <input
-              type="range"
-              aria-label="How long ago"
-              aria-valuetext={`${formatClock(at)}, ${agoLabel(minutesAgo)}`}
-              min={0}
-              max={MAX_MINUTES_AGO}
-              step={STEP}
-              // Left is earlier, right is now, like a timeline.
-              value={MAX_MINUTES_AGO - minutesAgo}
-              onChange={(e) => onChange(clamp(MAX_MINUTES_AGO - Number(e.target.value)))}
-              className="time-range min-w-0 flex-1"
-              style={{ "--fill": `${((MAX_MINUTES_AGO - minutesAgo) / MAX_MINUTES_AGO) * 100}%` } as React.CSSProperties}
-            />
+            <div className="min-w-0 flex-1">
+              <input
+                type="range"
+                aria-label="How long ago"
+                aria-valuetext={`${formatClock(at)}, ${agoLabel(minutesAgo)}`}
+                min={0}
+                max={LAST}
+                step={1}
+                value={position}
+                onChange={(e) =>
+                  onChange(
+                    minutesAgoScale.values[LAST - Number(e.target.value)]!,
+                  )
+                }
+                className="time-range block w-full"
+                style={
+                  {
+                    "--fill": `${(position / LAST) * 100}%`,
+                  } as React.CSSProperties
+                }
+              />
+              {/* Guide words under the track, at the rungs they name (the track runs between the thumb's centres, 16px in). */}
+              <div
+                aria-hidden="true"
+                className="text-ink-2 relative mx-4 -mt-1 h-5 text-base tabular-nums"
+              >
+                {GUIDES.map(({ m, narrow }) => (
+                  <span
+                    key={m}
+                    className={`absolute -translate-x-1/2 whitespace-nowrap ${narrow ? "" : "hidden min-[360px]:inline"}`}
+                    style={{
+                      left: `${((LAST - minutesAgoScale.indexOf(m)) / LAST) * 100}%`,
+                    }}
+                  >
+                    {guideLabel(m)}
+                  </span>
+                ))}
+              </div>
+            </div>
             <button
               type="button"
-              onClick={() => onChange(clamp(minutesAgo - 5))}
-              aria-label="5 minutes later"
-              className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/15"
+              onClick={() => onChange(minutesAgoScale.move(minutesAgo, -1))}
+              disabled={laterBy === 0}
+              aria-label={
+                laterBy === 0
+                  ? "Later (already now)"
+                  : `${stepLabel(laterBy)} later`
+              }
+              className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-40"
             >
               <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
             </button>
