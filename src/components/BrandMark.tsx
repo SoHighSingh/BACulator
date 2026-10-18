@@ -7,8 +7,10 @@ import { useId } from "react";
  *
  * `tone="alert"` is the mark "in trouble": the same shape, with the band in the alert family
  * (#ffa494 over a deeper #ff6a55 glow) and a warm rim, whenever the night is not safe to drive.
- * The tick stays white. Both bands are always drawn and cross-fade with `.bm-tone` (250ms, off
- * under reduced motion), so flipping the prop never redraws the mark. Ids come from `useId`, so
+ * The tick stays white and steps 6 units to the right, the needle moving up. Both bands are always
+ * drawn and cross-fade with `.bm-tone` (250ms) while the tick slides (`.bm-tick`, same clock); both
+ * only animate inside an animating `.night-status` and are instant under reduced motion, so
+ * flipping the prop never redraws the mark and nothing plays on load. Ids come from `useId`, so
  * several marks (and the favicon, which reuses this SVG) can share a document.
  */
 export function BrandMark({ size = 40, title = "BACulator", tone = "calm" }: { size?: number; title?: string; tone?: "calm" | "alert" }) {
@@ -48,7 +50,11 @@ export function BrandMark({ size = 40, title = "BACulator", tone = "calm" }: { s
         <rect x="18" y="28" width="30" height="8" rx="4" fill="#ff6a55" filter={`url(#${glow})`} opacity="0.9" />
         <rect x="19" y="29.5" width="28" height="5" rx="2.5" fill="#ffa494" />
       </g>
-      <rect x="28" y="22" width="4" height="20" rx="2" fill="#fafafa" />
+      {/* The tick: white in both tones; in alert it stands 6 units further right (x 34), as if the
+          needle had moved up. It slides there with the morph (`.bm-tick`, globals.css). */}
+      <g className={`bm-tick ${alert ? "is-alert" : ""}`}>
+        <rect x="28" y="22" width="4" height="20" rx="2" fill="#fafafa" />
+      </g>
     </svg>
   );
 }

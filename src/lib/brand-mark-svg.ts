@@ -6,7 +6,8 @@
  * a white tick for now) on a dark glass tile with a lit rim. Keep the two in step.
  *
  * Tones: "calm" is the everyday blue. "alert" is the red the night screen turns whenever drinks
- * are counted (not safe to drive): coral band, hotter glow, slightly warmed rim; the tick stays white.
+ * are counted (not safe to drive): coral band, hotter glow, slightly warmed rim; the tick stays white
+ * and stands further right along the band, as if the needle had moved up.
  */
 export type BrandTone = "calm" | "alert";
 
@@ -52,18 +53,21 @@ export function brandMarkSvg(tone: BrandTone = "calm", opts: BrandMarkSvgOptions
   const id = `bm${(uid = (uid + 1) % 1000)}`;
 
   // A range strip, not a cross: the band is clearly wider than the tick is tall, and the tick sits
-  // at 40% of the band (now, inside the likely range), as on the night screen.
+  // at 40% of the band (now, inside the likely range), as on the night screen. In the alert tone the
+  // tick stands further right, the needle moved up, matching BrandMark.tsx (`.bm-tick.is-alert`,
+  // +6 units; +8 here in the small drawing to stay on its 4-unit pixel grid).
+  const tickX = small ? (tone === "alert" ? 32 : 24) : tone === "alert" ? 34 : 28;
   const glyph = small
     ? // Favicon, on the 16px pixel grid (4 units = 1px): track to the tile edges, band 48×12,
       // tick 4×20 at 37.5% of the band (pixel-snapped). Centred on y=34 so every edge lands on a whole pixel at 16px.
       `<rect x="4" y="32" width="56" height="4" rx="2" fill="#fff" fill-opacity="0.18"/>` +
       `<rect x="8" y="28" width="48" height="12" rx="6" fill="${t.band}"/>` +
-      `<rect x="24" y="24" width="4" height="20" rx="2" fill="${TICK}"/>`
+      `<rect x="${tickX}" y="24" width="4" height="20" rx="2" fill="${TICK}"/>`
     : // Standard: track 42×4, band 28×5 (glow 28×6), tick 4×20 at 40% of the band.
       `<rect x="11" y="30" width="42" height="4" rx="2" fill="#fff" fill-opacity="0.14"/>` +
       `<rect x="19" y="29" width="28" height="6" rx="3" fill="${t.glow}" filter="url(#${id}-glow)" opacity="0.8"/>` +
       `<rect x="19" y="29.5" width="28" height="5" rx="2.5" fill="${t.band}"/>` +
-      `<rect x="28" y="22" width="4" height="20" rx="2" fill="${TICK}"/>`;
+      `<rect x="${tickX}" y="22" width="4" height="20" rx="2" fill="${TICK}"/>`;
 
   // The favicon's rim is a 2px stroke, so it gets a little more opacity to survive the tiny size.
   const rimBoost = small ? 0.12 : 0;

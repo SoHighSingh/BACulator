@@ -40,6 +40,27 @@ describe("brandMarkSvg", () => {
     }
   });
 
+  it("moves the tick right in the alert tone, still inside the band (the needle moved up)", () => {
+    const tickRe = /<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)" height="[\d.]+" rx="[\d.]+" fill="#fafafa"\/>/;
+    for (const small of [false, true]) {
+      const calm = tickRe.exec(brandMarkSvg("calm", { small }));
+      const alert = tickRe.exec(brandMarkSvg("alert", { small }));
+      const bandRe = (c: string) => new RegExp(`<rect x="([\\d.]+)" y="[\\d.]+" width="([\\d.]+)" height="[\\d.]+" rx="[\\d.]+" fill="${c}"\\/>`);
+      const band = bandRe("#ffa494").exec(brandMarkSvg("alert", { small }));
+      const calmBand = bandRe("#7cb4ff").exec(brandMarkSvg("calm", { small }));
+      if (!calm || !alert || !band || !calmBand) throw new Error("tick or band missing");
+      const [cx, ax, tw] = [+calm[1]!, +alert[1]!, +alert[2]!];
+      const [bx, bw] = [+band[1]!, +band[2]!];
+      // Standard: +6 (BrandMark.tsx's .bm-tick.is-alert); small: +8, pixel-snapped on its 4-unit grid.
+      expect(ax - cx).toBe(small ? 8 : 6);
+      const at = (ax + tw / 2 - bx) / bw;
+      expect(at).toBeGreaterThan(0.5);
+      expect(at).toBeLessThan(0.7);
+      // Only the tick moves: the band is drawn in the same place in both tones.
+      expect([band[1], band[2]]).toEqual([calmBand[1], calmBand[2]]);
+    }
+  });
+
   it("bleeds to the square edge and scales the glyph into the 80% safe zone", () => {
     const svg = brandMarkSvg("calm", { bleed: true });
     expect(svg).toContain('<rect width="64" height="64" fill="#111114"/>');
