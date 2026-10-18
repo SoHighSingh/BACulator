@@ -16,19 +16,11 @@ interface EditDrinkSheetProps {
   onSave: (drink: LoggedDrink, change: { standards: number; finishedAt: Date }) => void;
 }
 
-<<<<<<< HEAD
-const STEP = 0.5;
-// Matches the server: a US handle (1.75 L of 40% spirit) is about 55 standards.
-const MAX_STANDARDS = 200;
-
-/** Fix a logged drink: when it was finished, and how many standard drinks it was. */
-=======
 /**
  * Fix a logged drink: when it was finished, and how many standard drinks it was. The amount
  * stepper walks `standardsScale`: tenths under 2, halves to 10, whole drinks above, so a single
  * nip can be corrected finely while a big night isn't twenty taps away. Its labels say how far.
  */
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
 export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetProps) {
   const { region, std } = useRegion();
   const [minutesAgo, setMinutesAgo] = useState(0);
@@ -69,9 +61,6 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
           <div className="mt-6 flex items-center justify-between gap-3">
             <p className="text-ink-2 text-lg">Standard drinks</p>
             <div className="flex items-center gap-2">
-<<<<<<< HEAD
-              <button type="button" aria-label="Half a standard drink less" onClick={() => step(-1)} className="press grid size-12 place-items-center rounded-key bg-white/10">
-=======
               <button
                 type="button"
                 aria-label={lessBy === 0 ? "Less (at the minimum)" : stepLabel(lessBy, "less")}
@@ -79,15 +68,11 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
                 onClick={() => step(-1)}
                 className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40"
               >
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
                 <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
               </button>
               <span className="w-14 text-center text-xl font-medium tabular-nums" aria-live="polite">
                 {std(standards)}
               </span>
-<<<<<<< HEAD
-              <button type="button" aria-label="Half a standard drink more" onClick={() => step(1)} className="press grid size-12 place-items-center rounded-key bg-white/10">
-=======
               <button
                 type="button"
                 aria-label={moreBy === 0 ? "More (at the maximum)" : stepLabel(moreBy, "more")}
@@ -95,7 +80,6 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
                 onClick={() => step(1)}
                 className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40"
               >
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
                 <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
               </button>
             </div>
@@ -103,10 +87,6 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
 
           <button
             type="button"
-<<<<<<< HEAD
-            onClick={() => onSave(drink, { standards, finishedAt: new Date(now.getTime() - minutesAgo * 60_000) })}
-            className="press key-glow mt-6 flex min-h-16 w-full items-center justify-center rounded-primary bg-ink text-xl font-medium text-bg"
-=======
             onClick={() =>
               onSave(drink, {
                 standards,
@@ -114,7 +94,6 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
               })
             }
             className="press key-glow bg-ink text-bg mt-6 flex min-h-16 w-full items-center justify-center rounded-primary text-xl font-medium"
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
           >
             Save
           </button>

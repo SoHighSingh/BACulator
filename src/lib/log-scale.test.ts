@@ -84,10 +84,11 @@ describe("minutesAgoScale", () => {
 });
 
 describe("standardsScale", () => {
-  it("runs from a tenth to 50 with tenths under 2, halves to 10, then whole drinks", () => {
+  it("runs from a tenth to 200 (the server limit): tenths under 2, halves to 10, wholes to 50, then fives", () => {
     expect(standardsScale.min).toBe(0.1);
-    expect(standardsScale.max).toBe(50);
-    expect(standardsScale.values.length).toBe(76);
+    expect(standardsScale.max).toBe(200);
+    expect(standardsScale.values.length).toBe(106);
+    expect(standardsScale.delta(50, 1)).toBe(5);
     expect(standardsScale.delta(1, 1)).toBe(0.1);
     expect(standardsScale.delta(2, 1)).toBe(0.5);
     expect(standardsScale.delta(2, -1)).toBe(-0.1);

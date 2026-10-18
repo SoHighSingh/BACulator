@@ -72,13 +72,8 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
               setOpen(false);
             }}
             aria-pressed={!open && minutesAgo === m}
-<<<<<<< HEAD
-            className={`press min-h-12 shrink-0 rounded-key px-4 text-lg ${
-              !open && minutesAgo === m ? "bg-ink font-medium text-bg" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
-=======
             className={`press min-h-12 shrink-0 rounded-key px-4 text-lg ${
               !open && minutesAgo === m ? "bg-ink text-bg font-medium" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
             }`}
           >
             {chip(m)}
@@ -89,20 +84,13 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
           onClick={() => setOpen(true)}
           aria-expanded={open}
           aria-controls={id}
-<<<<<<< HEAD
-          className={`press min-h-12 shrink-0 rounded-key px-4 text-lg ${open ? "bg-ink font-medium text-bg" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"}`}
-=======
           className={`press min-h-12 shrink-0 rounded-key px-4 text-lg ${open ? "bg-ink text-bg font-medium" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"}`}
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
         >
           Earlier…
         </button>
       </div>
 
       {open && (
-<<<<<<< HEAD
-        <div id={id} className="compose-in rounded-row bg-white/[0.04] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
-=======
         <div
           id={id}
           // Opened by a tap, the slider brings itself into view, clear of a sheet's sticky Add button.
@@ -111,7 +99,6 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
           }}
           className="compose-in scroll-mb-28 rounded-row bg-white/[0.04] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]"
         >
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
           <p className="text-center text-lg" aria-live="polite">
             <span className="font-medium">{formatClock(at)}</span>
             <span className="text-ink-2"> · {agoLabel(minutesAgo)}</span>
@@ -119,16 +106,10 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
           <div className="mt-1 flex items-center gap-2">
             <button
               type="button"
-<<<<<<< HEAD
-              onClick={() => onChange(clamp(minutesAgo + 5))}
-              aria-label="5 minutes earlier"
-              className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15"
-=======
               onClick={() => onChange(minutesAgoScale.move(minutesAgo, 1))}
               disabled={earlierBy === 0}
               aria-label={earlierBy === 0 ? "Earlier (at the start)" : `${stepLabel(earlierBy)} earlier`}
               className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15 disabled:opacity-40"
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
             >
               <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
             </button>
@@ -166,16 +147,10 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap
             </div>
             <button
               type="button"
-<<<<<<< HEAD
-              onClick={() => onChange(clamp(minutesAgo - 5))}
-              aria-label="5 minutes later"
-              className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15"
-=======
               onClick={() => onChange(minutesAgoScale.move(minutesAgo, -1))}
               disabled={laterBy === 0}
               aria-label={laterBy === 0 ? "Later (already now)" : `${stepLabel(laterBy)} later`}
               className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15 disabled:opacity-40"
->>>>>>> refs/heads/worktree-agent-a89285a51b3b78b34
             >
               <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
             </button>

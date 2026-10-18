@@ -84,11 +84,12 @@ export const minutesAgoScale = ladder(0, [
 ]);
 
 /**
- * Standard drinks (in the region's own standard), from a tenth to 50: tenths under 2, halves to
- * 10, then whole drinks. 76 rungs.
+ * Standard drinks (in the region's own standard), from a tenth to 200 (the server's limit; a US handle is about 55): tenths under 2, halves to
+ * 10, whole drinks to 50, then fives.
  */
 export const standardsScale = ladder(0.1, [
   { upTo: 2, step: 0.1 },
   { upTo: 10, step: 0.5 },
   { upTo: 50, step: 1 },
+  { upTo: 200, step: 5 },
 ]);
