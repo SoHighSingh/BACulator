@@ -1,3 +1,4 @@
+import { Maximize2 } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
 
 import type { NightSimulation } from "~/lib/bac-calculator";
@@ -163,24 +164,20 @@ export function TimelineCard({ simulation, now, onExpand }: TimelineCardProps) {
   const bac = picked?.bac ?? valueAt(simulation.samples, now.getTime());
   return (
     <section aria-labelledby="curve-heading" className="card p-5">
-      <header className="flex items-baseline justify-between gap-3">
-        <h2 id="curve-heading" className="text-lg font-semibold">
+      {/* The header opens the bigger graph; dragging the curve itself scrubs. No instructions needed. */}
+      <button type="button" onClick={onExpand} aria-label="Tonight: open a bigger graph" className="press -mx-2 -mt-2 flex min-h-12 w-[calc(100%+16px)] items-center justify-between gap-3 rounded-xl px-2 text-left">
+        <h2 id="curve-heading" className="flex items-center gap-1.5 text-lg font-semibold">
           Tonight
+          <Maximize2 aria-hidden="true" className="size-4 text-ink-2" strokeWidth={2} />
         </h2>
-        <p className="text-lg" aria-live="off">
+        <span className="text-lg" aria-live="off">
           <span className="text-ink-2">{picked?.t ? formatClock(picked.t) : "Now"} · </span>
           <span className="font-medium">about {formatPoint(bac)}</span>
-        </p>
-      </header>
-      <div className="mt-4">
+        </span>
+      </button>
+      <div className="mt-3">
         <TimelineChart simulation={simulation} now={now} height={170} onPick={(t, b) => setPicked(t === null ? null : { t, bac: b })} />
       </div>
-      <p className="mt-1 flex items-center justify-between gap-3 text-lg text-ink-2">
-        Drag across it to read any time.
-        <button type="button" onClick={onExpand} className="press min-h-12 shrink-0 rounded-full px-3 font-medium text-ink hover:bg-white/5">
-          Bigger
-        </button>
-      </p>
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 import { aboutPoint, BAND_HIGH, BAND_LOW, formatBand } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
+import { WarningMark } from "./WarningMark";
 
 interface EstimateProps {
   bac: number;
@@ -12,6 +13,11 @@ interface EstimateProps {
   /** The model an hour ago, for the trail that shows which way it's going when it's falling. */
   hourAgo?: number | null;
   size?: "md" | "lg";
+  /** Shows "Not safe to drive" under the number (whenever any drink is counted). */
+  notSafe?: boolean;
+  /** Makes the number a button that opens the details (range, peak, back to zero, why). */
+  onOpenDetails?: () => void;
+  ref?: React.Ref<HTMLElement>;
 }
 
 /** True once a value has been shown and then changes, so first paint never animates. */
@@ -29,7 +35,7 @@ function useChanged(value: string) {
  * back to where it was an hour ago. Tapping the bar spells out the range. Nothing on the bar is a
  * limit: there are no marks but the reading's own.
  */
-export function Estimate({ bac, peak, status, hourAgo = null, size = "md" }: EstimateProps) {
+export function Estimate({ bac, peak, status, hourAgo = null, size = "md", notSafe = false, onOpenDetails, ref }: EstimateProps) {
   const [about, point] = aboutPoint(bac);
   const changed = useChanged(point);
   const [showRange, setShowRange] = useState(false);
@@ -45,22 +51,39 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md" }: Est
   const peakText = rising ? `about ${aboutPoint(rising.bac)[1]} by ${formatClock(rising.at)}` : null;
 
   return (
-    <section aria-labelledby="estimate-heading" className="px-1 pt-6 pb-1">
+    <section ref={ref} aria-labelledby="estimate-heading" className="px-1 pt-6 pb-1">
       <h2 id="estimate-heading" className="text-lg text-ink-2">
         Estimated blood alcohol
       </h2>
-      <p className="mt-2 flex items-baseline gap-3" aria-hidden="true">
-        {about && <span className="text-2xl font-medium">about</span>}
-        <span
-          key={point}
-          data-changed={changed || undefined}
-          className={`num-in inline-block leading-[0.88] font-medium tracking-[-0.055em] ${
-            point.length > 4 ? "text-[clamp(48px,14vw,64px)]" : size === "lg" ? "text-[clamp(96px,10vw,148px)]" : "text-[clamp(88px,27vw,116px)]"
-          }`}
-        >
-          {point}
-        </span>
-      </p>
+      {(() => {
+        const number = (
+          <span className="mt-2 flex items-baseline gap-3" aria-hidden="true">
+            {about && <span className="text-2xl font-medium">about</span>}
+            <span
+              key={point}
+              data-changed={changed || undefined}
+              className={`num-in inline-block leading-[0.88] font-medium tracking-[-0.055em] ${
+                point.length > 4 ? "text-[clamp(48px,14vw,64px)]" : size === "lg" ? "text-[clamp(96px,10vw,148px)]" : "text-[clamp(88px,27vw,116px)]"
+              }`}
+            >
+              {point}
+            </span>
+          </span>
+        );
+        return onOpenDetails ? (
+          <button type="button" onClick={onOpenDetails} aria-label={`About this estimate: ${about ? "about " : ""}${point}`} className="press -mx-1 block rounded-2xl px-1 text-left">
+            {number}
+          </button>
+        ) : (
+          <p>{number}</p>
+        );
+      })()}
+      {notSafe && (
+        <p role="status" className="mt-3 flex items-center gap-2 text-lg font-medium text-alert">
+          <WarningMark className="size-5" />
+          Not safe to drive
+        </p>
+      )}
 
       {hasRange && (
         <button

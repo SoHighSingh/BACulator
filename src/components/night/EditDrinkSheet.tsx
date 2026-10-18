@@ -45,7 +45,7 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
         <>
           <p className="text-lg text-ink-2">When you finished it</p>
           <div className="mt-2">
-            <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} startOpen />
+            <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} startOpen wrap />
           </div>
 
           <div className="mt-6 flex items-center justify-between gap-3">

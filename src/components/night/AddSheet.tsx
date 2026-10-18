@@ -109,7 +109,7 @@ export function AddSheet({ open, onClose, now, onAdd }: AddSheetProps) {
 
       <p className="mt-5 text-lg text-ink-2">When you finished it</p>
       <div className="mt-2">
-        <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} />
+        <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} wrap />
       </div>
 
       <button type="button" onClick={submit} className="press key-glow mt-6 flex min-h-16 w-full items-center justify-center gap-2 rounded-full bg-ink text-xl font-medium text-bg">

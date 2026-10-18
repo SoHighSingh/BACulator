@@ -28,7 +28,7 @@ Text on the white pill and keys is `bg` (19.1:1). Glass chrome is `rgb(18 18 22 
 No green anywhere, no red/green status, no colour-only meaning: status is icon + word + colour.
 
 ## Material
-- **Light field:** two radial blue glows behind the estimate (`.glass-field`). Static: it never moves.
+- **Light field:** two radial blue glows behind the estimate (`.glass-field`, fixed to the viewport). Static: it never moves. Its `.is-alert` state is the red not-safe-to-drive field (one 900ms cross-fade, then still).
 - **Glass (`.glass`):** `backdrop-filter: blur(22px) saturate(180%)`, a lit top edge (inset 1px white at 14%), a faint inner rim, a soft drop shadow, and a specular rim drawn by `::before` (a 160° gradient border, bright top-left). Only for chrome that floats: top bar, warning pill, dock, sheets, the landing's device frame.
 - **Cards (`.card`):** `surface` with a 1px `edge` border, 14px corners; rows inside are split by 1px `edge` dividers. Everything you read sits on a card or on the field, never on glass alone.
 - **White key:** the primary action is white (`ink`) with `bg` text: a full-width pill on the dock, a disc for compact keys, a soft blue under-glow. No other filled colour buttons.
@@ -44,15 +44,17 @@ No green anywhere, no red/green status, no colour-only meaning: status is icon +
 
 ## Night screen layout
 Top to bottom, phone (max-width 480, 16px gutter, safe-area aware):
-1. **Top bar** (glass, sticky): BACulator · Get home · You (person icon + "You", opens Your details).
-2. **Not safe to drive** (glass pill, sticky under the bar, separate from it): coral triangle, white words, "about 0.10" in `ink-2`. Shown whenever drinks are counted and the model is above zero, with no weight, and through the slow-eliminator tail.
-3. **Estimate** on the light field: "Estimated blood alcohol", about + number, "Likely 0.07 to 0.14", a 4px range strip (signal band with a soft glow, a 2px ink tick at the point, only zero implied, no other marks), and "Still rising: about 0.11 by 11:20 pm" or "Falling".
-4. **Tonight** card: the scrubbable curve (past solid with a glow and a fading fill, future dashed, a now line and dot), "Now · about 0.10" header that reads the scrubbed time, hour labels.
-5. **Numbers** card: Back to zero (range of clock times), Peak, Counted; "Estimate only. Bodies and pours vary."
+1. **No top bar.** The mark (left) and two round glass icon keys (Get home = house, You = person; 48px, spoken labels) float over the field, sticky. A dark scrim fades content out under them as it scrolls.
+2. **Estimate** on the light field: "Estimated blood alcohol", about + number (the number is a button that opens **About this estimate**), then the range bar: the likely range as a glowing band, a white tick for now, a dashed track to a ring at the coming peak (labelled "about 0.11 by 11:20 pm") while rising, or a fading trail back to an hour ago while falling. Tapping the bar shows "Likely 0.07 to 0.14". Under it, the coral "Not safe to drive" line with its icon (see Open below).
+3. **Not safe to drive state (the red field):** whenever drinks are counted (the same rule as the warning, never a number threshold) the fixed light field cross-fades from blue to warm red across the whole screen and holds still until the slowest likely back-to-zero time. No pulse. When the number scrolls out of view a compact "Not safe to drive" glass pill takes the mark's place at top left, so the warning is never off screen.
+4. **Tonight** card: the scrubbable curve and hour labels; its header ("Tonight" + an expand icon, "Now · about 0.10" reading the scrubbed time) is the button that opens the bigger graph. No instruction text.
+5. **Numbers** card: Back to zero, Peak, Counted; "Estimate only. Bodies and pours vary."
 6. **Getting home** card: the emergency instruction first, then rows for Call 000 (alert), Text a mate, Find a ride; Terms and Privacy.
 7. **Your tab** card: newest first; each row opens Edit (time and size) and has its own Remove.
-8. **Dock** (glass, fixed bottom, 28px corners): status line ("Added: Vodka soda ×2 [Undo one]", "Removed … [Add back]", "Last: … · 6 min ago", "Saved on this phone, will sync"), the white **Add another vodka soda** pill (72px), and the composer: "Type or say a drink" with a mic key. Focusing the composer hides the pill and shows recents as suggestion chips; typing parses on the device (catalog) and shows a confirmation card with time and "Add · 1.9 std"; the bartender (Workers AI) is only asked when the catalog can't read it.
+8. **Dock** (glass, fixed bottom, 28px corners): status line ("Added: Vodka soda ×2 [Undo one]", "Removed … [Add back]", "Last: … · 6 min ago", "Saved on this phone, will sync"), the white **Add another vodka soda** pill (72px; 64px on short screens), and the composer: "Type or say a drink" with a mic key. Focusing the composer hides the pill, shows recents as one scrolling row of suggestion chips and folds a parsed drink to one line with an inline Add; the dock rides on top of the keyboard. Done drops the keyboard and shows the full card with its time control. The bartender (Workers AI) is only asked when the on-device catalog can't read it.
 Desktop (≥1024): two content columns; the dock floats as a 420px glass panel at the bottom right.
+
+**Open (user, 18 Oct):** the "Not safe to drive" line "doesn't look like it belongs there". Replace its treatment, but it must still carry the meaning as icon + short word (screen readers and a glance both need words), must not hang off a number threshold, and must not move at rest.
 
 ## Time of a drink
 Default now. Chips: Now / 15 min ago / 30 min ago / 1 hour ago, then **Earlier…** which opens a slider (5-minute steps, back to the start of the 48 h window) with −15 / +15 minute buttons either side and a live read-out "9:40 pm · 1 h 20 min ago". Dragging is never the only way. The same control edits a logged drink's time.

@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { BrandMark } from "~/components/BrandMark";
 import type { LoggedDrink, NewDrink } from "~/hooks/useNight";
-import { aboutPoint, type NightModel } from "~/lib/estimate-display";
+import type { NightModel } from "~/lib/estimate-display";
 import { AddDock, type Notice, type QuickDrink } from "./AddDock";
 import { Estimate } from "./Estimate";
+import { EstimateDetails } from "./EstimateDetails";
 import { GetHome } from "./GetHome";
 import { NightNumbers } from "./NightNumbers";
 import { useKeyboardInset } from "./Sheet";
@@ -37,7 +38,7 @@ export interface NightViewProps {
   onSignIn?: () => void;
 }
 
-const ICON_BUTTON = "press grid size-12 place-items-center rounded-xl hover:bg-white/5 active:bg-white/10";
+const ICON_BUTTON = "glass press relative grid size-12 shrink-0 place-items-center rounded-full";
 
 /**
  * The signed-in night screen (Glass, see DESIGN.md): a still field of light behind the number,
@@ -61,21 +62,53 @@ export function NightView(props: NightViewProps) {
     return () => ro.disconnect();
   }, []);
 
+  // "Not safe to drive" lives under the number; once the number scrolls away a compact copy
+  // joins the floating icons, so the warning is never off screen.
+  const estimateRef = useRef<HTMLElement>(null);
+  const hasEstimate = model.bac !== null && !!estimate;
+  const [showStickyWarning, setShowStickyWarning] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  useEffect(() => {
+    const el = estimateRef.current;
+    if (!el) {
+      setShowStickyWarning(true);
+      return;
+    }
+    const io = new IntersectionObserver(([e]) => setShowStickyWarning(!e?.isIntersecting), { rootMargin: "-80px 0px 0px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasEstimate]);
+
   const total = drinks.reduce((sum, d) => sum + d.standards, 0);
 
   return (
     <div className="app-shell fixed inset-0 overflow-hidden bg-bg text-ink">
+      {/* Content fades out under the floating icons instead of colliding with them. */}
+      <div aria-hidden="true" className="night-scrim pointer-events-none fixed inset-x-0 top-0 z-10 h-[calc(96px_+_env(safe-area-inset-top))]" />
       <main className="app-main h-full overflow-y-auto overscroll-contain">
         <div className="relative">
-          <div className="glass-field" aria-hidden="true" />
+          <div className={`glass-field ${model.notSafeToDrive ? "is-alert" : ""}`} aria-hidden="true" />
           <div
             className="night-cols relative mx-auto flex w-full max-w-[480px] flex-col gap-4 px-4 pt-[max(12px,env(safe-area-inset-top))]"
             style={{ paddingBottom: dockHeight + 24 }}
           >
-            <header className="glass night-span sticky top-[max(8px,env(safe-area-inset-top))] z-20 flex items-center gap-1 rounded-2xl py-1.5 pr-1.5 pl-2">
-              <h1 className="flex-1">
-                <BrandMark size={40} />
-              </h1>
+            {/* No bar: the mark and two icon keys float over the field, so nothing sits between
+                the person and the number. */}
+            <header className="night-span sticky top-[max(8px,env(safe-area-inset-top))] z-20 flex items-center gap-2">
+              {/* Once the number scrolls away, the warning takes the mark's place. */}
+              {model.notSafeToDrive && showStickyWarning ? (
+                <div className="flex min-w-0 flex-1">
+                  <h1 className="sr-only">BACulator</h1>
+                  <p role="status" className="glass glass-strong compose-in flex min-h-12 items-center gap-2 rounded-full px-3.5 text-lg font-medium whitespace-nowrap">
+                    <WarningMark className="size-5 text-alert" />
+                    Not safe to drive
+                  </p>
+                </div>
+              ) : (
+                <h1 className="flex-1">
+                  <BrandMark size={44} />
+                </h1>
+              )}
               <button
                 type="button"
                 aria-label="Get home"
@@ -89,25 +122,15 @@ export function NightView(props: NightViewProps) {
               </button>
             </header>
 
-            {model.notSafeToDrive && (
-              <p
-                role="status"
-                className="glass glass-strong night-span sticky top-[calc(max(8px,env(safe-area-inset-top))+68px)] z-10 flex min-h-12 items-center gap-3 rounded-full px-4 text-lg font-medium"
-              >
-                <WarningMark className="size-5 text-alert" />
-                <span className="flex-1 whitespace-nowrap">Not safe to drive</span>
-                {model.bac !== null && model.bac > 0 && (
-                  <span className="whitespace-nowrap text-ink-2 max-[340px]:hidden">
-                    {aboutPoint(model.bac)[0] ? "about " : ""}
-                    {aboutPoint(model.bac)[1]}
-                  </span>
-                )}
-              </p>
-            )}
-
             <div className="flex flex-col gap-4">
               {model.bac === null || !estimate ? (
                 <section className="card mt-4 flex flex-col gap-3 p-6">
+                  {model.notSafeToDrive && (
+                    <p role="status" className="flex items-center gap-2 text-lg font-medium text-alert">
+                      <WarningMark className="size-5" />
+                      Not safe to drive
+                    </p>
+                  )}
                   <h2 className="text-2xl font-semibold tracking-[-0.02em]">Add your weight to see an estimate</h2>
                   <p className="text-lg text-ink-2">{model.hasDrinks ? "Your drinks are saved and counted." : "Your drinks still get saved without it."}</p>
                   <button type="button" onClick={props.onAddDetails} className="press min-h-14 rounded-full bg-ink text-lg font-medium text-bg">
@@ -116,6 +139,9 @@ export function NightView(props: NightViewProps) {
                 </section>
               ) : (
                 <Estimate
+                  ref={estimateRef}
+                  notSafe={model.notSafeToDrive}
+                  onOpenDetails={() => setDetailsOpen(true)}
                   bac={model.bac}
                   peak={model.peak}
                   status={estimate.status}
@@ -147,6 +173,8 @@ export function NightView(props: NightViewProps) {
           </div>
         </div>
       </main>
+
+      <EstimateDetails open={detailsOpen} onClose={() => setDetailsOpen(false)} model={model} />
 
       <footer
         ref={dockRef}

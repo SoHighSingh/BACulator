@@ -178,15 +178,34 @@
   --glass-strong: rgb(18 18 22 / 0.78);
 }
 
-/* A still field of light behind the estimate. It never moves. */
+/* A still field of light behind the estimate. It never moves. While any drink is counted (the same
+   rule as "Not safe to drive", never a number threshold) the light turns warm red across the whole
+   screen, so the state reads from across the room; it cross-fades once, then holds still. */
 .glass-field {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 560px;
+  position: fixed;
+  inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(60% 55% at 50% 18%, rgb(70 120 255 / 0.22), transparent 70%),
-    radial-gradient(40% 40% at 80% 0%, rgb(124 180 255 / 0.12), transparent 70%);
+    radial-gradient(60% 45% at 50% 12%, rgb(70 120 255 / 0.22), transparent 70%),
+    radial-gradient(40% 35% at 85% 0%, rgb(124 180 255 / 0.12), transparent 70%);
+}
+.glass-field::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    radial-gradient(70% 50% at 50% 14%, rgb(255 70 50 / 0.3), transparent 72%),
+    radial-gradient(60% 45% at 50% 110%, rgb(255 70 50 / 0.14), transparent 70%),
+    rgb(60 8 4 / 0.35);
+}
+.glass-field.is-alert::after {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .glass-field::after {
+    transition: opacity 900ms var(--ease-out);
+  }
 }
 
 /* No position here: glass chrome is sticky or fixed, and either one anchors the ::before rim. */
@@ -453,4 +472,8 @@ html:has(.app-shell) body {
   .app-shell #estimate-heading {
     margin-top: -12px;
   }
+}
+
+.night-scrim {
+  background: linear-gradient(to bottom, rgb(9 9 11 / 0.95) 62%, rgb(9 9 11 / 0));
 }

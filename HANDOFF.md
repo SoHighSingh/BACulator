@@ -1,4 +1,4 @@
-# BACulator — handoff (17 Oct 2026, evening)
+# BACulator — handoff (18 Oct 2026, evening)
 
 Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decisions) and `DESIGN.md` (what's built now). This file covers: where the code is, what the seven-agent audit found and what's still open, the three side branches waiting to merge, and the brief for the next visual direction.
 
@@ -7,12 +7,55 @@ Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decision
 - **Migrations renumbered** so they apply in order: `0004_ai_limits`, `0005_drop_oauth_tokens`, `0006_offline_adds` (was the offline branch's 0004), `0007_consent` (was the consent branch's 0004). None has been applied remotely. **Tell the migration session before go-live** (it wasn't reachable from the design session).
 - **`.env` and `.env.local` still exist in the main checkout.** `npm run build:worker` refuses to run while they do (by design). The user should move the values into `.dev.vars`, rotate the secrets, and delete those files. Until then, build in a throwaway worktree.
 - **Visual direction: "Glass"** (see DESIGN.md), chosen from five built directions under `/dev/directions` (dev only; also `/dev/directions/type`, `/dock`, `/glass/lab`, `/logo`, `/fonts`, `/assets`). The night screen and landing are rebuilt on it; FluidGauge, the gauge lab, `lib/fluid` and the paper docket are deleted.
-- **New on the night screen:** icon-only top bar (logo mark, Get home, You); the warning as its own glass pill; the estimate bar draws direction (dashed track to the peak while rising, a fading trail while falling) and shows the range's numbers on tap; a dock with a white "Add another …" pill and a type-or-say composer (on-device catalog parse first, the bartender only when the catalog can't read it; folds to one-line rows while the keyboard is up and rides on top of it); time chips Now/10/20/30 min/1 h plus an Earlier slider in 5-minute steps with ±5 buttons.
+- **New on the night screen:** no top bar (the mark, Get home and You float as glass keys over a scrim); the whole screen turns red while any drink counts (never a number threshold) and "Not safe to drive" sits under the number, moving to the top left once the number scrolls away; tapping the number opens About this estimate; the estimate bar draws direction (dashed track to the peak while rising, a fading trail while falling) and shows the range's numbers on tap; a dock with a white "Add another …" pill and a type-or-say composer (on-device catalog parse first, the bartender only when the catalog can't read it; folds to one-line rows while the keyboard is up and rides on top of it); time chips Now/10/20/30 min/1 h plus an Earlier slider in 5-minute steps with ±5 buttons.
 - **Audit items closed here:** B2 (signed-out now has a Sign in button), profile button is an icon labelled "You" and opens a Radix sheet (the floating Profile button is gone), onboarding asks weight and sex once before the first night (skippable), editing a drink's time or size (a replace through the offline outbox, so it works with no signal), one `formatClock()` (`src/lib/format-clock.ts`, tested), Radix Dialog for the add, edit and You sheets.
 - **Still open from that list:** none. Other ⏳ items below are unchanged; the engine items are proposed as their own session ("BAC engine accuracy fixes").
 - **Logo:** five candidates at `/dev/directions/logo`; the shipped `BrandMark` is a placeholder until the user picks (the current one reads as a plus sign at 40px).
 - **Motion study:** `motion/` is a separate Remotion project (`npx remotion studio`); its landscape loop ships at `public/media/add-flow-loop.mp4` on the landing page.
 - **Voice entry** uses the browser's speech recognition (audio goes to Google or Apple's servers); `Permissions-Policy` now allows `microphone=(self)` and the mic is only requested when its key is tapped.
+
+## Kickoff prompt for the next session
+Paste this to continue:
+
+> Continue BACulator in C:\Users\agams\BACulator on branch cloudflare-d1-migration. Read HANDOFF.md (the 18 Oct section first), PRODUCT.md and DESIGN.md; don't re-explore beyond what they point to. The visual direction is "Glass" and the night screen is rebuilt on it. Keep every PRODUCT.md non-negotiable and the designing-for-impaired-users rules: no limit lines or number thresholds, nothing moving at rest, and icon + word + colour for status.
+>
+> 1. **Redo the landing page properly.** The user called the current one "very AI slop" and wants better use of the window, more fun, more excitement, more design, and a headline that isn't about error bars.
+>    - Run the impeccable skill's new-work flow for a Persuade surface inside the established Glass world. Its launcher is missing, so read reference/new-work.md, mode-persuade.md and craft-floor.md. Then run the taste skill's draw, lint and inspect gate.
+>    - A stopped agent left a start: `.taste-skill/direction.json` (dealt "one-motif") and `src/components/landing/LiveStrip.tsx`. LiveStrip blows the range strip up to the window's width, with the big number riding on the tick; that's a good motif.
+>    - Show the maths "coded style": a live code panel of the real Widmark model with the demo night's numbers filled in as visitors tap drinks. The model: fixed r 0.68/0.55, ~95% absorbed in 30 min, 0.015/h elimination, a 0.75–1.4× likely range, 0.75–1.6× back to zero.
+>    - Keep the consent flow (`onStart`), RegionSwitch, getting-home, privacy, FAQ and the add-flow video.
+> 2. **Logo.** The user's idea: a blue-to-red gradient running corner to corner, with a dot in the centre or something similar, and the mark turning red while it's not safe to drive.
+>    - Candidates so far are at /dev/directions/logo; G "filling drop" and J "drop in brackets" read best small.
+>    - Draw 3–4 takes on the gradient-with-dot idea and show them side by side in the real top bar and at favicon size. Let the user pick.
+>    - Then ship it everywhere: `BrandMark`; the red state on the night screen; the tab favicon while not safe; the app icons (public/icons, src/app/icon.png, apple-icon.png, manifest); and a 1200×630 OG image.
+> 3. **Replace the "Not safe to drive" line under the number.** The user says it doesn't look like it belongs. The red field already carries the state. The new treatment must:
+>    - fit Glass;
+>    - still carry icon + short word, because screen readers and a quick glance both need words;
+>    - not be tied to a number threshold;
+>    - not move at rest.
+>
+>    Render 3–4 options side by side before choosing.
+> 4. **Check everything, then commit locally.**
+>    - Shoot with `npm run shoot` in real Chrome at 375×812, 320×568 and 1440×900. It now supports `press`, `focus` and `type` actions.
+>    - Run `node scripts/rubric.mjs <url>` for the impaired-user measurements, and `node scripts/contact-sheet.mjs` to lay options side by side for the user.
+>    - Keep lint, typecheck, tests and the OpenNext build green. Build in a throwaway worktree, because the `.env` files in the main checkout block `build:worker`.
+>    - Commit locally. Don't push, and check with the migration session before anything touches main.
+>
+> Proposed side sessions (cards in the previous session):
+> - **"BAC engine accuracy fixes":**
+>   - the estimate reads ~40% low right after logging;
+>   - the elimination tail;
+>   - g/100 g vs g/100 mL;
+>   - future-dated drinks;
+>   - possibly a computed range instead of a fixed one.
+> - **"Ops runbook":** Workers Logs, D1 backups, an uptime ping, a health route.
+>
+> Still on the user:
+> - move the `.env`/`.env.local` values into `.dev.vars` and rotate the secrets;
+> - publish the Google OAuth consent screen;
+> - review the consent and privacy wording;
+> - tell the migration session the migrations are renumbered 0004–0007;
+> - test on a real iPhone and Android phone.
 
 ## Where things are
 - **Repo:** `C:\Users\agams\BACulator`, GitHub `SoHighSingh/BACulator`. Work branch **`cloudflare-d1-migration`** (local, not pushed since `6788199`). `main` on GitHub is older still. Don't push `main` without checking with the migration session (`local_57f76079…`), which owns go-live.

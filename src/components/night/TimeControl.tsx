@@ -25,6 +25,8 @@ interface TimeControlProps {
   now: Date;
   /** Opens with the slider showing (editing a logged drink). */
   startOpen?: boolean;
+  /** Wrap the chips onto two rows (sheets). Without it they scroll on one row, for above a keyboard. */
+  wrap?: boolean;
 }
 
 /**
@@ -32,7 +34,7 @@ interface TimeControlProps {
  * steps with large −5 / +5 minute buttons, so dragging is never the only way. The read-out says the
  * clock time and how long ago, in words.
  */
-export function TimeControl({ minutesAgo, onChange, now, startOpen = false }: TimeControlProps) {
+export function TimeControl({ minutesAgo, onChange, now, startOpen = false, wrap = false }: TimeControlProps) {
   const id = useId();
   const [open, setOpen] = useState(startOpen || !CHIPS.includes(minutesAgo));
   const clamp = (m: number) => Math.min(MAX_MINUTES_AGO, Math.max(0, Math.round(m / STEP) * STEP));
@@ -41,8 +43,8 @@ export function TimeControl({ minutesAgo, onChange, now, startOpen = false }: Ti
 
   return (
     <div className="flex flex-col gap-3">
-      {/* One scrolling row, so the control stays one line tall above a keyboard. */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5" role="group" aria-label="When you finished it">
+      {/* In a sheet the chips wrap; above a keyboard they scroll on one row to stay one line tall. */}
+      <div className={wrap ? "flex flex-wrap gap-2" : "-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5"} role="group" aria-label="When you finished it">
         {CHIPS.map((m) => (
           <button
             key={m}

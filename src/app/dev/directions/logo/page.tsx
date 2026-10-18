@@ -86,13 +86,94 @@ const MARKS: { id: string; name: string; note: string; svg: React.ReactNode }[] 
   },
 ];
 
+/** Round 2: drink-coded. */
+const DRINK_MARKS: { id: string; name: string; note: string; svg: React.ReactNode }[] = [
+  {
+    id: "drop-range",
+    name: "F · Drop + range",
+    note: "A drop of alcohol, outlined in white, carrying the estimate's range: blue band, white tick for now.",
+    svg: TILE(
+      <>
+        <path d="M32 9C32 9 17 27 17 38a15 15 0 0 0 30 0C47 27 32 9 32 9Z" fill="none" stroke="#fafafa" strokeWidth="3.5" strokeLinejoin="round" />
+        <rect x="23" y="36" width="18" height="5" rx="2.5" fill="#7cb4ff" filter="url(#glow)" opacity="0.9" />
+        <rect x="23" y="36" width="18" height="5" rx="2.5" fill="#7cb4ff" />
+        <rect x="29.5" y="31" width="3" height="15" rx="1.5" fill="#fafafa" />
+      </>,
+    ),
+  },
+  {
+    id: "drop-fill",
+    name: "G · Filling drop",
+    note: "The drop is the gauge: blue fills it to tonight's level, a white line marks now. Simplest at 24px.",
+    svg: TILE(
+      <>
+        <defs>
+          <clipPath id="dropclip">
+            <path d="M32 9C32 9 17 27 17 38a15 15 0 0 0 30 0C47 27 32 9 32 9Z" />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#dropclip)">
+          <rect x="10" y="34" width="44" height="30" fill="#7cb4ff" />
+          <rect x="10" y="33" width="44" height="3" fill="#fafafa" />
+        </g>
+        <path d="M32 9C32 9 17 27 17 38a15 15 0 0 0 30 0C47 27 32 9 32 9Z" fill="none" stroke="#fafafa" strokeWidth="3.5" strokeLinejoin="round" />
+      </>,
+    ),
+  },
+  {
+    id: "bottle",
+    name: "H · Bottle label",
+    note: "A bottle whose label is the range bar. Most obviously about drinks; a little literal.",
+    svg: TILE(
+      <>
+        <path d="M28 8h8v10c0 3 8 6 8 13v21a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4V31c0-7 8-10 8-13Z" fill="none" stroke="#fafafa" strokeWidth="3.5" strokeLinejoin="round" />
+        <rect x="20" y="36" width="24" height="10" fill="#7cb4ff" opacity="0.25" />
+        <rect x="23" y="39" width="18" height="4" rx="2" fill="#7cb4ff" />
+        <rect x="30" y="35" width="3" height="12" rx="1.5" fill="#fafafa" />
+      </>,
+    ),
+  },
+  {
+    id: "glass",
+    name: "I · Glass level",
+    note: "A tumbler with its level lit blue and the meniscus in white: the night's level, read off a glass.",
+    svg: TILE(
+      <>
+        <defs>
+          <clipPath id="glassclip">
+            <path d="M16 14h32l-4 38a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4Z" />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#glassclip)">
+          <rect x="10" y="34" width="44" height="30" fill="#7cb4ff" opacity="0.9" />
+          <rect x="10" y="32.5" width="44" height="3" fill="#fafafa" />
+        </g>
+        <path d="M16 14h32l-4 38a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4Z" fill="none" stroke="#fafafa" strokeWidth="3.5" strokeLinejoin="round" />
+      </>,
+    ),
+  },
+  {
+    id: "bracket-drop",
+    name: "J · Drop in brackets",
+    note: "Interval brackets holding a blue drop: the drink, and the honest range around it.",
+    svg: TILE(
+      <>
+        <path d="M20 14h-6v36h6" fill="none" stroke="#fafafa" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M44 14h6v36h-6" fill="none" stroke="#fafafa" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M32 19C32 19 23 30 23 36a9 9 0 0 0 18 0C41 30 32 19 32 19Z" fill="#7cb4ff" filter="url(#glow)" opacity="0.8" />
+        <path d="M32 19C32 19 23 30 23 36a9 9 0 0 0 18 0C41 30 32 19 32 19Z" fill="#7cb4ff" />
+      </>,
+    ),
+  },
+];
+
 export default function Page() {
   return (
     <main className="min-h-svh bg-black px-6 py-8 text-ink">
-      <h1 className="text-[28px] font-semibold tracking-[-0.03em]">Logo round</h1>
+      <h1 className="text-[28px] font-semibold tracking-[-0.03em]">Logo round 2: drink-coded</h1>
       <p className="mt-1 text-lg text-ink-2">Each mark at app-icon size, at 64, in the real top bar at 40, and as a 24px favicon.</p>
       <div className="mt-8 grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-6">
-        {MARKS.map((m) => (
+        {[...DRINK_MARKS, ...MARKS.slice(0, 2)].map((m) => (
           <section key={m.id} className="card flex flex-col gap-4 p-5">
             <h2 className="text-lg font-semibold">{m.name}</h2>
             <p className="min-h-20 text-base text-ink-2">{m.note}</p>

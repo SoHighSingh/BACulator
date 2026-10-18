@@ -10,8 +10,8 @@ import { describeNight } from "~/lib/estimate-display";
  * The landing page's sample night: a stated demo person (75 kg, female) and four drinks over the
  * last hour and a half, run through the real engine. Visitors add drinks to it; nothing is saved.
  */
-const DEMO_WEIGHT = 75;
-const DEMO_SEX = "female";
+export const DEMO_WEIGHT = 75;
+export const DEMO_SEX = "female";
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 const sample = (): LoggedDrink[] => [
@@ -53,5 +53,5 @@ export function useDemoNight() {
     setLastAdded(null);
   }
 
-  return { model, now, ready: drinks.length > 0, lastAdded, add, undo };
+  return { model, drinks, now, ready: drinks.length > 0, lastAdded, add, undo };
 }
