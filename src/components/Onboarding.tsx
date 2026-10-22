@@ -32,8 +32,8 @@ export function Onboarding({ onDone }: OnboardingProps) {
         <div>
           <h1 className="text-[34px] leading-tight font-semibold tracking-[-0.03em]">Before your first night</h1>
           <p className="mt-3 text-lg text-ink-2">
-            Your estimate needs your weight and sex. Set them now, while it&apos;s easy. They&apos;re only used for the
-            estimate, and you can change them any time under You.
+            Your estimate needs your weight and sex. They&apos;re only used for the estimate; change them any time
+            under You.
           </p>
         </div>
         <section className="card p-5">

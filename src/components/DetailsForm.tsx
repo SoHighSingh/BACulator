@@ -16,8 +16,9 @@ const choice = (on: boolean) =>
   `press min-h-14 rounded-row px-4 text-lg ${on ? "bg-white/[0.14] font-medium shadow-[inset_0_0_0_2px_var(--color-ink)]" : "bg-white/[0.05] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]"}`;
 
 /**
- * Weight, sex and units: what the estimate needs, asked once (ideally sober) and editable any time.
- * Used by the first-run setup and by the You sheet.
+ * Weight and sex (what the estimate needs), then units, which are already guessed from the phone's
+ * language: asked once (ideally sober) and editable any time. The save key is never disabled; a tap
+ * with something missing says what. Used by the first-run setup and by the You sheet.
  */
 export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps) {
   const { region, setRegion } = useRegion();
@@ -26,6 +27,7 @@ export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps)
   const [weightKg, setWeightKg] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState<string | null>(null);
 
   const utils = api.useUtils();
   const info = api.post.userInfo.useQuery();
@@ -44,11 +46,17 @@ export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps)
   }, [weightKg, region]);
 
   const kg = regionWeightToKg(Number(weight), region);
-  const valid = weight !== "" && kg >= 30 && kg <= 300 && sex !== "";
+  const [lo, hi] = [kgToRegionWeight(30, region), kgToRegionWeight(300, region)];
+  const problem =
+    weight === "" ? "Add your weight." : kg < 30 || kg > 300 ? `Weight between ${lo} and ${hi} ${region.weightUnit}.` : sex === "" ? "Pick female or male." : null;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!valid) return;
+    if (problem || sex === "") {
+      setMissing(problem);
+      return;
+    }
+    setMissing(null);
     setError(null);
     try {
       await update.mutateAsync({ weight: kg, sex });
@@ -62,16 +70,6 @@ export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps)
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-lg text-ink-2">Standard drinks and units</legend>
-        <div className="grid gap-2">
-          {REGION_IDS.map((id) => (
-            <button key={id} type="button" aria-pressed={region.id === id} onClick={() => setRegion(id)} className={`${choice(region.id === id)} text-left`}>
-              {REGIONS[id].label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
 
       <div className="flex flex-col gap-2">
         <label htmlFor="details-weight" className="text-lg text-ink-2">
@@ -88,6 +86,7 @@ export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps)
           onChange={(e) => {
             setWeight(e.target.value);
             setSaved(false);
+            setMissing(null);
           }}
           className="min-h-14 rounded-row bg-white/[0.05] px-4 text-xl text-ink shadow-[inset_0_0_0_1px_var(--color-line)] focus:shadow-[inset_0_0_0_2px_var(--color-signal)] focus:outline-none"
         />
@@ -104,6 +103,7 @@ export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps)
               onClick={() => {
                 setSex(option);
                 setSaved(false);
+                setMissing(null);
               }}
               className={`${choice(sex === option)} capitalize`}
             >
@@ -114,7 +114,23 @@ export function DetailsForm({ onSaved, submitLabel = "Save" }: DetailsFormProps)
         <p className="text-lg text-ink-2">The formula uses average body water, which differs by sex.</p>
       </fieldset>
 
-      <button type="submit" disabled={!valid || update.isPending} className="press key-glow min-h-16 rounded-primary bg-ink text-xl font-medium text-bg disabled:opacity-50">
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-lg text-ink-2">Units</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {REGION_IDS.map((id) => (
+            <button key={id} type="button" aria-pressed={region.id === id} aria-label={REGIONS[id].label} onClick={() => setRegion(id)} className={choice(region.id === id)}>
+              {id === "us" ? "US · lb" : "Metric · kg"}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      {missing && (
+        <p role="alert" className="-mb-3 text-lg font-medium text-alert">
+          {missing}
+        </p>
+      )}
+      <button type="submit" disabled={update.isPending} className="press key-glow min-h-16 rounded-primary bg-ink text-xl font-medium text-bg disabled:opacity-50">
         {update.isPending ? "Saving…" : saved ? "Saved" : submitLabel}
       </button>
       {error && (
