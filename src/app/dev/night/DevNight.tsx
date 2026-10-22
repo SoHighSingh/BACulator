@@ -103,7 +103,6 @@ export function DevNight() {
         notice={notice}
         now={now}
         error={signedOut ? SIGNED_OUT : null}
-        unsyncedCount={offline && drinks.length > 0 ? 1 : 0}
         onUseParsed={(p) => {
           setPrefill(p);
           setAddOpen(true);

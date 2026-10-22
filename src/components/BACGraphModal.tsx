@@ -27,12 +27,10 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex,
         if (next && document.activeElement instanceof HTMLElement) document.activeElement.blur();
       }}
     >
-      <DialogContent className={`${alert ? "tone-alert" : ""} fixed top-1/2 left-1/2 z-[130] mx-auto w-[94vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-panel border-0 bg-surface p-0`}>
+      <DialogContent showCloseButton={false} className={`${alert ? "tone-alert" : ""} fixed top-1/2 left-1/2 z-[130] mx-auto w-[94vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-panel border-0 bg-surface p-0`}>
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-2xl font-bold text-ink">Tonight&apos;s curve</DialogTitle>
-          <DialogDescription className="text-lg text-ink-2">
-            Estimated blood alcohol since your first drink, and where it&apos;s heading. Drag across it to see any time.
-          </DialogDescription>
+          <DialogDescription className="sr-only">Estimated blood alcohol since your first drink, and where it&apos;s heading.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 px-6 pb-6">
           {/* While the dialog leaves it keeps showing the curve it had, not the empty-state line. */}

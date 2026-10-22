@@ -26,8 +26,6 @@ export interface NightViewProps {
   notice: Notice | null;
   now: Date;
   error: string | null;
-  /** Drinks saved on this phone that haven't reached the account yet (no signal). */
-  unsyncedCount?: number;
   onAdd: (drink: QuickDrink) => void;
   /** A typed or spoken drink, read: open the add sheet on When with it. */
   onUseParsed: (drink: Prefill) => void;
@@ -131,6 +129,8 @@ export function NightView(props: NightViewProps) {
                   hourAgo={model.simulation ? valueAt(model.simulation.samples, now.getTime() - 3_600_000) : null}
                 />
               )}
+              {/* An empty night says it's ready, once, quietly; the add key is right below. */}
+              {!model.hasDrinks && model.bac !== null && <p className="-mt-2 px-1 text-lg text-ink-2">Nothing added tonight</p>}
 
               {props.error && (
                 <div role="alert" className="card flex flex-col gap-3 p-4">
@@ -167,7 +167,6 @@ export function NightView(props: NightViewProps) {
           lastDrink={props.lastDrink}
           notice={props.notice}
           now={now}
-          unsynced={props.unsyncedCount ?? 0}
           onAdd={props.onAdd}
           onUseParsed={props.onUseParsed}
           onOpenAdd={props.onOpenAdd}

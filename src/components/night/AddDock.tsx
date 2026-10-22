@@ -49,7 +49,6 @@ interface AddDockProps {
   lastDrink: LoggedDrink | null;
   notice: Notice | null;
   now: Date;
-  unsynced: number;
   onAdd: (drink: QuickDrink) => void;
   /** A typed or spoken drink, read: opens the add sheet on When with its amount and name. */
   onUseParsed: (drink: Prefill) => void;
@@ -81,7 +80,7 @@ type Mode = "idle" | "typing" | "listening";
  * only asked when the catalog can't read it.
  */
 export function AddDock(props: AddDockProps) {
-  const { repeat, recents, lastDrink, notice, now, unsynced } = props;
+  const { repeat, recents, lastDrink, notice, now } = props;
   const { std, region } = useRegion();
   const [mode, setMode] = useState<Mode>("idle");
   const [text, setText] = useState("");
@@ -208,9 +207,6 @@ export function AddDock(props: AddDockProps) {
             </button>
           )}
         </div>
-      )}
-      {rest && unsynced > 0 && (
-        <p className="px-2 text-lg text-ink-2">{unsynced === 1 ? "Saved on this phone, will sync" : `${unsynced} saved on this phone, will sync`}</p>
       )}
 
       {/* One add key. It opens the add sheet, recents first, so the drink you just had is the top row. */}

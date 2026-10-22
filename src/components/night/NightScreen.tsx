@@ -172,7 +172,6 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         notice={notice}
         now={now}
         error={night.error}
-        unsyncedCount={night.unsyncedCount}
         onAdd={quickAdd}
         onUseParsed={(p) => {
           setPrefill(p);

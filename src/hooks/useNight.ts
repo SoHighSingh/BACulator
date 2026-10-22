@@ -343,8 +343,6 @@ export function useNight() {
     drinks,
     recents: recentsQuery.data ?? [],
     isLoading: nightQuery.isLoading,
-    /** Changes saved on this phone that haven't reached the account yet. */
-    unsyncedCount: queue.filter((e) => e.op === "add" && (waiting || e.stuck)).length,
     error,
     add,
     remove,
