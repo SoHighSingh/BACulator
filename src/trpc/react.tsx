@@ -8,7 +8,9 @@ import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
 
-import { type AppRouter } from "~/server/api/root";
+// `import type`, not `import { type … }`: under verbatimModuleSyntax the latter keeps a runtime
+// import, and Turbopack then pulls the server router into the browser bundle.
+import type { AppRouter } from "~/server/api/root";
 import { OFFLINE_CACHE_MAX_AGE, offlinePersister, shouldPersistQuery } from "./offline-cache";
 import { createQueryClient } from "./query-client";
 

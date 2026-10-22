@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { Prisma, type PrismaClient } from "@prisma/client/wasm";
+import { isUniqueViolation, type PrismaClient } from "~/server/prisma-client";
 
 import { TERMS_VERSION } from "~/lib/consent";
 import { NIGHT_WINDOW_MS, serverDrinkTime } from "~/lib/night-model";
@@ -71,7 +71,6 @@ const drinkId = z.string().min(1).max(64);
 // The id the phone gave a drink when it was added, possibly offline (crypto.randomUUID()).
 const clientId = z.string().uuid();
 
-const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
 // The database allows one open tab per user (see migrations/0004_offline_adds.sql). Queued drinks
 // replayed in a burst can race to start one: the loser of the race uses the winner's.
