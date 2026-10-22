@@ -256,7 +256,7 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
       {scrub !== null && readout && width > 0 && (
         <div
           aria-hidden="true"
-          className="border-edge bg-surface-2 text-ink pointer-events-none absolute top-0 rounded-md border px-2 py-0.5 text-lg leading-6 whitespace-nowrap tabular-nums"
+          className="bg-surface-3 text-ink pointer-events-none absolute top-0 rounded-md px-2 py-0.5 text-lg leading-6 whitespace-nowrap tabular-nums"
           style={cursorX < width / 2 ? { left: Math.min(width - 8, cursorX + 12) } : { right: width - cursorX + 12 }}
         >
           {readoutText}
