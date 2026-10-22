@@ -147,6 +147,11 @@ export function DevNight() {
         drink={editing}
         now={now}
         onClose={() => setEditing(null)}
+        onRemove={(d) => {
+          setEditing(null);
+          setDrinks((p) => p.filter((x) => x.id !== d.id));
+          setNotice({ kind: "removed", drink: d, at: Date.now(), count: 1 });
+        }}
         onSave={(d, change) => {
           setEditing(null);
           if (!change) return;

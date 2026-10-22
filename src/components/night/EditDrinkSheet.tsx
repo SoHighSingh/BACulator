@@ -1,14 +1,16 @@
-import { Minus, Plus } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { DrinkChange, LoggedDrink } from "~/hooks/useNight";
 import { useRegion } from "~/hooks/useRegion";
-import { drinkLabel, formatStandards } from "~/lib/estimate-display";
-import { minutesAgoScale, standardsScale } from "~/lib/log-scale";
+import { drinkLabel } from "~/lib/estimate-display";
+import { formatClock } from "~/lib/format-clock";
 import { editChange } from "~/lib/night-model";
-import { fromRegionStandards, toRegionStandards } from "~/lib/region";
+import { PRIMARY, STICKY } from "./AddSheet";
+import { AmountControl } from "./add/AmountControl";
+import { StepTabs, type Step } from "./add/StepTabs";
+import { WhenControl } from "./add/WhenControl";
 import { Sheet } from "./Sheet";
-import { TimeControl } from "./TimeControl";
 
 interface EditDrinkSheetProps {
   drink: LoggedDrink | null;
@@ -16,98 +18,86 @@ interface EditDrinkSheetProps {
   onClose: () => void;
   /** Only what changed; null when nothing did. */
   onSave: (drink: LoggedDrink, change: DrinkChange | null) => void;
+  /** Removes the drink (with Undo in the dock). */
+  onRemove?: (drink: LoggedDrink) => void;
 }
 
 /**
- * Fix a logged drink: when it was finished, and how many standard drinks it was. The amount
- * stepper walks `standardsScale`: tenths under 2, halves to 10, whole drinks above, so a single
- * nip can be corrected finely while a big night isn't twenty taps away. Its labels say how far.
+ * Change a logged drink with the same two controls as adding one: how much, and when. It opens on
+ * the drink's own amount and exact time; the time moves only if the person touches it, and only
+ * what changed is saved. Remove lives here, at the bottom, away from Save.
  */
-export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetProps) {
-  const { region, std } = useRegion();
-  const [minutesAgo, setMinutesAgo] = useState(0);
+export function EditDrinkSheet({ drink, now, onClose, onSave, onRemove }: EditDrinkSheetProps) {
+  const { std } = useRegion();
+  const [step, setStep] = useState<Step>("amount");
   const [standards, setStandards] = useState(1);
-  // The time is kept exactly as logged unless the person moves it: the slider shows the nearest
-  // step, and saving an untouched time must not move the drink to that step.
+  const [minutesAgo, setMinutesAgo] = useState(0);
   const [timeTouched, setTimeTouched] = useState(false);
+  const [openedAt, setOpenedAt] = useState(now);
 
   useEffect(() => {
     if (!drink) return;
-    setTimeTouched(false);
-    // Snapped to the time slider's own rungs (1 min near now, coarser further back).
-    setMinutesAgo(minutesAgoScale.snap((now.getTime() - drink.finishedAt.getTime()) / 60_000));
+    const at = new Date();
+    setOpenedAt(at);
+    setStep("amount");
     setStandards(drink.standards);
-    // Only when a different drink opens: the clock ticking must not reset what's being edited.
+    // Exact, seconds and all: saving an untouched time must not move the drink at all.
+    setMinutesAgo(Math.max(0, (at.getTime() - drink.finishedAt.getTime()) / 60_000));
+    setTimeTouched(false);
+    // Only when a different drink opens: the clock ticking must not reset what's being changed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drink?.id]);
 
-  // The stepper counts in the region's standard drinks; state stays in stored 10 g standards.
-  const shown = toRegionStandards(standards, region);
-  const lessBy = -standardsScale.delta(shown, -1);
-  const moreBy = standardsScale.delta(shown, 1);
-  function step(direction: 1 | -1) {
-    setStandards(fromRegionStandards(standardsScale.move(shown, direction), region));
-  }
-  const stepLabel = (d: number, word: string) => `${formatStandards(d)} standard ${d === 1 ? "drink" : "drinks"} ${word}`;
+  const change = drink ? editChange(drink, { standards, minutesAgo }, timeTouched, openedAt) : null;
 
   return (
     <Sheet
       open={!!drink}
       onOpenChange={(o) => !o && onClose()}
-      title={drink ? drinkLabel(drink, std) : "Edit drink"}
-      description="Change when you finished it or how much it was."
+      title={drink ? `Change ${drinkLabel(drink, std)}` : "Change drink"}
+      description="Change how much it was or when you finished it, then save."
     >
       {drink && (
-        <>
-          <p className="text-ink-2 text-lg">When you finished it</p>
-          <div className="mt-2">
-            <TimeControl
-              minutesAgo={minutesAgo}
-              onChange={(m) => {
-                setMinutesAgo(m);
-                setTimeTouched(true);
-              }}
-              now={now}
-              startOpen
-              wrap
-            />
-          </div>
+        <div className="flex min-h-full flex-col gap-5 pt-1">
+          <p className="-mt-1 px-1 text-lg text-ink-2 tabular-nums">
+            Logged {std(drink.standards)} std at {formatClock(drink.finishedAt)}
+          </p>
+          <StepTabs step={step} onStep={setStep} />
 
-          <div className="mt-6 flex items-center justify-between gap-3">
-            <p className="text-ink-2 text-lg">Standard drinks</p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-label={lessBy === 0 ? "Less (at the minimum)" : stepLabel(lessBy, "less")}
-                disabled={lessBy === 0}
-                onClick={() => step(-1)}
-                className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40"
-              >
-                <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
-              </button>
-              <span className="w-14 text-center text-xl font-medium tabular-nums" aria-live="polite">
-                {std(standards)}
-              </span>
-              <button
-                type="button"
-                aria-label={moreBy === 0 ? "More (at the maximum)" : stepLabel(moreBy, "more")}
-                disabled={moreBy === 0}
-                onClick={() => step(1)}
-                className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40"
-              >
-                <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
-              </button>
+          {step === "amount" ? (
+            <div key="amount" className="compose-in">
+              <AmountControl standards={standards} onChange={setStandards} onEnter={() => setStep("when")} />
             </div>
-          </div>
+          ) : (
+            <div key="when" className="compose-in">
+              <WhenControl
+                minutesAgo={minutesAgo}
+                onChange={(m) => {
+                  setMinutesAgo(m);
+                  setTimeTouched(true);
+                }}
+                now={openedAt}
+              />
+            </div>
+          )}
 
-          <button
-            type="button"
-            onClick={() => onSave(drink, editChange(drink, { standards, minutesAgo }, timeTouched, now))}
-            className="press key-glow bg-ink text-bg mt-6 flex min-h-16 w-full items-center justify-center rounded-primary text-xl font-medium"
-          >
-            Save
-          </button>
-        </>
+          {onRemove && (
+            <button
+              type="button"
+              onClick={() => onRemove(drink)}
+              className="press mt-4 flex min-h-12 w-fit items-center gap-2 self-center rounded-key px-4 text-lg font-medium text-ink-2 hover:bg-white/[0.06]"
+            >
+              <Trash2 aria-hidden="true" className="size-5" strokeWidth={2.25} />
+              Remove drink
+            </button>
+          )}
+
+          <div className={STICKY}>
+            <button type="button" disabled={!change} onClick={() => onSave(drink, change)} className={PRIMARY}>
+              {change ? "Save" : "No changes"}
+            </button>
+          </div>
+        </div>
       )}
     </Sheet>
   );

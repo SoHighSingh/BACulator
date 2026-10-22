@@ -192,7 +192,16 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         recents={repeat ? [repeat, ...others] : others}
         onAddRecent={quickAdd}
       />
-      <EditDrinkSheet drink={editing} now={now} onClose={() => setEditing(null)} onSave={saveEdit} />
+      <EditDrinkSheet
+        drink={editing}
+        now={now}
+        onClose={() => setEditing(null)}
+        onSave={saveEdit}
+        onRemove={(d) => {
+          setEditing(null);
+          remove(d);
+        }}
+      />
 
       <BACGraphModal open={timelineOpen} onOpenChange={setTimelineOpen} drinks={drinks} userWeight={userWeight} userSex={userSex} />
     </>

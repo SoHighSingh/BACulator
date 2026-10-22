@@ -206,7 +206,7 @@ export function AddDock(props: AddDockProps) {
         // Your tab lists it); it shows when a change lands, with its Undo / Add back.
         <div className={live ? "flex min-h-12 items-center gap-3 px-2" : "sr-only"}>
           {/* One persistent live region: screen readers announce text changes, not remounts. */}
-          <p aria-live="polite" className="min-w-0 flex-1 truncate text-lg">
+          <p aria-live="polite" className="line-clamp-2 min-w-0 flex-1 text-lg leading-snug">
             <span key={live?.at ?? "idle"} className="snack inline">
               {status}
             </span>

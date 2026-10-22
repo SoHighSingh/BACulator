@@ -1,16 +1,17 @@
-import { Check, ChevronLeft, Minus, Plus } from "lucide-react";
+import { ChevronLeft, List, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { NewDrink } from "~/hooks/useNight";
 import { useRegion } from "~/hooks/useRegion";
-import { rawStandards } from "~/lib/drinks/standards";
 import { drinkLabel } from "~/lib/estimate-display";
-import { formatVolume, loggedStandards, servesFor } from "~/lib/region";
+import { drinkKey } from "~/lib/night-model";
 import type { QuickDrink } from "./AddDock";
-import { sizesFor } from "./add/sizes";
+import { AmountControl } from "./add/AmountControl";
+import { DrinkPicker, ICON_TILE, toSheetTop, type Picked } from "./add/DrinkPicker";
+import { StepTabs, type Step } from "./add/StepTabs";
+import { WhenControl } from "./add/WhenControl";
 import { DrinkIcon, drinkKind } from "./DrinkIcon";
 import { Sheet } from "./Sheet";
-import { TimeControl } from "./TimeControl";
 
 interface AddSheetProps {
   open: boolean;
@@ -18,249 +19,211 @@ interface AddSheetProps {
   now: Date;
   /** Adds optimistically and returns at once; false if it was swallowed as a double tap. */
   onAdd: (drink: NewDrink) => boolean;
-  /** Drinks from earlier tonight or nights before, shown first: one tap adds one at "now". */
+  /** Drinks from earlier tonight or nights before, the last one first. */
   recents?: QuickDrink[];
+  /** A recent's "Add now" key: logs it at now in one tap. */
   onAddRecent?: (drink: QuickDrink) => void;
 }
 
-const MAX_COUNT = 6;
+/** What the amount is called, while it still matches what was picked. */
+type Named = Omit<Picked, "standards"> & { standards: number; source: "recent" | "manual" };
 
-const ROW = "press flex w-full items-center gap-4 rounded-row bg-white/[0.05] px-4 py-4 text-left shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] hover:bg-white/[0.08]";
-const ICON_TILE = "grid size-11 shrink-0 place-items-center rounded-tile bg-white/[0.06] text-ink-2";
+export const PRIMARY = "press key-glow flex min-h-16 w-full items-center justify-center gap-2 rounded-primary bg-ink text-xl font-medium text-bg disabled:opacity-40";
+/** The sticky key at the bottom of a sheet, over a fade so the content scrolls under it. */
+export const STICKY = "sticky -bottom-5 -mx-5 mt-auto -mb-5 bg-gradient-to-t from-[var(--glass-strong)] from-70% to-transparent px-5 pt-4 pb-5";
 
 /**
- * Pick a drink from a list, the way a food log or an order screen does it: recents first, then the
- * region's usual serves as roomy rows (glass, name, size and strength). "Add" on a row logs one
- * at its usual size, now; tapping the row opens a size step (then how many and when) before Add.
- * Never any typing: typing and voice live in the dock's composer.
+ * Add a drink in two steps, then Add. How much: a big typeable number, −/+ and a smooth slider,
+ * with recent drinks as presets (each with its own "Add now" key, so a repeat is two taps) and the
+ * drink list as a calculator. When: a read-out, chips and a smooth slider, now by default. Nothing
+ * moves on by itself and nothing is added until Add is tapped.
  */
 export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent }: AddSheetProps) {
-  const { region, std } = useRegion();
-  const serves = servesFor(region);
-  const [picked, setPicked] = useState<number | null>(null);
-  const [volumeMl, setVolumeMl] = useState<number | null>(null);
-  const [count, setCount] = useState(1);
+  const { std } = useRegion();
+  const [step, setStep] = useState<Step>("amount");
+  const [picking, setPicking] = useState(false);
+  const [standards, setStandards] = useState(1);
+  const [named, setNamed] = useState<Named | null>(null);
   const [minutesAgo, setMinutesAgo] = useState(0);
+  // The time is measured from when the sheet opened, so it doesn't drift while the sheet is up.
+  const [openedAt, setOpenedAt] = useState(now);
 
-  // Every open starts on the list at "Now", so a drink is never stamped with a stale time.
+  // Every open starts on how much, at the last drink's amount, finished now.
   useEffect(() => {
     if (!open) return;
-    setPicked(null);
-    setVolumeMl(null);
-    setCount(1);
+    const last = recents[0];
+    setStep("amount");
+    setPicking(false);
+    setStandards(last?.standards ?? 1);
+    setNamed(null);
     setMinutesAgo(0);
+    setOpenedAt(new Date());
+    // Only on open: recents refreshing mustn't reset what's being chosen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const serve = picked === null ? null : serves[picked]!;
-  const sizes = serve ? sizesFor(serve, region) : [];
-  const size = serve ? (sizes.find((s) => s.volumeMl === (volumeMl ?? serve.volumeMl)) ?? sizes[0]!) : null;
-  const standards = serve && size ? loggedStandards(rawStandards(count, size.volumeMl, serve.abv), region) : 0;
+  // A name only sticks while the amount is still the one it came with.
+  const name = named && Math.abs(named.standards - standards) < 1e-9 ? named : null;
+  const label = name ? drinkLabel({ name: name.name, standards }, std) : `${std(standards)} std drink`;
 
-  function quickAdd(i: number) {
-    const s = serves[i]!;
-    const added = onAdd({
-      standards: s.standards,
-      finishedAt: new Date(),
-      details: { name: s.label, volumeMl: s.volumeMl, abv: s.abv, count: 1, source: "manual", confidence: 1, rawText: "" },
-    });
-    if (added) onClose();
+  function choose(p: Named) {
+    setStandards(p.standards);
+    setNamed(p);
+    setPicking(false);
+    setStep("when");
   }
 
-  function submit() {
-    if (!serve || !size) return;
+  function add() {
+    const finishedAt = minutesAgo <= 0 ? new Date() : new Date(openedAt.getTime() - minutesAgo * 60_000);
     const added = onAdd({
       standards,
-      finishedAt: new Date(Date.now() - minutesAgo * 60_000),
-      details: {
-        name: count > 1 ? `${count} × ${size.label}` : size.label,
-        volumeMl: size.volumeMl,
-        abv: serve.abv,
-        count,
-        source: "manual",
-        confidence: 1,
-        rawText: "",
-      },
+      finishedAt,
+      details: name
+        ? {
+            name: name.name || undefined,
+            volumeMl: name.volumeMl || undefined,
+            abv: name.abv || undefined,
+            count: name.count || undefined,
+            source: name.source,
+            confidence: 1,
+            rawText: "",
+          }
+        : { source: "manual", confidence: 1, rawText: "" },
     });
     if (added) onClose();
   }
-
-  const detail = (ml: number, abv: number) => `${formatVolume(ml, region)} · ${abv}%`;
 
   return (
     <Sheet
       open={open}
       onOpenChange={(o) => !o && onClose()}
-      title={serve ? "Size and time" : "Add a drink"}
-      description={serve ? "Choose the size, how many and when you finished it, then add it." : "Recent drinks first, then the usual serves. Add logs one now; tap a drink to change its size or time."}
+      title="Add a drink"
+      description="Step 1, how much. Step 2, when. Then add it."
     >
-      {serve && size ? (
-        <div className="flex flex-col gap-5 pt-1">
-          <button type="button" onClick={() => setPicked(null)} className="press -ml-2 flex min-h-12 w-fit items-center gap-1 rounded-key pr-4 pl-2 text-lg font-medium text-ink-2 hover:bg-white/[0.06]">
-            <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2.25} />
-            All drinks
-          </button>
+      <div className="flex min-h-full flex-col gap-5 pt-1">
+        {!picking && <StepTabs step={step} onStep={setStep} />}
 
-          <div className="flex items-center gap-4 px-1">
-            <span className={ICON_TILE}>
-              <DrinkIcon kind={drinkKind({ name: serve.label, volumeMl: serve.volumeMl, abv: serve.abv })} className="size-6" />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-xl leading-snug font-medium">{size.label}</span>
-              <span className="block text-lg leading-snug text-ink-2">{detail(size.volumeMl, serve.abv)}</span>
-            </span>
+        {picking ? (
+          <div key="pick" className="compose-in">
+            <DrinkPicker onBack={() => setPicking(false)} onPick={(p) => choose({ ...p, source: "manual" })} />
           </div>
+        ) : step === "amount" ? (
+          <div key="amount" ref={toSheetTop} className="compose-in flex flex-col gap-5">
+            <AmountControl
+              standards={standards}
+              onChange={(s) => setStandards(s)}
+              onEnter={() => setStep("when")}
+            />
 
-          <section aria-labelledby="size-heading" className="flex flex-col gap-2">
-            <h3 id="size-heading" className="px-1 text-lg font-semibold">
-              Size
-            </h3>
-            <div role="radiogroup" aria-labelledby="size-heading" className="flex flex-col gap-2">
-              {sizes.map((s) => {
-                const on = s.volumeMl === size.volumeMl;
-                return (
-                  <button
-                    key={s.volumeMl}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => setVolumeMl(s.volumeMl)}
-                    className={`${ROW} min-h-16 ${on ? "bg-white/[0.12] shadow-[inset_0_0_0_2px_var(--color-ink)]" : ""}`}
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-lg leading-snug font-medium">{s.size}</span>
-                      <span className="block text-lg leading-snug text-ink-2 tabular-nums">
-                        {formatVolume(s.volumeMl, region)} · {std(loggedStandards(rawStandards(1, s.volumeMl, serve.abv), region))} std
-                      </span>
-                    </span>
-                    <span className={`grid size-7 shrink-0 place-items-center rounded-circle ${on ? "bg-ink text-bg" : "shadow-[inset_0_0_0_1.5px_var(--color-line)]"}`}>
-                      {on && <Check aria-hidden="true" className="size-4" strokeWidth={3} />}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+            {recents.length > 0 && (
+              <section aria-labelledby="recent-heading" className="flex flex-col gap-2">
+                <h3 id="recent-heading" className="px-1 text-lg font-semibold">
+                  Recent
+                </h3>
+                <ul className="flex flex-col gap-2">
+                  {recents.slice(0, 4).map((d) => (
+                    <RecentRow
+                      key={drinkKey(d)}
+                      drink={d}
+                      onPick={() =>
+                        choose({
+                          standards: d.standards,
+                          name: d.name ?? "",
+                          volumeMl: d.volumeMl ?? 0,
+                          abv: d.abv ?? 0,
+                          count: d.count ?? 1,
+                          source: "recent",
+                        })
+                      }
+                      onAddNow={
+                        onAddRecent
+                          ? () => {
+                              onAddRecent(d);
+                              onClose();
+                            }
+                          : undefined
+                      }
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
 
-          <div className="flex min-h-16 items-center justify-between gap-3 rounded-row bg-white/[0.04] px-4 py-2 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
-            <p className="text-lg font-semibold">How many</p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-label="One fewer"
-                disabled={count <= 1}
-                onClick={() => setCount((c) => Math.max(1, c - 1))}
-                className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40"
-              >
-                <Minus aria-hidden="true" className="size-5" strokeWidth={2.25} />
-              </button>
-              <span className="w-9 text-center text-xl font-medium tabular-nums" aria-live="polite">
-                {count}
-              </span>
-              <button
-                type="button"
-                aria-label="One more"
-                disabled={count >= MAX_COUNT}
-                onClick={() => setCount((c) => Math.min(MAX_COUNT, c + 1))}
-                className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40"
-              >
-                <Plus aria-hidden="true" className="size-5" strokeWidth={2.25} />
-              </button>
-            </div>
-          </div>
-
-          <section className="flex flex-col gap-3">
-            <h3 className="px-1 text-lg font-semibold">When you finished it</h3>
-            <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} wrap />
-          </section>
-
-          <div className="sticky -bottom-5 -mx-5 -mb-5 bg-gradient-to-t from-[var(--glass-strong)] from-70% to-transparent px-5 pt-4 pb-5">
-            <button type="button" onClick={submit} className="press key-glow flex min-h-16 w-full items-center justify-center gap-2 rounded-primary bg-ink text-xl font-medium text-bg">
-              <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
-              Add {count > 1 ? `${count} · ` : "· "}
-              {std(standards)} std
+            <button
+              type="button"
+              onClick={() => setPicking(true)}
+              className="press flex min-h-12 items-center justify-center gap-2 rounded-key text-lg font-medium text-ink-2 hover:bg-white/[0.06]"
+            >
+              <List aria-hidden="true" className="size-5" strokeWidth={2.25} />
+              Pick from the drink list
             </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-6 pt-1">
-          {recents.length > 0 && onAddRecent && (
-            <section aria-labelledby="recent-heading" className="flex flex-col gap-2">
-              <h3 id="recent-heading" className="px-1 text-lg font-semibold">
-                Recent
-              </h3>
-              <ul className="flex flex-col gap-2">
-                {recents.map((d) => (
-                  <li key={`${d.name ?? ""}|${d.standards}`}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onAddRecent(d);
-                        onClose();
-                      }}
-                      className={`${ROW} min-h-[72px]`}
-                    >
-                      <span className={ICON_TILE}>
-                        <DrinkIcon kind={drinkKind(d)} className="size-6" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xl leading-snug font-medium">{drinkLabel(d, std)}</span>
-                        <span className="block text-lg leading-snug text-ink-2">
-                          {d.volumeMl && d.abv ? `${detail(d.volumeMl, d.abv)} · ` : ""}
-                          {std(d.standards)} std
-                        </span>
-                      </span>
-                      <span className="flex min-h-12 shrink-0 items-center gap-1 rounded-key bg-ink pr-4 pl-3 text-lg font-medium text-bg">
-                        <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
-                        Add
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
 
-          <section aria-labelledby="serves-heading" className="flex flex-col gap-2">
-            <h3 id="serves-heading" className="px-1 text-lg font-semibold">
-              {recents.length > 0 ? "All drinks" : "Drinks"}
-            </h3>
-            <ul className="flex flex-col gap-2">
-              {serves.map((s, i) => (
-                <li key={s.label} className="flex items-center rounded-row bg-white/[0.05] pr-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
-                  {/* The row opens the size step; its + key logs one at the usual size, now. */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPicked(i);
-                      setVolumeMl(s.volumeMl);
-                    }}
-                    aria-label={`${s.label}, ${detail(s.volumeMl, s.abv)}, ${std(s.standards)} standard drinks. Change size or time`}
-                    className="press flex min-h-[72px] min-w-0 flex-1 items-center gap-3 rounded-l-row py-3 pr-2 pl-4 text-left"
-                  >
-                    <span className={ICON_TILE}>
-                      <DrinkIcon kind={drinkKind({ name: s.label, volumeMl: s.volumeMl, abv: s.abv })} className="size-6" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-xl leading-snug font-medium">{s.label}</span>
-                      <span className="block text-lg leading-snug text-ink-2">
-                        {formatVolume(s.volumeMl, region)} · {std(s.standards)} std
-                      </span>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => quickAdd(i)}
-                    aria-label={`Add ${s.label.toLowerCase()}`}
-                    className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/15"
-                  >
-                    <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-      )}
+            <div className={STICKY}>
+              <button type="button" onClick={() => setStep("when")} className={PRIMARY}>
+                Next: when
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div key="when" ref={toSheetTop} className="compose-in flex flex-col gap-5">
+            <button
+              type="button"
+              onClick={() => setStep("amount")}
+              className="press -ml-2 flex min-h-12 w-fit max-w-full items-center gap-1 rounded-key pr-4 pl-2 text-lg text-ink-2 hover:bg-white/[0.06]"
+            >
+              <ChevronLeft aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.25} />
+              <span className="truncate">
+                <span className="font-medium text-ink tabular-nums">{std(standards)} std</span>
+                {name?.name ? ` · ${name.name}` : ""}
+              </span>
+            </button>
+
+            <WhenControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={openedAt} />
+
+            <div className={STICKY}>
+              <button type="button" onClick={add} className={PRIMARY} aria-label={`Add ${label}`}>
+                <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
+                Add · {std(standards)} std
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </Sheet>
+  );
+}
+
+/** A recent drink: the row picks it (then when), its "Add now" key logs it at now. */
+function RecentRow({ drink, onPick, onAddNow }: { drink: QuickDrink; onPick: () => void; onAddNow?: () => void }) {
+  const { std } = useRegion();
+  const label = drinkLabel(drink, std);
+  return (
+    <li className="flex items-center gap-2 rounded-row bg-white/[0.05] pr-2 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+      <button
+        type="button"
+        onClick={onPick}
+        aria-label={`${label}, ${std(drink.standards)} standard drinks. Choose when`}
+        className="press flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-l-row py-2 pr-1 pl-3 text-left hover:bg-white/[0.04]"
+      >
+        <span className={ICON_TILE}>
+          <DrinkIcon kind={drinkKind(drink)} className="size-6" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-lg leading-snug font-medium">{label}</span>
+          <span className="block text-lg leading-snug text-ink-2 tabular-nums">{std(drink.standards)} std</span>
+        </span>
+      </button>
+      {onAddNow && (
+        <button
+          type="button"
+          onClick={onAddNow}
+          aria-label={`Add ${label} now`}
+          className="press flex min-h-12 shrink-0 items-center gap-1 rounded-key bg-white/[0.1] pr-4 pl-3 text-lg font-medium shadow-[inset_0_0_0_1px_rgb(255_255_255/0.18)] hover:bg-white/15"
+        >
+          <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
+          Add now
+        </button>
+      )}
+    </li>
   );
 }
