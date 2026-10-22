@@ -215,74 +215,6 @@ function peakFromTimeline(
   };
 }
 
-/**
- * Find peak BAC and when it occurs.
- * timeToPeak is in hours relative to currentTime (negative if the peak has passed).
- */
-export function findPeakBAC(
-  drinks: Drink[],
-  userWeight: number,
-  userSex: string,
-  currentTime: Date
-): { peakBAC: number; timeToPeak: number } {
-  if (drinks.length === 0) return { peakBAC: 0, timeToPeak: 0 };
-  const { startTime, timeline } = simulateTimeline(drinks, userWeight, userSex, predictionEnd(drinks, currentTime));
-  return peakFromTimeline(timeline, startTime, currentTime.getTime());
-}
-
-/**
- * Get the status of a drink at the current time
- */
-export function getDrinkStatus(
-  drink: Drink,
-  currentTime: Date
-): { status: 'not_started' | 'absorbing' | 'absorbed'; minutesToPeak: number } {
-  const finishedTime = new Date(drink.finishedAt);
-  const minutesSinceFinished = (currentTime.getTime() - finishedTime.getTime()) / (1000 * 60);
-
-  if (minutesSinceFinished < 0) {
-    return {
-      status: 'not_started',
-      minutesToPeak: roundToPrecision(Math.abs(minutesSinceFinished) + CONFIG.ABSORPTION_TIME_MINUTES, 1)
-    };
-  } else if (minutesSinceFinished <= CONFIG.ABSORPTION_TIME_MINUTES) {
-    return {
-      status: 'absorbing',
-      minutesToPeak: roundToPrecision(CONFIG.ABSORPTION_TIME_MINUTES - minutesSinceFinished, 1)
-    };
-  } else {
-    return { status: 'absorbed', minutesToPeak: 0.0 };
-  }
-}
-
-/**
- * Calculate the BAC contribution from a single drink
- * This is used for display purposes to show individual drink contributions
- */
-export function calculateDrinkContribution(
-  drink: Drink,
-  userWeight: number,
-  userSex: string,
-  currentTime: Date
-): { bac: number; isAbsorbing: boolean; peakBAC: number; timeToPeak: number } {
-  const status = getDrinkStatus(drink, currentTime);
-
-  // This drink's full Widmark contribution once completely absorbed
-  const theoreticalPeakBAC = gramsToBAC(drink.standards * CONFIG.GRAMS_PER_STANDARD, userWeight, userSex);
-
-  const minutesSinceFinished = (currentTime.getTime() - new Date(drink.finishedAt).getTime()) / MS_PER_MINUTE;
-  const currentContribution = theoreticalPeakBAC * absorbedFraction(minutesSinceFinished);
-
-  // Note: We don't apply elimination here as that's handled at the total BAC level
-  // This is just to show the drink's theoretical contribution
-
-  return {
-    bac: roundToPrecision(currentContribution, 4),
-    isAbsorbing: status.status === 'absorbing',
-    peakBAC: roundToPrecision(theoreticalPeakBAC, 4),
-    timeToPeak: status.minutesToPeak
-  };
-}
 
 function sampleTimeline(
   timeline: number[],
@@ -320,21 +252,6 @@ function sampleTimeline(
   return dataPoints;
 }
 
-/**
- * Generate BAC over time data (from currentTime forward)
- */
-export function generateBACOverTime(
-  drinks: Drink[],
-  userWeight: number,
-  userSex: string,
-  currentTime: Date,
-  hoursToShow: number = 12.0
-): Array<{ hour: number; bac: number }> {
-  if (drinks.length === 0) return [];
-  const endTime = currentTime.getTime() + hoursToShow * 60 * MS_PER_MINUTE;
-  const { startTime, timeline } = simulateTimeline(drinks, userWeight, userSex, endTime);
-  return sampleTimeline(timeline, startTime, currentTime.getTime(), hoursToShow);
-}
 
 /**
  * Main BAC calculation function

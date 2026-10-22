@@ -71,19 +71,6 @@ export function ladder(min: number, segments: Segment[]): Ladder {
 }
 
 /**
- * How long ago a drink was finished, in minutes, back to 12 h (the night window is 48 h but a
- * drink further back than this wouldn't count anyway): 1-minute rungs in the first quarter hour,
- * 5 to the hour, 10 to 3 h, 15 to 6 h, then 30. 61 rungs in all.
- */
-export const minutesAgoScale = ladder(0, [
-  { upTo: 15, step: 1 },
-  { upTo: 60, step: 5 },
-  { upTo: 180, step: 10 },
-  { upTo: 360, step: 15 },
-  { upTo: 720, step: 30 },
-]);
-
-/**
  * Standard drinks (in the region's own standard), from a tenth to 200 (the server's limit; a US handle is about 55): tenths under 2, halves to
  * 10, whole drinks to 50, then fives.
  */

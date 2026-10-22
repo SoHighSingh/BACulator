@@ -1,6 +1,6 @@
 # BACulator — design system: "Glass"
 
-Chosen 18 Oct 2026 from five built directions (Result, Night dial, Forecast, Health card, Glass); prototypes live under `/dev/directions` (dev only). The register is Vercel / shadcn / Claude desktop: dark zinc, light caught on 1px edges, dense glass cards for anything you read, and lighter liquid glass for the chrome that floats over content. Premium comes from material, restraint and motion that answers the finger, never from loud fills or big buttons.
+Chosen 18 Oct 2026 from five built directions (Result, Night dial, Forecast, Health card, Glass); the prototypes were removed on 23 Oct 2026 and stay in git history (before commit 9ece249). The register is Vercel / shadcn / Claude desktop: dark zinc, light caught on 1px edges, dense glass cards for anything you read, and lighter liquid glass for the chrome that floats over content. Premium comes from material, restraint and motion that answers the finger, never from loud fills or big buttons.
 
 Two modes share one system:
 
@@ -78,4 +78,4 @@ Default now. Chips: Now / 15 min ago / 30 min ago / 1 hour ago, then **Earlier�
 Primary add 72px tall and full width; every target ≥ 48px; ≥ 8px between targets and ≥ 12px around the primary. Status words ≥ 7:1, everything else ≥ 4.5:1, control edges ≥ 3:1. Repeat drink = 2 taps (Add a drink, then a recent); a new drink ≤ 3 taps (type, size, Add); typing and voice are optional. Undo instead of confirm. The microphone is only requested when the mic key is tapped.
 
 ## Dev preview
-`/dev/night` renders the real night screen with sample drinks (`?empty`, `?noweight`, `?us`, `?metric`, `?offline`). `/dev/directions/*` holds the direction prototypes and labs; `/dev/directions/morph` toggles calm ↔ red (0.05 and above) on the real screen (`?alert` starts red) and `/morph/rising` holds the direction-cue variants.
+`/dev/night` renders the real night screen with sample drinks (`?empty`, `?noweight`, `?us`, `?metric`, `?offline`). The direction prototypes and labs that lived under `/dev/directions` were removed on 23 Oct 2026; they are in git history.

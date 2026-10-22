@@ -11,12 +11,12 @@ import { fromRegionStandards, toRegionStandards } from "~/lib/region";
 import { EasedSlider } from "./EasedSlider";
 
 /** The most that can be typed in one go; the slider stops at 10. */
-export const MAX_TYPED = 50;
+const MAX_TYPED = 50;
 
 const KEY = "press grid size-14 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15 disabled:opacity-40";
 
 /** "1,5" or "1.5" → 1.5, rounded up to a tenth (never down), within 0.1–50. Null if it isn't a number. */
-export function parseTyped(text: string): number | null {
+function parseTyped(text: string): number | null {
   const n = Number(text.trim().replace(",", "."));
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.min(MAX_TYPED, Math.max(0.1, Math.ceil(n * 10 - 1e-6) / 10));

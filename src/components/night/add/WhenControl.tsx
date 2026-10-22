@@ -14,7 +14,7 @@ const KEY = "press grid size-14 shrink-0 place-items-center rounded-key bg-white
 
 const chipLabel = (m: number) => (m === 0 ? "Now" : m < 60 ? `${m} min` : `${m / 60} h`);
 
-export function agoWords(minutes: number): string {
+function agoWords(minutes: number): string {
   const total = Math.round(minutes);
   if (total <= 0) return "now";
   const h = Math.floor(total / 60);
@@ -24,8 +24,8 @@ export function agoWords(minutes: number): string {
 }
 
 /** 5 minutes earlier or later, landing on whole fives. */
-export const fiveEarlier = (m: number) => Math.min(MAX_AGO, Math.floor(Math.round(m) / 5) * 5 + 5);
-export const fiveLater = (m: number) => Math.max(0, Math.ceil(Math.round(m) / 5) * 5 - 5);
+const fiveEarlier = (m: number) => Math.min(MAX_AGO, Math.floor(Math.round(m) / 5) * 5 + 5);
+const fiveLater = (m: number) => Math.max(0, Math.ceil(Math.round(m) / 5) * 5 - 5);
 
 interface WhenControlProps {
   /** Minutes before `now`; may have seconds in it for a logged drink's exact time. */

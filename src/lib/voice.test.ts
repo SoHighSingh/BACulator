@@ -12,7 +12,7 @@ describe("voice", () => {
   });
 
   it("takes the first guess that reads as a drink", () => {
-    const drink = (t: string) => /vodka/.test(t);
+    const drink = (t: string) => t.includes("vodka");
     expect(pickHeard(["Bodhi red bull", "vodka red bull"], drink)).toBe("vodka red bull");
     expect(pickHeard(["hello there", "hollow there"], drink)).toBe("hello there");
     expect(pickHeard(["", "  "], drink)).toBe("");

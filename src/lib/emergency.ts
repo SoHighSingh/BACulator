@@ -62,7 +62,7 @@ const EUROPE_NOT_112 = new Set([
 ]);
 
 /** ISO country from an IANA time zone, or null when the zone doesn't pin one we know. */
-export function countryFromTimeZone(zone: string | undefined): string | null {
+function countryFromTimeZone(zone: string | undefined): string | null {
   if (!zone) return null;
   for (const [prefix, country] of ZONE_PREFIXES) if (zone.startsWith(prefix)) return country;
   if (US_ZONES.has(zone) || zone.startsWith("America/Indiana/") || zone.startsWith("America/Kentucky/") || zone.startsWith("America/North_Dakota/")) return "US";

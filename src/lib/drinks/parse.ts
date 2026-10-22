@@ -382,7 +382,7 @@ function preprocess(text: string, index: CatalogIndex) {
   return norm;
 }
 
-export function splitSegments(norm: string) {
+function splitSegments(norm: string) {
   return norm
     .split(/[,;\n]| and | then | plus | also | followed by | after that /)
     .map((s) => s.trim())

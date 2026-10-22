@@ -28,7 +28,7 @@ export function normaliseText(text: string) {
 }
 
 /** Light plural stemming applied to both catalog aliases and user tokens. */
-export function stem(token: string) {
+function stem(token: string) {
   if (token.length <= 3 || /\d/.test(token)) return token.replace(/^(\d+)s$/, "$1"); // 196s -> 196
   if (token.endsWith("ies") && token.length > 4) return `${token.slice(0, -3)}y`; // tinnies -> tinny
   if (token.endsWith("sses")) return token.slice(0, -2); // glasses -> glass

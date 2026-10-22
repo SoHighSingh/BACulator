@@ -11,9 +11,9 @@ import { sizesFor } from "./sizes";
 
 const MAX_COUNT = 6;
 
-export const ROW =
+const ROW =
   "press flex w-full items-center gap-4 rounded-row bg-white/[0.05] px-4 py-3 text-left hover:bg-white/[0.08]";
-export const ICON_TILE = "grid size-11 shrink-0 place-items-center rounded-tile bg-white/[0.06] text-ink-2";
+const ICON_TILE = "grid size-11 shrink-0 place-items-center rounded-tile bg-white/[0.06] text-ink-2";
 
 /** A new view in a sheet starts at its top, so its back key and heading are never scrolled away. */
 export const toSheetTop = (el: HTMLElement | null) => {

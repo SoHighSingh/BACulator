@@ -672,45 +672,6 @@ html:has(.app-shell) body {
   }
 }
 
-/* Range input in the time control: a 48px hit area, a white thumb, a signal track. */
-.time-range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 48px;
-  background: transparent;
-  touch-action: pan-y;
-}
-.time-range::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
-  corner-shape: round;
-  background: linear-gradient(to right, var(--color-signal) var(--fill, 0%), rgb(255 255 255 / 0.12) var(--fill, 0%));
-}
-.time-range::-moz-range-track {
-  height: 6px;
-  border-radius: 3px;
-  corner-shape: round;
-  background: rgb(255 255 255 / 0.12);
-}
-.time-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  margin-top: -13px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  corner-shape: round;
-  background: var(--color-ink);
-  box-shadow: 0 2px 10px rgb(0 0 0 / 0.5);
-}
-.time-range::-moz-range-thumb {
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: 50%;
-  corner-shape: round;
-  background: var(--color-ink);
-}
 
 /* Night screen on desktop: content in two columns, the dock floats at the bottom right. */
 @media (min-width: 1024px) {

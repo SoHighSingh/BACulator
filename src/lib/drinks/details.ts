@@ -1,4 +1,3 @@
-import { formatVolume, REGIONS, servesFor, type Region } from "../region";
 import type { ParsedItem, ParseResult } from "./types";
 
 /** What gets stored on a Drink row alongside the standards the user confirmed. */
@@ -14,12 +13,6 @@ export interface DrinkDetails {
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10);
 
-/** "2 × 425 ml · Victoria Bitter · 4.9%" */
-export function describeItem(item: ParsedItem, region: Region = REGIONS.metric) {
-  if (item.volumeMl <= 0) return item.name; // "same again" of a drink that was entered by hand
-  const count = item.count === 1 ? "" : `${fmt(item.count)} × `;
-  return `${count}${formatVolume(item.volumeMl, region)} · ${item.name} · ${fmt(item.abv)}%`;
-}
 
 /**
  * One Drink row per add. A multi-drink entry ("2 schooners and a shot") is stored as its total
@@ -47,4 +40,3 @@ export function toDrinkDetails(result: ParseResult, rawText: string): DrinkDetai
 }
 
 /** Manual-entry chips for the default region; the add sheet picks them per region (see lib/region). */
-export const MANUAL_CHIPS = servesFor(REGIONS.metric);
