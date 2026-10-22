@@ -97,7 +97,7 @@ export function EditDrinkSheet({ drink, now, onClose, onSave, onRemove }: EditDr
               type="button"
               disabled={!change}
               onClick={() => onSave(drink, change)}
-              className={change ? PRIMARY : "flex min-h-16 w-full items-center justify-center rounded-primary bg-white/[0.08] text-xl font-medium text-ink-2"}
+              className={change ? PRIMARY : "flex min-h-16 w-full items-center justify-center rounded-primary bg-surface-3 text-xl font-medium text-ink-2"}
             >
               {change ? "Save" : "No changes"}
             </button>

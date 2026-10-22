@@ -24,6 +24,16 @@ The kickoff prompt is in `docs/next-session/KICKOFF.md`. The user's own list, wo
 - In production a just-added drink isn't counted for up to 30 s, because `now` isn't refreshed on add.
 - The first drink shows 0.00 with no bar, then "under 0.01", then 0.01: three layout shapes. This ties into the engine lag in `docs/analysis/06-bac-engine.md`.
 
+## 23 Oct 2026: the next-session list, in progress (local commits, not deployed)
+User decisions: recents keep an inline "Add now" (repeat = 2 taps); the Numbers row says "Below 0.05"; red follows the shown three-decimal value; Remove lives in the Change sheet.
+- **P0 done:** the landing maths card has no drive row or raw decimals; one rounding rule (`loggedStandards`); the edit bug is fixed with a real `update` outbox op (`planRemoval`, `editChange`, regression tests in `night-model.test.ts`), "Changed … [Undo]" restores the old values, and the clock moves on at once after add/edit/remove/undo. The user said to wait before deploying.
+- **P1 done:** two-step Add a drink (How much / When) with continuous eased sliders (`eased-scale.ts`, `add/EasedSlider.tsx`, measured 1 px of thumb per 1 px of finger, 4 px slop, 60% hysteresis, settles on release). Change drink uses the same controls.
+- **P2 done (merged):** exit motion for every sheet and dialog, scrim fades, drag-down to close on the handle, `usePresence` for the composer. Off under reduced motion.
+- **P3 done (merged):** Numbers is "Back to zero" + "Below 0.05"; Counted, Peak and "Estimate only. Bodies and pours vary." are cut; Your tab is one line per drink; the details sheet is trimmed; a small live third digit (the headline is now the model rounded up to three places, so 0.0963 reads 0.09 with a small 7); the scrollbar is hidden.
+- **P4 parser done (merged):** mixed drinks keep the mixer ("Vodka & Red Bull"); an unknown drink in a known glass is unread unless its strength is stated. PARSER_VERSION 4. Voice UI and the composer prefilling the two sliders are not done yet.
+- **P5:** not started. Known leftovers: focus doesn't return to the opener after a sheet closes (Escape lands on body); the dock's glass panel snaps height after the composer leaves (NightView).
+- Design checks this round: impeccable (critique A/B, craft floor), designing-for-impaired-users (rubric.mjs clean at 375 and 320), taste-skill lint clean on the add sheets. The impeccable detector binary is still missing.
+
 ## 22 Oct 2026: deployed
 - **Live at baculator.com** (Worker version `84e64fcf-00f7-4517-b6b6-9eff1a7c515a`), from `cloudflare-d1-migration` (the code was not pushed to GitHub).
 - **Remote D1:** migrations 0004–0008 applied on 22 Oct (the database had 0 users before). The pre-migration export is in `backups/` (gitignored).
