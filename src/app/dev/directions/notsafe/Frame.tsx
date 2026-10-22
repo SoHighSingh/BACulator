@@ -26,7 +26,7 @@ export interface Treatment {
 /** A 375×812 copy of the top of the night screen on the red field, with one treatment applied. */
 export function Frame({ night, t, scrolled }: { night: SampleNight; t: Treatment; scrolled: boolean }) {
   const { std } = useRegion();
-  const { model, now, drinks, last } = night;
+  const { model, now, last } = night;
   const est = model.estimate;
 
   return (
@@ -59,7 +59,7 @@ export function Frame({ night, t, scrolled }: { night: SampleNight; t: Treatment
         )}
         {t.cardRow}
         <TimelineCard simulation={model.simulation} now={now} onExpand={() => undefined} />
-        {model.hasDrinks && <NightNumbers model={model} drinkCount={drinks.length} totalStandards={night.totalStd} />}
+        {model.hasDrinks && <NightNumbers model={model} />}
       </div>
 
       <div className="glass glass-strong absolute inset-x-2 bottom-2 z-30 rounded-[28px] p-3">

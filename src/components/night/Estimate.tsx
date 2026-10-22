@@ -3,7 +3,7 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useRef, useState } from "react";
 
-import { aboutPoint, BAND_HIGH, BAND_LOW, formatBand } from "~/lib/estimate-display";
+import { aboutPoint, BAND_HIGH, BAND_LOW, displayPoint, formatBand } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
 
 interface EstimateProps {
@@ -37,8 +37,11 @@ function useChanged(value: string) {
  * spells out the range. Nothing on the bar is a limit: there are no marks but the reading's own.
  */
 export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpenDetails, ref }: EstimateProps) {
+  // Spoken (and in the button's name): two places, rounded up, with "about". Drawn: three places,
+  // rounded up, the third digit small (`displayPoint`); only the big digits settle in with motion.
   const [about, point] = aboutPoint(bac);
-  const changed = useChanged(point);
+  const drawn = displayPoint(bac);
+  const changed = useChanged(drawn.big);
   const [showRange, setShowRange] = useState(false);
   const [lo, hi] = formatBand(bac).split("–");
   const rising = status !== "none" && peak && peak.bac > bac + 0.004 ? peak : null;
@@ -68,13 +71,18 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
           // 18 Oct 2026 late: no "about" beside the number; it stays in the spoken text).
           <span className="mt-2 flex items-baseline" aria-hidden="true">
             <span
-              key={point}
-              data-changed={changed || undefined}
-              className={`num-in inline-block -ml-[0.04em] leading-[0.88] font-medium tracking-[-0.055em] ${
-                point.length > 4 ? "text-[clamp(48px,14vw,64px)]" : size === "lg" ? "text-[clamp(96px,10vw,148px)]" : "text-[clamp(88px,27vw,116px)]"
+              className={`inline-flex -ml-[0.04em] items-baseline leading-[0.88] font-medium ${
+                drawn.big.length > 4 ? "text-[clamp(48px,14vw,64px)]" : size === "lg" ? "text-[clamp(96px,10vw,148px)]" : "text-[clamp(88px,27vw,116px)]"
               }`}
             >
-              {point}
+              <span key={drawn.big} data-changed={changed || undefined} className="num-in inline-block tracking-[-0.055em]">
+                {drawn.big}
+              </span>
+              {/* The model's third place, small, on the same baseline at the number's bottom right. It
+                  changes in place as the night moves (every few minutes), with no animation. */}
+              {drawn.small !== null && (
+                <span className="ml-[0.06em] text-[0.35em] tracking-[-0.02em] text-ink/70 tabular-nums">{drawn.small}</span>
+              )}
             </span>
           </span>
         );
@@ -125,9 +133,8 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
           />
 
           {showRange ? (
-            <span aria-hidden="true" className="compose-in absolute inset-x-0 top-10 flex items-baseline justify-between text-lg">
-              <span className="font-medium">{rangeText}</span>
-              <span className="text-ink-2">tap to hide</span>
+            <span aria-hidden="true" className="compose-in absolute inset-x-0 top-10 text-lg font-medium">
+              {rangeText}
             </span>
           ) : (
             headingText && (

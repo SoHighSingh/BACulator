@@ -32,6 +32,8 @@ export interface NightViewProps {
   onOpenAdd: () => void;
   onUndo: () => void;
   onEdit: (drink: LoggedDrink) => void;
+  /** Not used by this view since the tab rows lost their Remove key (22 Oct 2026); removing moves
+      into the edit sheet, which NightScreen owns. Kept so the screen's plumbing is unchanged. */
   onRemove: (drink: LoggedDrink) => void;
   onOpenProfile: () => void;
   onAddDetails: () => void;
@@ -86,13 +88,13 @@ export function NightView(props: NightViewProps) {
   const animateAlert = useAlertChange(model.alert, props.notice?.at ?? null);
   const animateHazard = useAlertChange(model.hazard, props.notice?.at ?? null);
 
-  const total = drinks.reduce((sum, d) => sum + d.standards, 0);
-
   return (
     <div className="app-shell fixed inset-0 overflow-hidden bg-bg text-ink">
       {/* Content fades out under the floating icons instead of colliding with them. */}
       <div aria-hidden="true" className="night-scrim pointer-events-none fixed inset-x-0 top-0 z-10 h-[calc(96px_+_env(safe-area-inset-top))]" />
-      <main className="app-main h-full overflow-y-auto overscroll-contain">
+      {/* No painted scrollbar (user decision, 22 Oct 2026; `.app-main` in globals.css): wheel, touch,
+          trackpad and keys still scroll it. tabIndex -1 lets a click give it focus for the keys. */}
+      <main tabIndex={-1} className="app-main h-full overflow-y-auto overscroll-contain outline-none">
         <div className="relative">
           <div className={`glass-field ${model.alert ? "is-alert" : ""} ${animateAlert ? "is-anim" : ""}`} aria-hidden="true" />
           <AlertFavicon alert={model.alert} />
@@ -140,11 +142,11 @@ export function NightView(props: NightViewProps) {
               )}
 
               <TimelineCard simulation={model.simulation} now={now} onExpand={props.onShowTimeline} drinks={drinks} weight={props.weight} sex={props.sex} />
-              {model.hasDrinks && <NightNumbers model={model} drinkCount={drinks.length} totalStandards={total} />}
+              {model.hasDrinks && <NightNumbers model={model} />}
             </div>
 
             <div className="flex flex-col gap-4">
-              <TonightList drinks={drinks} onEdit={props.onEdit} onRemove={props.onRemove} />
+              <TonightList drinks={drinks} onEdit={props.onEdit} />
             </div>
           </div>
         </div>

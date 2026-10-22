@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { describeEstimate, describeNight, drinkLabel, formatBackToZero, formatBand, formatPoint, isAlert, isHazard, timeAgo } from "./estimate-display";
+import { calculateBACAtTime, findTimeToTarget } from "./bac-calculator";
+import {
+  asRange,
+  describeEstimate,
+  describeNight,
+  displayPoint,
+  drinkLabel,
+  formatBackToZero,
+  formatBand,
+  formatPoint,
+  isAlert,
+  isHazard,
+  timeAgo,
+} from "./estimate-display";
 
 const base = {
   currentBAC: 0,
@@ -97,11 +110,85 @@ describe("formatPoint", () => {
   });
 });
 
+describe("displayPoint: the headline with its small third digit", () => {
+  it("rounds up at the third place and splits big and small from that one value", () => {
+    expect(displayPoint(0.0963)).toEqual({ big: "0.09", small: "7" });
+    expect(displayPoint(0.0991)).toEqual({ big: "0.10", small: "0" });
+    expect(displayPoint(0.07)).toEqual({ big: "0.07", small: "0" });
+    expect(displayPoint(0.05)).toEqual({ big: "0.05", small: "0" });
+    expect(displayPoint(0.0491)).toEqual({ big: "0.05", small: "0" });
+    expect(displayPoint(0.049)).toEqual({ big: "0.04", small: "9" });
+    expect(displayPoint(0.0101)).toEqual({ big: "0.01", small: "1" });
+  });
+
+  it("has no small digit at zero or under 0.01", () => {
+    expect(displayPoint(0)).toEqual({ big: "0.00", small: null });
+    expect(displayPoint(0.004)).toEqual({ big: "under 0.01", small: null });
+  });
+
+  it("never draws lower than the model, never more than 0.001 above, and its digits never contradict", () => {
+    for (let bac = 0.01; bac < 0.4; bac += 0.00037) {
+      const { big, small } = displayPoint(bac);
+      const shown = Number(`${big}${small}`);
+      expect(shown).toBeGreaterThanOrEqual(bac - 1e-9);
+      expect(shown - bac).toBeLessThan(0.001 + 1e-9);
+      // The big digits are the shown value's own first two places, never a separately rounded figure.
+      expect(big).toBe(shown.toFixed(3).slice(0, 4));
+      // Red always matches what's printed.
+      expect(isAlert(bac)).toBe(shown >= 0.05 - 1e-9);
+    }
+  });
+});
+
+describe("the Below 0.05 window", () => {
+  const drink = (minutesAgo: number, standards: number) => ({
+    id: `${minutesAgo}-${standards}`,
+    standards,
+    finishedAt: new Date(now.getTime() - minutesAgo * 60000),
+  });
+
+  it("is a window like Back to zero, and comes before it, while the screen is red", () => {
+    const m = describeNight([drink(90, 2), drink(45, 2), drink(15, 2)], 75, "male", now);
+    expect(m.alert).toBe(true);
+    expect(m.estimate!.belowAlert).toMatch(/^between \d{1,2}:\d{2}( am| pm)? and \d{1,2}:\d{2} (am|pm)$/);
+    expect(m.estimate!.backToZero).not.toBeNull();
+    expect(asRange(m.estimate!.belowAlert!)).toMatch(/ to /);
+  });
+
+  it("is keyed on the same moment the red ends, to the minute", () => {
+    const drinks = [drink(90, 2), drink(45, 2), drink(15, 2)];
+    const hours = findTimeToTarget(drinks, 75, "male", now, 0.049);
+    const at = (h: number) => calculateBACAtTime(drinks, 75, "male", new Date(now.getTime() + h * 3_600_000));
+    expect(hours).toBeGreaterThan(0);
+    expect(isAlert(at(hours - 2 / 60))).toBe(true);
+    expect(isAlert(at(hours + 1 / 60))).toBe(false);
+  });
+
+  it("is absent when the drawn number is under 0.05 and stays there", () => {
+    const m = describeNight([drink(120, 1)], 75, "male", now);
+    expect(m.alert).toBe(false);
+    expect(m.estimate!.belowAlert).toBeNull();
+  });
+
+  it("is absent without a weight to estimate with", () => {
+    expect(describeNight([drink(30, 4)], null, null, now).estimate).toBeNull();
+  });
+
+  it("never collapses to a single clock time", () => {
+    expect(formatBackToZero(0.05, now)).toMatch(/^between .+ and .+$/);
+    const [a, b] = asRange(formatBackToZero(0.05, now)!).split(" to ");
+    expect(a).not.toBe(b!.replace(/ (am|pm)$/, ""));
+  });
+});
+
 describe("red and the hazard key (user decision, 18 Oct 2026 late: 0.05, by what is shown)", () => {
-  it("is red once the shown number is 0.05", () => {
+  it("is red once the drawn three-place number is 0.050 (user decision, 22 Oct 2026)", () => {
     expect(isAlert(0.05)).toBe(true);
-    // 0.0449 shows 0.05 (rounded up), so it is red.
-    expect(isAlert(0.0449)).toBe(true);
+    // 0.0491 draws 0.05|0 (rounded up at the third place): red.
+    expect(isAlert(0.0491)).toBe(true);
+    // 0.049 draws 0.04|9, and 0.0449 draws 0.04|5: not red, even though two places would round up to 0.05.
+    expect(isAlert(0.049)).toBe(false);
+    expect(isAlert(0.0449)).toBe(false);
     expect(isAlert(0.04)).toBe(false);
     expect(isAlert(0)).toBe(false);
     expect(isAlert(null)).toBe(false);

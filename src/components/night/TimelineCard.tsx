@@ -52,7 +52,6 @@ export function TimelineCard({ simulation, now, onExpand, drinks, weight, sex }:
   const events = useMemo(() => (drinks ?? []).map((d) => new Date(d.finishedAt).getTime()).filter((t) => t <= now.getTime()), [drinks, now]);
   if (!sim || sim.samples.length < 2) return null;
   const nowBac = valueAt(sim.samples, now.getTime());
-  const bac = picked?.bac ?? nowBac;
   const zero = sim.zeroAt;
   return (
     <section aria-labelledby="curve-heading" className="card p-5">
@@ -67,10 +66,13 @@ export function TimelineCard({ simulation, now, onExpand, drinks, weight, sex }:
           Tonight
           <Maximize2 aria-hidden="true" className="text-ink-2 size-4" strokeWidth={2} />
         </h2>
-        <span className="text-lg" aria-live="off">
-          <span className="text-ink-2">{picked?.t ? formatClock(picked.t) : "Now"} · </span>
-          <span className="font-medium tabular-nums">about {formatPoint(bac)}</span>
-        </span>
+        {/* Only while scrubbing: at rest it would repeat the number above (user decision, 22 Oct 2026). */}
+        {picked?.t ? (
+          <span className="text-lg" aria-live="off">
+            <span className="text-ink-2">{formatClock(picked.t)} · </span>
+            <span className="font-medium tabular-nums">about {formatPoint(picked.bac)}</span>
+          </span>
+        ) : null}
       </button>
       <p className="sr-only">
         Estimated blood alcohol through the night, from {formatClock(sim.samples[0]!.t)}. Now about {formatPoint(nowBac)}. Peak about{" "}

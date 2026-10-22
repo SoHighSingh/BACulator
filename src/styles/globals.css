@@ -476,6 +476,14 @@ html:has(.app-shell) body {
   user-select: none;
   touch-action: manipulation;
 }
+/* The night screen's scroller paints no scrollbar (user decision, 22 Oct 2026). Only the painted bar
+   goes: wheel, touch, trackpad and keyboard scrolling are a property of overflow and still work. */
+.app-main {
+  scrollbar-width: none;
+}
+.app-main::-webkit-scrollbar {
+  display: none;
+}
 
 @media (prefers-reduced-motion: no-preference) {
   /* "Added …" slides into the dock; it answers the tap, then stays put. */
