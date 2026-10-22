@@ -2,7 +2,29 @@
 
 Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decisions) and `DESIGN.md` (what's built now). This file covers: where the code is, what the seven-agent audit found and what's still open, the three side branches waiting to merge, and the brief for the next visual direction.
 
-## 22 Oct 2026: deployed (read first)
+## Next session (from 22 Oct 2026): read first
+The kickoff prompt is in `docs/next-session/KICKOFF.md`. The user's own list, word for word, is in `docs/next-session/00-user-list.md`. Five read-only audits back it up:
+
+| Report | What it covers |
+|---|---|
+| `01-motion-exits.md` | Every sheet opens with motion and unmounts instantly (no exit keyframes, the scrim snaps). One CSS fix in `Sheet.tsx` and `globals.css` covers five sheets; a `usePresence` hook covers the composer and Earlier. |
+| `02-add-flow-and-bugs.md` | The edit bug's probable root cause (`useNight.ts:277` `remove()` drops a queued add without a delete, though it may have reached the server). Slider jank, measured at 61 hard rungs and 2–3 px per step. The two-step add spec. |
+| `03-clutter-tab-details.md` | Keep/cut lists, the Numbers row (the engine can supply "below 0.05" as a range), the Your tab and details redesigns, the third-digit spec, the scrollbar fix. Mocks are in `.shots/next-session/`. |
+| `04-voice-and-parse.md` | "vodka red bull" → "Vodka" is a parser bug: the mixer is matched, then dropped. Voice fails from interim results, `continuous=false` stopping at the first pause, silent errors, and the mic being offered on iOS standalone. |
+| `05-friction-walk.md` | 28 new issues with screenshots, plus tap counts. A live blocker: the landing maths card's "drive → not safe" row and raw 4-decimal BAC. |
+
+**Open decisions to ask the user first:**
+1. **Repeat drink.** A strict two-step add makes a repeat 3 taps. Keep 2 by giving recents an inline "Add now" key, or always ask the time?
+2. **Numbers row wording.** "Below 0.05" (the audit's pick: no legal framing) or "Back to 0.05" (the user's words)?
+3. **Third digit and the red rule.** Red currently starts at ceil2 ≥ 0.05, so the screen could show "0.04₃" in red. Move red to the shown three-decimal value (about 35 minutes later), or accept the gap?
+4. **Your tab.** Move Remove into the Edit sheet so each row is one clean line (Undo still covers mistakes)?
+
+**Known facts for the work:**
+- The edit bug doesn't reproduce on `/dev/night`, because DevNight edits in place. Test the real `NightScreen`/`useNight` path, or a unit test on `night-model`.
+- In production a just-added drink isn't counted for up to 30 s, because `now` isn't refreshed on add.
+- The first drink shows 0.00 with no bar, then "under 0.01", then 0.01: three layout shapes. This ties into the engine lag in `docs/analysis/06-bac-engine.md`.
+
+## 22 Oct 2026: deployed
 - **Live at baculator.com** (Worker version `84e64fcf-00f7-4517-b6b6-9eff1a7c515a`), from `cloudflare-d1-migration` (the code was not pushed to GitHub).
 - **Remote D1:** migrations 0004–0008 applied on 22 Oct (the database had 0 users before). The pre-migration export is in `backups/` (gitignored).
 - **How it was deployed:** Wrangler needs Node 22+, and the default Node here is 20, so put nvm's `C:/Users/agams/AppData/Local/nvm/v24.0.1` on PATH. Build in a throwaway worktree, because the `.env` files in the main checkout block `build:worker`.
