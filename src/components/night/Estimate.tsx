@@ -50,8 +50,9 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
   const pos = (v: number) => Math.min(100, (v / scale) * 100);
   const pct = (v: number) => `${pos(v)}%`;
   const falling = !rising && status === "falling" && hourAgo !== null && hourAgo > bac + 0.004 ? hourAgo : null;
-  const hasRange = bac > 0 && !!hi;
-  const rangeText = hasRange ? `Likely ${lo} to ${hi}` : null;
+  const rangeText = bac > 0 && hi ? `Likely ${lo} to ${hi}` : null;
+  // The bar is there from the first drink (while it's still rising from 0.00), so the screen keeps
+  // one shape as the night starts instead of growing a bar later.
   const peakText = rising ? `about ${aboutPoint(rising.bac)[1]} by ${formatClock(rising.at)}` : null;
   const headingText = rising ? `Rising to ${peakText}` : falling !== null ? "Falling" : null;
   const HeadingIcon = rising ? TrendingUp : TrendingDown;
@@ -81,7 +82,7 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
               {/* The model's third place, small, on the same baseline at the number's bottom right. It
                   changes in place as the night moves (every few minutes), with no animation. */}
               {drawn.small !== null && (
-                <span className="ml-[0.06em] text-[0.35em] tracking-[-0.02em] text-ink/70 tabular-nums">{drawn.small}</span>
+                <span className="ml-[0.06em] text-[0.3em] tracking-[-0.02em] text-ink-2 tabular-nums">{drawn.small}</span>
               )}
             </span>
           </span>
@@ -95,7 +96,7 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
         );
       })()}
 
-      {hasRange && (
+      {(bac > 0 || rising) && (
         <button
           type="button"
           onClick={() => setShowRange((v) => !v)}
@@ -132,7 +133,7 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
             style={{ left: pct(bac) }}
           />
 
-          {showRange ? (
+          {showRange && rangeText ? (
             <span aria-hidden="true" className="compose-in absolute inset-x-0 top-10 text-lg font-medium">
               {rangeText}
             </span>

@@ -55,13 +55,13 @@ export function formatPoint(bac: number): string {
 /**
  * The headline as drawn: the model rounded UP at the third place, split into the big two places and
  * a small third digit ("0.09" + "7" for 0.0963). Both come from one rounded value, so the three
- * digits never contradict each other and never read lower than the model. Under 0.01 and at zero
- * there is no small digit. Screen readers keep the two-place `aboutPoint` ("about 0.10"): voice
+ * digits never contradict each other and never read lower than the model. Under 0.01 it reads
+ * 0.00 with its small digit (0.004 → "0.00" + "4"), the same shape as the rest of the night; only
+ * zero has no small digit. Screen readers keep the two-place `aboutPoint` ("about 0.10"): voice
  * never reads a three-decimal figure.
  */
 export function displayPoint(bac: number): { big: string; small: string | null } {
   if (bac <= 0) return { big: "0.00", small: null };
-  if (bac < 0.01) return { big: "under 0.01", small: null };
   const shown = (shownMilli(bac) / 1000).toFixed(3);
   return { big: shown.slice(0, -1), small: shown.slice(-1) };
 }

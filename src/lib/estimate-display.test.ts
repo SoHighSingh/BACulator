@@ -121,9 +121,9 @@ describe("displayPoint: the headline with its small third digit", () => {
     expect(displayPoint(0.0101)).toEqual({ big: "0.01", small: "1" });
   });
 
-  it("has no small digit at zero or under 0.01", () => {
+  it("has no small digit only at zero; under 0.01 keeps the same shape", () => {
     expect(displayPoint(0)).toEqual({ big: "0.00", small: null });
-    expect(displayPoint(0.004)).toEqual({ big: "under 0.01", small: null });
+    expect(displayPoint(0.004)).toEqual({ big: "0.00", small: "4" });
   });
 
   it("never draws lower than the model, never more than 0.001 above, and its digits never contradict", () => {
