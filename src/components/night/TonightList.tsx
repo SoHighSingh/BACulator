@@ -1,5 +1,3 @@
-import { ChevronRight } from "lucide-react";
-
 import { useRegion } from "~/hooks/useRegion";
 import type { LoggedDrink } from "~/hooks/useNight";
 import { drinkLabel } from "~/lib/estimate-display";
@@ -8,63 +6,57 @@ import { formatClock } from "~/lib/format-clock";
 interface TonightListProps {
   drinks: LoggedDrink[];
   onEdit: (drink: LoggedDrink) => void;
-  onRemove: (drink: LoggedDrink) => void;
 }
 
 /**
- * Your tab: what, how much, when, with the running total. It is also the morning-after record.
- * Tapping a drink edits its time or size; Remove lives here, away from the add buttons.
+ * Your tab: one clean line per drink (name · time · standards), newest first, with the count and
+ * total once in the header. It is also the morning-after record. The whole row is one target that
+ * opens the edit sheet; removing a drink lives in that sheet, off the logging screen (user decision,
+ * 22 Oct 2026). The unit is said once, in the header; rows carry figures only.
  */
-export function TonightList({ drinks, onEdit, onRemove }: TonightListProps) {
+export function TonightList({ drinks, onEdit }: TonightListProps) {
   const { std } = useRegion();
   if (drinks.length === 0) return null;
   const total = drinks.reduce((sum, d) => sum + d.standards, 0);
   const newestFirst = [...drinks].sort((a, b) => b.finishedAt.getTime() - a.finishedAt.getTime());
+  const unsynced = drinks.filter((d) => d.unsynced).length;
+  const count = `${drinks.length} ${drinks.length === 1 ? "drink" : "drinks"}`;
 
   return (
     <section aria-labelledby="tonight-heading" className="card overflow-hidden">
-      <header className="flex items-end justify-between gap-4 p-5">
+      <header className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 px-5 py-2">
         <h2 id="tonight-heading" className="text-lg font-semibold">
           Your tab
-          <span className="block font-normal text-ink-2">Last 24 hours</span>
         </h2>
-        <p className="text-right">
-          <span className="block text-3xl leading-none font-medium tracking-[-0.03em] tabular-nums">{std(total)}</span>
-          <span className="block text-lg text-ink-2">standard drinks</span>
+        <p className="ml-auto text-lg font-medium tabular-nums">
+          {count} · {std(total)} std
         </p>
       </header>
       <ul className="divide-y divide-edge border-t border-edge">
         {newestFirst.map((drink) => {
           const label = drinkLabel(drink, std);
+          const time = formatClock(drink.finishedAt);
           return (
-            <li key={drink.id} className="flex items-center gap-2 py-1.5 pr-4 pl-1">
+            <li key={drink.id}>
               <button
                 type="button"
                 onClick={() => onEdit(drink)}
-                aria-label={`Edit ${label} at ${formatClock(drink.finishedAt)}`}
-                className="press flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-row px-4 text-left hover:bg-white/[0.03]"
+                aria-label={`Edit ${label}, ${time}, ${std(drink.standards)} standard drinks`}
+                className="press grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 px-5 py-2 text-left text-lg hover:bg-white/[0.03]"
               >
-                <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-medium">{label}</span>
-                  <span className="block text-lg text-ink-2 tabular-nums">
-                    {formatClock(drink.finishedAt)} · {std(drink.standards)} std
-                  </span>
-                  {drink.unsynced && <span className="block text-lg text-ink-2">Saved on this phone, will sync</span>}
-                </span>
-                <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-2" strokeWidth={2} />
-              </button>
-              <button
-                type="button"
-                onClick={() => onRemove(drink)}
-                aria-label={`Remove ${label} at ${formatClock(drink.finishedAt)}`}
-                className="press min-h-12 shrink-0 rounded-key px-4 text-lg text-ink-2 shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
-              >
-                Remove
+                <span className="font-medium break-words">{label}</span>
+                <span className="text-ink-2 tabular-nums whitespace-nowrap">{time}</span>
+                <span className="min-w-[3ch] text-right tabular-nums">{std(drink.standards)}</span>
               </button>
             </li>
           );
         })}
       </ul>
+      {unsynced > 0 && (
+        <p className="border-t border-edge px-5 py-3 text-lg text-ink-2">
+          {unsynced} saved on this phone, will sync
+        </p>
+      )}
     </section>
   );
 }

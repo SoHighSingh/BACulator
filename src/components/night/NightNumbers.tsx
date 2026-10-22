@@ -1,32 +1,33 @@
-import { useRegion } from "~/hooks/useRegion";
-import { aboutPoint, type NightModel } from "~/lib/estimate-display";
-import { formatClock } from "~/lib/format-clock";
+import { asRange, type NightModel } from "~/lib/estimate-display";
 
-interface NightNumbersProps {
-  model: NightModel;
-  drinkCount: number;
-  totalStandards: number;
-}
-
-/** Back to zero, peak and what was counted, aligned like the rows of a results table. */
-export function NightNumbers({ model, drinkCount, totalStandards }: NightNumbersProps) {
-  const { std } = useRegion();
+/**
+ * The two forward-looking times, as table rows (user decision, 22 Oct 2026): Back to zero, and
+ * Below 0.05, which is when the red field ends (the drawn number drops under 0.050). Both are
+ * windows, never one clock time. Peak lives on the bar, the count lives in Your tab, and the one
+ * disclaimer lives in the details sheet.
+ */
+export function nightRows(model: NightModel): [string, string][] {
   const rows: [string, string][] = [];
   const zero = model.estimate?.backToZero;
-  if (zero) rows.push(["Back to zero", zero.replace(/^between /, "").replace(" and ", " to ")]);
-  if (model.peak) rows.push(["Peak", `about ${aboutPoint(model.peak.bac)[1]} at ${formatClock(model.peak.at)}`]);
-  rows.push(["Counted", `${drinkCount} ${drinkCount === 1 ? "drink" : "drinks"} · ${std(totalStandards)} std`]);
+  const below = model.estimate?.belowAlert;
+  if (zero) rows.push(["Back to zero", asRange(zero)]);
+  if (below) rows.push(["Below 0.05", asRange(below)]);
+  return rows;
+}
+
+export function NightNumbers({ model }: { model: NightModel }) {
+  const rows = nightRows(model);
+  if (rows.length === 0) return null;
   return (
-    <section aria-label="Tonight's numbers" className="card overflow-hidden">
+    <section aria-label="When it wears off" className="card overflow-hidden">
       <dl className="divide-y divide-edge">
         {rows.map(([k, v]) => (
-          <div key={k} className="flex min-h-12 items-center justify-between gap-4 px-4 py-1 text-lg leading-snug">
-            <dt className="shrink-0 text-ink-2">{k}</dt>
-            <dd className="text-right font-medium">{v}</dd>
+          <div key={k} className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 px-5 py-2 text-lg leading-snug">
+            <dt className="text-ink-2 whitespace-nowrap">{k}</dt>
+            <dd className="ml-auto text-right font-medium whitespace-nowrap tabular-nums">{v}</dd>
           </div>
         ))}
       </dl>
-      <p className="border-t border-edge px-4 py-2.5 text-lg leading-snug text-ink-2">Estimate only. Bodies and pours vary.</p>
     </section>
   );
 }

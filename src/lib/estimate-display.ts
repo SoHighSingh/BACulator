@@ -1,5 +1,5 @@
 import { formatClock } from "./format-clock";
-import { calculateBAC, simulateNight, type NightSimulation } from "~/lib/bac-calculator";
+import { calculateBAC, findTimeToTarget, simulateNight, type NightSimulation } from "~/lib/bac-calculator";
 import type { BACResult, Drink } from "~/types/bac";
 
 // The model is an estimate. Widmark predictions vary with a CV of about 20% between people and
@@ -16,6 +16,9 @@ const QUARTER_HOUR_MS = 15 * 60 * 1000;
 // screen goes red when the shown number reaches it, and the hazard key appears once the top of the
 // likely range reaches it. Neither is framed as a driving or legal state.
 export const ALERT_AT = 0.05;
+// The headline is drawn to three places (user decision, 22 Oct 2026: a small live third digit),
+// rounded UP, so red starts once the model passes 0.049 and ends when it is back to 0.049 or less.
+const RED_ENDS_AT = ALERT_AT - 0.001;
 
 export interface EstimateDisplay {
   /** The headline number: "0.07", "under 0.01" or "0.00" */
@@ -25,12 +28,19 @@ export interface EstimateDisplay {
   status: "rising" | "falling" | "none";
   /** "between 2:30 and 4:00 am", or null when nothing is left to wear off */
   backToZero: string | null;
+  /**
+   * When the red field ends, as the same kind of window: "between 1:00 and 3:15 am". Null when the
+   * shown number is under 0.05 and stays there, or is still above at the model's horizon.
+   */
+  belowAlert: string | null;
   /** True whenever any alcohol is counted, including drinks still being absorbed */
   notSafeToDrive: boolean;
 }
 
 const floor2 = (n: number) => Math.floor(n * 100) / 100;
 const ceil2 = (n: number) => Math.ceil(n * 100) / 100;
+/** The model in thousandths, rounded UP: 0.0963 → 97. The epsilon absorbs float noise (0.07 × 1000). */
+const shownMilli = (bac: number) => Math.ceil(bac * 1000 - 1e-6);
 
 /**
  * One number for the headline, rounded UP to two places: 0.0549 shows 0.06, never 0.05, so the
@@ -40,6 +50,20 @@ export function formatPoint(bac: number): string {
   if (bac <= 0) return "0.00";
   if (bac < 0.01) return "under 0.01";
   return ceil2(bac - 1e-9).toFixed(2);
+}
+
+/**
+ * The headline as drawn: the model rounded UP at the third place, split into the big two places and
+ * a small third digit ("0.09" + "7" for 0.0963). Both come from one rounded value, so the three
+ * digits never contradict each other and never read lower than the model. Under 0.01 and at zero
+ * there is no small digit. Screen readers keep the two-place `aboutPoint` ("about 0.10"): voice
+ * never reads a three-decimal figure.
+ */
+export function displayPoint(bac: number): { big: string; small: string | null } {
+  if (bac <= 0) return { big: "0.00", small: null };
+  if (bac < 0.01) return { big: "under 0.01", small: null };
+  const shown = (shownMilli(bac) / 1000).toFixed(3);
+  return { big: shown.slice(0, -1), small: shown.slice(-1) };
 }
 
 /**
@@ -59,9 +83,12 @@ export function formatBand(bac: number): string {
   return `${low.toFixed(2)}–${high.toFixed(2)}`;
 }
 
-/** Red: the headline as shown (rounded up, so 0.0449 shows 0.05) is ALERT_AT or more. */
+/**
+ * Red: the headline as drawn, three places rounded up (`displayPoint`), is 0.050 or more, so the
+ * colour always matches what's printed: 0.0491 draws 0.05|0 and is red; 0.049 draws 0.04|9 and isn't.
+ */
 export function isAlert(bac: number | null): boolean {
-  return bac !== null && bac >= 0.01 && ceil2(bac - 1e-9) >= ALERT_AT;
+  return bac !== null && bac >= 0.01 && shownMilli(bac) >= Math.round(ALERT_AT * 1000);
 }
 
 /** The hazard key: the top of the likely range as shown ("Likely X to Y", Y rounded up) is ALERT_AT or more. */
@@ -80,12 +107,23 @@ const clockTime = (date: Date, withPeriod: boolean) => formatClock(date, { perio
 export function formatBackToZero(hoursToZero: number, now: Date): string | null {
   if (hoursToZero <= 0) return null;
   const early = roundToQuarterHour(now.getTime() + hoursToZero * ZERO_EARLY * 3_600_000);
-  const late = roundToQuarterHour(now.getTime() + hoursToZero * ZERO_LATE * 3_600_000);
+  let late = roundToQuarterHour(now.getTime() + hoursToZero * ZERO_LATE * 3_600_000);
+  // Always a window, never one clock time (a single time reads like a target).
+  if (late.getTime() <= early.getTime()) late = new Date(early.getTime() + QUARTER_HOUR_MS);
   const samePeriod = early.getHours() < 12 === late.getHours() < 12;
   return `between ${clockTime(early, !samePeriod)} and ${clockTime(late, true)}`;
 }
 
-export function describeEstimate(result: BACResult, drinks: Drink[], now: Date): EstimateDisplay {
+/** A window as a table value: "between 2:30 and 6:15 am" → "2:30 to 6:15 am". */
+export function asRange(window: string): string {
+  return window.replace(/^between /, "").replace(" and ", " to ");
+}
+
+/**
+ * @param hoursBelowAlert hours until the drawn number is under 0.050 for good (0: under now and
+ * staying there; -1: still above at the model's horizon, so no window is shown).
+ */
+export function describeEstimate(result: BACResult, drinks: Drink[], now: Date, hoursBelowAlert = 0): EstimateDisplay {
   const counted = drinks.some((d) => new Date(d.finishedAt).getTime() <= now.getTime());
   const status = result.isRising ? "rising" : result.currentBAC > 0 ? "falling" : "none";
   return {
@@ -93,6 +131,7 @@ export function describeEstimate(result: BACResult, drinks: Drink[], now: Date):
     band: formatBand(result.currentBAC),
     status,
     backToZero: formatBackToZero(result.timeToSober, now),
+    belowAlert: hoursBelowAlert > 0 ? formatBackToZero(hoursBelowAlert, now) : null,
     notSafeToDrive: counted && (result.currentBAC > 0 || result.isRising),
   };
 }
@@ -151,7 +190,10 @@ export function describeNight(drinks: Drink[], userWeight: number | null, userSe
     return { hasDrinks, estimate: null, bac: null, peak: null, notSafeToDrive: hasDrinks, alert: false, hazard: false, simulation };
   }
 
-  const estimate = describeEstimate(result, drinks, now);
+  // When the red field ends: after the last moment the model is above 0.049 (`RED_ENDS_AT`), which
+  // is exactly when the drawn three-place number drops under 0.050, so the row and the colour agree.
+  const hoursBelowAlert = userWeight && userSex ? findTimeToTarget(drinks, userWeight, userSex.toLowerCase(), now, RED_ENDS_AT) : 0;
+  const estimate = describeEstimate(result, drinks, now, hoursBelowAlert);
   const peak =
     result.timeToPeak > 0 && result.peakBAC > result.currentBAC
       ? { bac: result.peakBAC, at: new Date(now.getTime() + result.timeToPeak * 3_600_000) }

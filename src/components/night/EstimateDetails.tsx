@@ -1,10 +1,10 @@
-import { Phone, TriangleAlert } from "lucide-react";
+import { Phone } from "lucide-react";
 import Link from "next/link";
 
 import { useRegion } from "~/hooks/useRegion";
 import { callPhrase } from "~/lib/emergency";
-import { aboutPoint, formatBand, type NightModel } from "~/lib/estimate-display";
-import { formatClock } from "~/lib/format-clock";
+import { formatBand, type NightModel } from "~/lib/estimate-display";
+import { nightRows } from "./NightNumbers";
 import { Sheet } from "./Sheet";
 
 interface EstimateDetailsProps {
@@ -15,49 +15,46 @@ interface EstimateDetailsProps {
 
 /**
  * The one sheet about tonight's estimate, whichever way it is opened: the hazard key beside the mark
- * or the number itself (user decision, 18 Oct 2026 late: an estimation calculator and nothing else).
- * The numbers behind the estimate, two factual notes, exactly one disclaimer line, one emergency
- * line for whoever is holding the phone, and the legal links. No rides, no texts, no judgement, and
- * nothing that frames red or the key as a driving state.
+ * or the number itself. Distilled (user decision, 22 Oct 2026: "reduce clutter like crazy"): the
+ * likely range as the one big line (the thing the number can't say), the same two times as the
+ * Numbers card, exactly one disclaimer, one emergency line for whoever is holding the phone, and
+ * the legal links last and quietest. No Now (the number is behind the sheet), no Peak (it is on the
+ * bar), no notes, no card inside the sheet, nothing framed as a driving state.
  */
 export function EstimateDetails({ open, onClose, model }: EstimateDetailsProps) {
   const { emergency } = useRegion();
-  const bac = model.bac ?? 0;
-  const [lo, hi] = formatBand(bac).split("–");
-  const rows: [string, string][] = [];
-  if (model.bac !== null) rows.push(["Now", `${aboutPoint(bac)[0] ? "about " : ""}${aboutPoint(bac)[1]}`]);
-  if (bac > 0 && hi) rows.push(["Likely range", `${lo} to ${hi}`]);
-  if (model.peak) rows.push(["Peak", `about ${aboutPoint(model.peak.bac)[1]} at ${formatClock(model.peak.at)}`]);
-  if (model.estimate?.backToZero) rows.push(["Back to zero", model.estimate.backToZero.replace(/^between /, "").replace(" and ", " to ")]);
+  const bac = model.bac;
+  const [lo, hi] = bac !== null ? formatBand(bac).split("–") : [];
+  const likely = bac === null ? null : bac > 0 && hi ? `${lo} to ${hi}` : bac > 0 ? "under 0.01" : null;
+  const rows = nightRows(model);
 
   return (
     <Sheet
       open={open}
       onOpenChange={(o) => !o && onClose()}
       title="About tonight's estimate"
-      description="The numbers behind tonight's estimate, and who to call if someone is in trouble."
+      description="The likely range, when it wears off, and who to call if someone is in trouble."
     >
+      {likely && (
+        <p className="mt-2">
+          <span className="block text-lg text-ink-2">Likely</span>
+          <span className="block text-[34px] leading-tight font-medium tracking-[-0.03em] tabular-nums">{likely}</span>
+        </p>
+      )}
+
       {rows.length > 0 && (
-        <dl className="card mt-1 divide-y divide-edge overflow-hidden">
+        <dl className="mt-4 divide-y divide-edge">
           {rows.map(([k, v]) => (
-            <div key={k} className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 px-4 py-2 text-lg">
+            <div key={k} className="flex min-h-[52px] flex-wrap items-center justify-between gap-x-4 py-2 text-lg">
               <dt className="text-ink-2 whitespace-nowrap">{k}</dt>
-              <dd className="ml-auto text-right font-medium whitespace-nowrap">{v}</dd>
+              <dd className="ml-auto text-right font-medium whitespace-nowrap tabular-nums">{v}</dd>
             </div>
           ))}
         </dl>
       )}
 
-      <ul className="mt-4 flex flex-col gap-2 px-1 text-lg text-ink-2">
-        <li>Only time brings it down.</li>
-        <li>The range is wide because bodies and pours vary.</li>
-      </ul>
-
-      {/* Exactly one disclaimer line (user decision, 18 Oct 2026 late). */}
-      <p className="mt-4 flex items-start gap-3 px-1 text-lg font-medium">
-        {model.hazard && <TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-alert" strokeWidth={2.25} />}
-        Estimate only. It can&apos;t tell you whether you&apos;re fit to drive.
-      </p>
+      {/* Exactly one disclaimer line (user decisions, 18 and 22 Oct 2026). */}
+      <p className="mt-5 text-lg text-ink-2">Estimate only. It can&apos;t tell you whether you&apos;re fit to drive.</p>
 
       {/* One line for whoever is holding the phone: the whole row is the call link. */}
       <a
@@ -70,7 +67,7 @@ export function EstimateDetails({ open, onClose, model }: EstimateDetailsProps) 
         </span>
       </a>
 
-      <p className="mt-4 flex gap-6 px-1 text-lg">
+      <p className="mt-3 flex gap-6 text-lg">
         <Link href="/terms" className="flex min-h-12 items-center text-ink-2 underline underline-offset-4">
           Terms
         </Link>
