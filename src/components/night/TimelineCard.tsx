@@ -25,11 +25,10 @@ interface ChartProps {
   whole?: boolean;
   band?: boolean;
   marks?: { t: number; key: string }[];
-  selected?: string | null;
 }
 
 /** Tonight's curve (see chart/SignalChart). The bigger graph uses it too, with a readout. */
-export function TimelineChart({ simulation, now, height, axes = false, events, onPick, whole, band, marks, selected }: ChartProps) {
+export function TimelineChart({ simulation, now, height, axes = false, events, onPick, whole, band, marks }: ChartProps) {
   return (
     <SignalChart
       simulation={simulation}
@@ -41,7 +40,6 @@ export function TimelineChart({ simulation, now, height, axes = false, events, o
       whole={whole}
       band={band}
       marks={marks}
-      selected={selected}
     />
   );
 }

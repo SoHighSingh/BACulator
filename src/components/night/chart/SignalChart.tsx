@@ -26,9 +26,8 @@ export interface SignalChartProps {
   whole?: boolean;
   /** The bigger graph: the likely range (0.75–1.4× of the curve) as a soft band around it. */
   band?: boolean;
-  /** The bigger graph: each drink as a dot on the curve; `selected` is drawn large with a guide. */
+  /** The bigger graph: each drink as a dot on the curve. */
   marks?: { t: number; key: string }[];
-  selected?: string | null;
 }
 
 const AXIS_H = 26;
@@ -44,7 +43,7 @@ const STEP = 5 * 60_000;
  * (the doubt, not a limit) and each drink as a dot on the curve. Drag or arrow across it to read any time; the header reads the time.
  * Everything is in CSS pixels (measured, never stretched), so strokes stay exact at every width.
  */
-export function SignalChart({ simulation, now, height, events = [], onPick, readout = false, smooth = true, ariaLabel, whole = false, band = false, marks = [], selected = null }: SignalChartProps) {
+export function SignalChart({ simulation, now, height, events = [], onPick, readout = false, smooth = true, ariaLabel, whole = false, band = false, marks = [] }: SignalChartProps) {
   const id = useId().replace(/:/g, "");
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -219,20 +218,12 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
           <circle cx={nowX} cy={nowY} r={8} fill="var(--tone)" fillOpacity={scrub === null ? 0.35 : 0.18} />
           <circle cx={nowX} cy={nowY} r={4.5} fill="var(--color-ink)" fillOpacity={scrub === null ? 1 : 0.6} />
 
-          {/* Drinks, as dots on the curve; the chosen one large, with a guide down to its time. */}
+          {/* Drinks, as dots on the curve. */}
           {marks
             .filter((m) => m.t >= win.t0 && m.t <= win.t1)
-            .map((m) => {
-              const on = m.key === selected;
-              const mx = x(m.t);
-              const my = y(valueAt(samples, m.t));
-              return (
-                <g key={m.key}>
-                  {on && <line x1={crisp(mx)} x2={crisp(mx)} y1={my} y2={baseY} stroke="var(--color-ink)" strokeOpacity={0.6} strokeWidth={1} />}
-                  <circle cx={mx} cy={my} r={on ? 7 : 4.5} fill={on ? "var(--color-ink)" : "var(--color-surface)"} stroke="var(--tone)" strokeWidth={2} />
-                </g>
-              );
-            })}
+            .map((m) => (
+              <circle key={m.key} cx={x(m.t)} cy={y(valueAt(samples, m.t))} r={4.5} fill="var(--color-surface)" stroke="var(--tone)" strokeWidth={2} />
+            ))}
 
           {/* Cursor while scrubbing. */}
           {scrub !== null && (
