@@ -65,7 +65,9 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
   // With the band drawn, the scale leaves room for its top edge.
   const top = band ? win.top * BAND_HIGH : win.top;
   const H = height;
-  const x = useCallback((t: number) => ((t - win.t0) / (win.t1 - win.t0)) * width, [win.t0, win.t1, width]);
+  // With drink dots drawn, a little room at each end so a dot on the first or last moment isn't cut.
+  const padX = marks.length ? 8 : 0;
+  const x = useCallback((t: number) => padX + ((t - win.t0) / (win.t1 - win.t0)) * (width - 2 * padX), [win.t0, win.t1, width, padX]);
   const y = useCallback((b: number) => PAD_TOP + (1 - b / top) * (H - PAD_TOP), [top, H]);
   const baseY = crisp(y(0));
 
@@ -102,7 +104,7 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
   function pickClient(clientX: number) {
     const r = box.current?.getBoundingClientRect();
     if (!r || width === 0) return;
-    const f = Math.min(1, Math.max(0, (clientX - r.left) / width));
+    const f = Math.min(1, Math.max(0, (clientX - r.left - padX) / Math.max(1, width - 2 * padX)));
     pickAt(win.t0 + f * (win.t1 - win.t0));
   }
   function onKey(e: React.KeyboardEvent) {

@@ -13,6 +13,29 @@ import { useId } from "react";
  * flipping the prop never redraws the mark and nothing plays on load. Ids come from `useId`, so
  * several marks (and the favicon, which reuses this SVG) can share a document.
  */
+/**
+ * The tile's outline as the app's squircle (CSS `corner-shape: squircle`), so the mark's corners
+ * match the keys beside it: radius 13 at 48 px (17.33 on this 64 grid). Each corner is a cubic
+ * with its control points 0.909 of the way along (the n = 4 superellipse; 0.552 would be a circle).
+ */
+function squircle(x: number, y: number, w: number, h: number, r: number) {
+  const c = r * (1 - 0.909);
+  const [x1, y1] = [x + w, y + h];
+  return [
+    `M${x + r} ${y}`,
+    `H${x1 - r}`,
+    `C${x1 - c} ${y} ${x1} ${y + c} ${x1} ${y + r}`,
+    `V${y1 - r}`,
+    `C${x1} ${y1 - c} ${x1 - c} ${y1} ${x1 - r} ${y1}`,
+    `H${x + r}`,
+    `C${x + c} ${y1} ${x} ${y1 - c} ${x} ${y1 - r}`,
+    `V${y + r}`,
+    `C${x} ${y + c} ${x + c} ${y} ${x + r} ${y}`,
+    "Z",
+  ].join(" ");
+}
+const TILE = squircle(0.5, 0.5, 63, 63, (13 / 48) * 64);
+
 export function BrandMark({ size = 40, title = "BACulator", tone = "calm" }: { size?: number; title?: string; tone?: "calm" | "alert" }) {
   const id = useId().replace(/:/g, "");
   const rim = `bm-rim-${id}`;
@@ -36,10 +59,10 @@ export function BrandMark({ size = 40, title = "BACulator", tone = "calm" }: { s
           <feGaussianBlur stdDeviation="2.2" />
         </filter>
       </defs>
-      <rect x="0.5" y="0.5" width="63" height="63" rx="16" fill="#111114" stroke={`url(#${rim})`} />
+      <path d={TILE} fill="#111114" stroke={`url(#${rim})`} />
       {/* The warm tile: a faint red cast and a warm rim, cross-faded over the calm one. */}
       <g className="bm-tone" opacity={alert ? 1 : 0}>
-        <rect x="0.5" y="0.5" width="63" height="63" rx="16" fill="#1a0f0e" stroke={`url(#${rimAlert})`} />
+        <path d={TILE} fill="#1a0f0e" stroke={`url(#${rimAlert})`} />
       </g>
       <rect x="11" y="30" width="42" height="4" rx="2" fill="#fff" fillOpacity="0.14" />
       <g className="bm-tone" opacity={alert ? 0 : 1}>
