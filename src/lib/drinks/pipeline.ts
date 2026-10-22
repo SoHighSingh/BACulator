@@ -5,7 +5,7 @@ import { roundUpToTenth } from "./standards";
 import type { ParsedItem, ParseResult, ParseSource } from "./types";
 
 /** Bump when parsing rules or the catalog change in a way that should invalidate cached parses. */
-export const PARSER_VERSION = 2;
+export const PARSER_VERSION = 3;
 
 export interface BartenderDeps {
   index: CatalogIndex;

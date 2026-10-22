@@ -68,6 +68,11 @@ export interface ParsedItem {
   confidence: number;
   source: ParseSource;
   catalogId: string | null;
+  /**
+   * Mixer(s) named with a spirit ("Red Bull" in "Vodka & Red Bull"). Already part of `name`; the
+   * mixer adds no alcohol, so volumeMl / abv / standards are the spirit's alone.
+   */
+  mixer?: string;
   /** Which of volume / abv / count were assumed rather than read from the text. */
   assumed: ("volume" | "abv" | "count")[];
 }
