@@ -17,7 +17,7 @@ const caller = createCallerFactory(postRouter)({
   db: db as never,
   session: { user: { id: "user-1" }, expires: "2099-01-01T00:00:00.000Z" },
   headers: new Headers(),
-} as never);
+});
 
 beforeEach(() => {
   userUpdate.mockReset();

@@ -159,7 +159,7 @@ async function pruneExpired(db: PrismaClient) {
 function getAi(): AiRunner | null {
   try {
     const { env } = getCloudflareContext();
-    return (env.AI as unknown as AiRunner | undefined) ?? null;
+    return (env.AI) ?? null;
   } catch {
     return null;
   }
@@ -179,7 +179,7 @@ export async function analyseDrinkText(db: PrismaClient, userId: string, text: s
     cacheGet: async (norm) => {
       const key = cacheKey(norm, region);
       const row = await db.parseCache.findUnique({ where: { key } });
-      if (!row || row.version !== PARSER_VERSION) return null;
+      if (row?.version !== PARSER_VERSION) return null;
       if (Date.now() - row.createdAt.getTime() > CACHE_TTL_MS) return null;
       await db.parseCache.update({ where: { key }, data: { hits: { increment: 1 } } });
       return parseJson<ParsedItem[] | null>(row.items, null);

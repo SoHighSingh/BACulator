@@ -40,7 +40,7 @@ function restAi(): AiRunner | null {
         body: JSON.stringify(inputs),
       });
       if (!res.ok) throw new Error(`Workers AI HTTP ${res.status}: ${await res.text()}`);
-      return ((await res.json()) as { result: unknown }).result;
+      return (await res.json<{ result: unknown }>()).result;
     },
   };
 }

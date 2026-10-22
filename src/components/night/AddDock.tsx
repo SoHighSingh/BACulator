@@ -103,7 +103,7 @@ export function AddDock(props: AddDockProps) {
   useEffect(() => setHasVoice(!!speechCtor()), []);
 
   const onDevice = useMemo(() => (text.trim().length >= 2 ? readOnDevice(text.trim(), region.id) : null), [text, region.id]);
-  const result = onDevice ?? (server && server.text === text.trim() ? server.result : null);
+  const result = onDevice ?? (server?.text === text.trim() ? server.result : null);
   const live = notice && now.getTime() - notice.at < UNDO_WINDOW_MS ? notice : null;
 
   function close() {

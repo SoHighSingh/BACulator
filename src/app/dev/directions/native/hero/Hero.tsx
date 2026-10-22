@@ -90,7 +90,7 @@ export default function Hero() {
               <button
                 type="button"
                 onClick={night.undo}
-                disabled={!night.notice || night.notice.kind !== "added"}
+                disabled={night.notice?.kind !== "added"}
                 className="ml-3 min-h-12 px-1 text-ink-2 underline underline-offset-4 disabled:hidden"
               >
                 Undo
