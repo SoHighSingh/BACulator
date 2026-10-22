@@ -100,11 +100,17 @@ export const regionWeightToKg = (weight: number, region: Region) =>
   region.weightUnit === "lb" ? Math.round((weight / LB_PER_KG) * 10) / 10 : weight;
 
 /**
- * Quick-pick serves with their stored (10 g) standards, rounded up to hundredths: rounding up to
- * tenths in 10 g units turned a 12 oz US beer (14.0 g) into "1.1" US standard drinks.
+ * The one rounding a drink gets before it's logged: up to a tenth of the region's own standard
+ * drink (never down), stored back in 10 g units. Shown with formatStandards it reads exactly as
+ * logged, and rounding it again changes nothing. It forgives a thousandth of a standard (about
+ * 0.01 g), so a 355 ml US beer at 5% (14.005 g) is "1.0" US standard drinks, not "1.1".
  */
+export const loggedStandards = (stored: number, region: Region) =>
+  fromRegionStandards(Math.ceil(toRegionStandards(stored, region) * 10 - 0.01) / 10, region);
+
+/** Quick-pick serves with their stored (10 g) standards, as they'll be logged. */
 export const servesFor = (region: Region) =>
   region.serves.map((s) => ({
     ...s,
-    standards: Math.ceil(rawStandards(1, s.volumeMl, s.abv) * 100 - 1e-6) / 100,
+    standards: loggedStandards(rawStandards(1, s.volumeMl, s.abv), region),
   }));

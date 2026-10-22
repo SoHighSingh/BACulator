@@ -31,7 +31,7 @@ function hoursMinutes(hours: number) {
  * from the same functions the night screen runs (bac-calculator.ts and estimate-display.ts).
  */
 export function CodePanel({ demo }: { demo: DemoNight }) {
-  const { model, result, drinks, sex, now } = demo;
+  const { result, drinks, sex, now } = demo;
   const r = sex === "male" ? 0.68 : 0.55;
   const grams = Math.round(drinks.reduce((sum, d) => sum + d.standards * 10, 0));
   const allAtOnce = grams / (r * DEMO_WEIGHT * 10);
@@ -44,12 +44,10 @@ export function CodePanel({ demo }: { demo: DemoNight }) {
   const lines: { name: string; formula: ReactNode; value: string }[] = [
     { name: "drinks", formula: <>{drinks.length} × <N>10</N> g</>, value: `${grams} g` },
     { name: "body", formula: <>r × kg = <N>{r.toFixed(2)}</N> × <N>{DEMO_WEIGHT}</N></>, value: `${sex}, ${DEMO_WEIGHT} kg` },
-    { name: "all at once", formula: <>grams ÷ (r × kg × <N>10</N>)</>, value: allAtOnce.toFixed(3) },
-    { name: "now", formula: <>absorbed over <N>30</N> min, cleared <N>0.015</N> an hour</>, value: bac.toFixed(4) },
-    { name: "shown", formula: <>rounded up</>, value: `about ${point}` },
+    { name: "all at once", formula: <>grams ÷ (r × kg × <N>10</N>)</>, value: (Math.ceil(allAtOnce * 100) / 100).toFixed(2) },
+    { name: "now", formula: <>absorbed over <N>30</N> min, cleared <N>0.015</N> an hour, rounded up</>, value: `about ${point}` },
     { name: "likely", formula: <>now × <N>0.75</N> … <N>1.4</N></>, value: band },
     { name: "zero", formula: <>{hours > 0 ? hoursMinutes(hours) : "now"} × <N>0.75</N> … <N>1.6</N></>, value: zero },
-    { name: "drive", formula: <>while any drink counts</>, value: model.notSafeToDrive ? "not safe" : "no drinks" },
   ];
 
   return (

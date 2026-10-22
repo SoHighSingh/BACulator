@@ -6,6 +6,7 @@ import {
   guessRegion,
   isRegionId,
   kgToRegionWeight,
+  loggedStandards,
   REGIONS,
   regionWeightToKg,
   servesFor,
@@ -61,5 +62,22 @@ describe("region", () => {
     expect((Math.round(toRegionStandards(beer.standards, us) * 10) / 10).toFixed(1)).toBe("1.0");
     // Never rounded below the alcohol actually in the serve.
     for (const s of servesFor(metric)) expect(s.standards * 10).toBeGreaterThanOrEqual((s.volumeMl * s.abv * 0.789) / 100 - 1e-9);
+  });
+
+  it("rounds a drink up once, in the region's own units, so the shown amount is what gets logged", () => {
+    const shown = (stored: number, region: typeof metric) => (Math.round(toRegionStandards(stored, region) * 10) / 10).toFixed(1);
+    // A metric schooner (425 ml at 4.8%) is 1.61 standards: it shows and logs as 1.7, never 1.6 then 1.7.
+    expect(shown(loggedStandards(1.61, metric), metric)).toBe("1.7");
+    for (const region of [metric, us]) {
+      for (const s of servesFor(region)) {
+        // Logging a serve's amount again changes nothing: one rounding, not two.
+        expect(loggedStandards(s.standards, region)).toBeCloseTo(s.standards, 9);
+        expect(shown(loggedStandards(s.standards, region), region)).toBe(shown(s.standards, region));
+      }
+      for (const raw of [0.05, 0.33, 1.4, 1.61, 2.04, 7.77]) {
+        expect(loggedStandards(raw, region)).toBeGreaterThanOrEqual(raw - 0.002);
+        expect(loggedStandards(loggedStandards(raw, region), region)).toBeCloseTo(loggedStandards(raw, region), 9);
+      }
+    }
   });
 });

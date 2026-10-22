@@ -5,7 +5,7 @@ import type { NewDrink } from "~/hooks/useNight";
 import { useRegion } from "~/hooks/useRegion";
 import { rawStandards } from "~/lib/drinks/standards";
 import { drinkLabel } from "~/lib/estimate-display";
-import { formatVolume, servesFor } from "~/lib/region";
+import { formatVolume, loggedStandards, servesFor } from "~/lib/region";
 import type { QuickDrink } from "./AddDock";
 import { sizesFor } from "./add/sizes";
 import { DrinkIcon, drinkKind } from "./DrinkIcon";
@@ -24,7 +24,6 @@ interface AddSheetProps {
 }
 
 const MAX_COUNT = 6;
-const ceil10 = (n: number) => Math.ceil(n * 10 - 1e-9) / 10; // never round a drink down
 
 const ROW = "press flex w-full items-center gap-4 rounded-row bg-white/[0.05] px-4 py-4 text-left shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] hover:bg-white/[0.08]";
 const ICON_TILE = "grid size-11 shrink-0 place-items-center rounded-tile bg-white/[0.06] text-ink-2";
@@ -55,13 +54,12 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
   const serve = picked === null ? null : serves[picked]!;
   const sizes = serve ? sizesFor(serve, region) : [];
   const size = serve ? (sizes.find((s) => s.volumeMl === (volumeMl ?? serve.volumeMl)) ?? sizes[0]!) : null;
-  const unitStandards = serve && size ? Math.ceil(rawStandards(1, size.volumeMl, serve.abv) * 100 - 1e-6) / 100 : 0;
-  const standards = ceil10(unitStandards * count);
+  const standards = serve && size ? loggedStandards(rawStandards(count, size.volumeMl, serve.abv), region) : 0;
 
   function quickAdd(i: number) {
     const s = serves[i]!;
     const added = onAdd({
-      standards: ceil10(s.standards),
+      standards: s.standards,
       finishedAt: new Date(),
       details: { name: s.label, volumeMl: s.volumeMl, abv: s.abv, count: 1, source: "manual", confidence: 1, rawText: "" },
     });
@@ -131,7 +129,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
                     <span className="min-w-0 flex-1">
                       <span className="block text-lg leading-snug font-medium">{s.size}</span>
                       <span className="block text-lg leading-snug text-ink-2 tabular-nums">
-                        {formatVolume(s.volumeMl, region)} · {std(Math.ceil(rawStandards(1, s.volumeMl, serve.abv) * 100 - 1e-6) / 100)} std
+                        {formatVolume(s.volumeMl, region)} · {std(loggedStandards(rawStandards(1, s.volumeMl, serve.abv), region))} std
                       </span>
                     </span>
                     <span className={`grid size-7 shrink-0 place-items-center rounded-circle ${on ? "bg-ink text-bg" : "shadow-[inset_0_0_0_1.5px_var(--color-line)]"}`}>
