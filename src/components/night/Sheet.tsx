@@ -35,6 +35,9 @@ export function Sheet({ open, onOpenChange, title, description, children, keyboa
   const shownDescription = useHeld(open, description);
   const content = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: number; y: number; t: number; dy: number; v: number } | null>(null);
+  // What had focus when it opened. These sheets open from state, not a Radix Trigger, so Radix alone
+  // would drop focus on <body> when they close; this hands it back to the key or row that opened it.
+  const opener = useRef<HTMLElement | null>(null);
 
   function settle(el: HTMLElement) {
     delete el.dataset.dragging;
@@ -85,6 +88,16 @@ export function Sheet({ open, onOpenChange, title, description, children, keyboa
           ref={content}
           className="glass glass-strong sheet app-shell fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] w-full max-w-[520px] flex-col rounded-t-sheet text-ink outline-none"
           style={{ paddingBottom: `max(${keyboardInset}px, env(safe-area-inset-bottom))` }}
+          onOpenAutoFocus={() => {
+            opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(e) => {
+            const el = opener.current;
+            opener.current = null;
+            if (!el?.isConnected || el === document.body) return;
+            e.preventDefault();
+            el.focus({ preventScroll: true });
+          }}
         >
           <div
             className="shrink-0 cursor-grab touch-none select-none active:cursor-grabbing"

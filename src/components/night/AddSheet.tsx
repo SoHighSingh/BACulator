@@ -70,11 +70,17 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent,
   const name = named && Math.abs(named.standards - standards) < 1e-9 ? named : null;
   const label = drinkLabel({ name: name?.details.name, standards }, std);
 
+  /** On to When. The key that did it goes away, so focus goes to the When tab, not the sheet itself. */
+  function toWhen() {
+    setStep("when");
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('[role="dialog"] [aria-current="step"]')?.focus({ preventScroll: true }));
+  }
+
   function choose(p: Prefill) {
     setStandards(p.standards);
     setNamed(p);
     setPicking(false);
-    setStep("when");
+    toWhen();
   }
 
   function add() {
@@ -111,7 +117,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent,
             <AmountControl
               standards={standards}
               onChange={(s) => setStandards(s)}
-              onEnter={() => setStep("when")}
+              onEnter={toWhen}
             />
 
             {recents.length > 0 && (
@@ -162,7 +168,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent,
             </button>
 
             <div className={STICKY}>
-              <button type="button" onClick={() => setStep("when")} className={PRIMARY}>
+              <button type="button" onClick={toWhen} className={PRIMARY}>
                 Next: when
               </button>
             </div>
