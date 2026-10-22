@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { signIn } from "next-auth/react";
 
-import { SIGNED_OUT, useNight, type LoggedDrink, type NewDrink } from "~/hooks/useNight";
+import { SIGNED_OUT, useNight, type DrinkChange, type LoggedDrink, type NewDrink } from "~/hooks/useNight";
 import { describeNight } from "~/lib/estimate-display";
 import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
 import { BACGraphModal } from "../BACGraphModal";
@@ -17,18 +17,19 @@ interface NightScreenProps {
   onOpenUserInfo: () => void;
 }
 
+/** The screen's clock, and a way to move it on at once (a drink stamped "now" counts straight away). */
 function useMinuteClock() {
   const [now, setNow] = useState(() => new Date());
+  const tick = useCallback(() => setNow(new Date()), []);
   useEffect(() => {
-    const tick = () => setNow(new Date());
     const id = setInterval(tick, 30_000);
     document.addEventListener("visibilitychange", tick);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, []);
-  return now;
+  }, [tick]);
+  return [now, tick] as const;
 }
 
 const toQuick = (d: LoggedDrink | QuickDrink): QuickDrink => ({
@@ -52,7 +53,7 @@ const STACK_MS = 15_000;
 
 /** The signed-in night-out screen. One job: record the drink you just got, and know it worked. */
 export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreenProps) {
-  const now = useMinuteClock();
+  const [now, tick] = useMinuteClock();
   const night = useNight();
   const [addOpen, setAddOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
@@ -76,6 +77,7 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
       if (fromTap && isDoubleTap(lastTap.current, key, at)) return false;
       lastTap.current = { key, at };
       const shown = night.add(drink);
+      tick();
       buzz();
       setNotice((n) =>
         n?.kind === "added" && drinkKey(n.drink) === key && at - n.at < STACK_MS
@@ -84,7 +86,7 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
       );
       return true;
     },
-    [night],
+    [night, tick],
   );
 
   function quickAdd(drink: QuickDrink) {
@@ -108,33 +110,31 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
   function remove(drink: LoggedDrink) {
     setNotice({ kind: "removed", drink, at: Date.now(), count: 1 });
     night.remove(drink.id);
+    tick();
   }
 
-  // An edit is a replace through the same outbox as adds and removes, so it works with no signal and
-  // a replay never doubles it. The notice offers "Undo" back to the old version via Add back.
-  function saveEdit(drink: LoggedDrink, change: { standards: number; finishedAt: Date }) {
+  // An edit changes the drink in place (same id, same row), through the same outbox as adds and
+  // removes, so it works with no signal. Undo puts the old values back.
+  function saveEdit(drink: LoggedDrink, change: DrinkChange | null) {
     setEditing(null);
-    if (change.standards === drink.standards && change.finishedAt.getTime() === drink.finishedAt.getTime()) return;
-    night.remove(drink.id);
-    const shown = night.add({
-      standards: change.standards,
-      finishedAt: change.finishedAt,
-      details: {
-        name: drink.name ?? undefined,
-        volumeMl: drink.volumeMl ?? undefined,
-        abv: drink.abv ?? undefined,
-        count: drink.count ?? undefined,
-        source: "edited",
-      },
-    });
-    setNotice({ kind: "added", drink: shown, at: Date.now(), count: 1 });
+    if (!change) return;
+    night.update(drink, change);
+    tick();
+    setNotice({ kind: "changed", drink: { ...drink, ...change }, before: drink, at: Date.now(), count: 1 });
   }
 
-  // Undo removes the latest add; Add back restores the latest removal. Each mirrors the other,
-  // so a wrong tap on either is always reversible.
+  // Undo removes the latest add or reverses the latest edit; Add back restores the latest removal.
+  // Each mirrors the other, so a wrong tap on either is always reversible.
   function undo() {
     if (!notice) return;
+    tick();
     const { drink } = notice;
+    if (notice.kind === "changed") {
+      const { before } = notice;
+      night.update(drink, { standards: before.standards, finishedAt: before.finishedAt });
+      setNotice({ kind: "changed", drink: before, before: drink, at: Date.now(), count: 1 });
+      return;
+    }
     if (notice.kind === "added") {
       night.remove(drink.id);
       setNotice(

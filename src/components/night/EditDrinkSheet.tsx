@@ -1,10 +1,11 @@
 import { Minus, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import type { LoggedDrink } from "~/hooks/useNight";
+import type { DrinkChange, LoggedDrink } from "~/hooks/useNight";
 import { useRegion } from "~/hooks/useRegion";
 import { drinkLabel, formatStandards } from "~/lib/estimate-display";
 import { minutesAgoScale, standardsScale } from "~/lib/log-scale";
+import { editChange } from "~/lib/night-model";
 import { fromRegionStandards, toRegionStandards } from "~/lib/region";
 import { Sheet } from "./Sheet";
 import { TimeControl } from "./TimeControl";
@@ -13,7 +14,8 @@ interface EditDrinkSheetProps {
   drink: LoggedDrink | null;
   now: Date;
   onClose: () => void;
-  onSave: (drink: LoggedDrink, change: { standards: number; finishedAt: Date }) => void;
+  /** Only what changed; null when nothing did. */
+  onSave: (drink: LoggedDrink, change: DrinkChange | null) => void;
 }
 
 /**
@@ -25,9 +27,13 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
   const { region, std } = useRegion();
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [standards, setStandards] = useState(1);
+  // The time is kept exactly as logged unless the person moves it: the slider shows the nearest
+  // step, and saving an untouched time must not move the drink to that step.
+  const [timeTouched, setTimeTouched] = useState(false);
 
   useEffect(() => {
     if (!drink) return;
+    setTimeTouched(false);
     // Snapped to the time slider's own rungs (1 min near now, coarser further back).
     setMinutesAgo(minutesAgoScale.snap((now.getTime() - drink.finishedAt.getTime()) / 60_000));
     setStandards(drink.standards);
@@ -55,7 +61,16 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
         <>
           <p className="text-ink-2 text-lg">When you finished it</p>
           <div className="mt-2">
-            <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} startOpen wrap />
+            <TimeControl
+              minutesAgo={minutesAgo}
+              onChange={(m) => {
+                setMinutesAgo(m);
+                setTimeTouched(true);
+              }}
+              now={now}
+              startOpen
+              wrap
+            />
           </div>
 
           <div className="mt-6 flex items-center justify-between gap-3">
@@ -87,12 +102,7 @@ export function EditDrinkSheet({ drink, now, onClose, onSave }: EditDrinkSheetPr
 
           <button
             type="button"
-            onClick={() =>
-              onSave(drink, {
-                standards,
-                finishedAt: new Date(now.getTime() - minutesAgo * 60_000),
-              })
-            }
+            onClick={() => onSave(drink, editChange(drink, { standards, minutesAgo }, timeTouched, now))}
             className="press key-glow bg-ink text-bg mt-6 flex min-h-16 w-full items-center justify-center rounded-primary text-xl font-medium"
           >
             Save

@@ -9,6 +9,7 @@ import { buildIndex, parseWithCatalog } from "~/lib/drinks/parse";
 import { SERVE_SIZES, servesForRegion } from "~/lib/drinks/serves";
 import type { ParseResult } from "~/lib/drinks/types";
 import { drinkLabel, timeAgo } from "~/lib/estimate-display";
+import { formatClock } from "~/lib/format-clock";
 import type { RegionId } from "~/lib/region";
 import { api } from "~/trpc/react";
 import { DrinkIcon, drinkKind } from "./DrinkIcon";
@@ -24,9 +25,19 @@ export interface QuickDrink {
 
 export type Notice =
   | { kind: "added"; drink: LoggedDrink; at: number; count: number }
-  | { kind: "removed"; drink: LoggedDrink; at: number; count: number };
+  | { kind: "removed"; drink: LoggedDrink; at: number; count: number }
+  /** An edit: `drink` as it is now, `before` as it was, for Undo. */
+  | { kind: "changed"; drink: LoggedDrink; before: LoggedDrink; at: number; count: number };
 
 // Undo stays on screen this long after an add or remove (the skill's floor is 10 s).
+/** What an edit changed, for the notice: "7:45 pm", "2.0 std", or both. */
+function changeSummary(before: LoggedDrink, after: LoggedDrink, std: (stored: number) => string) {
+  const parts: string[] = [];
+  if (before.finishedAt.getTime() !== after.finishedAt.getTime()) parts.push(formatClock(after.finishedAt, { period: true }));
+  if (before.standards !== after.standards) parts.push(`${std(after.standards)} std`);
+  return parts.join(", ");
+}
+
 export const UNDO_WINDOW_MS = 2 * 60 * 1000;
 
 interface AddDockProps {
@@ -170,8 +181,9 @@ export function AddDock(props: AddDockProps) {
   if (live) {
     status = (
       <>
-        <span className="text-ink-2">{live.kind === "added" ? "Added: " : "Removed: "}</span>
+        <span className="text-ink-2">{live.kind === "added" ? "Added: " : live.kind === "changed" ? "Changed: " : "Removed: "}</span>
         <span className="font-medium">{drinkLabel(live.drink, std)}</span>
+        {live.kind === "changed" && <span className="text-ink-2"> · {changeSummary(live.before, live.drink, std)}</span>}
         {live.count > 1 && <span className="font-medium"> ×{live.count}</span>}
       </>
     );
@@ -201,7 +213,7 @@ export function AddDock(props: AddDockProps) {
           </p>
           {live && (
             <button type="button" onClick={props.onUndo} className="press min-h-12 shrink-0 rounded-key bg-white/10 px-4 text-lg font-medium hover:bg-white/15">
-              {live.kind === "added" ? (live.count > 1 ? "Undo one" : "Undo") : "Add back"}
+              {live.kind === "removed" ? "Add back" : live.count > 1 ? "Undo one" : "Undo"}
             </button>
           )}
         </div>

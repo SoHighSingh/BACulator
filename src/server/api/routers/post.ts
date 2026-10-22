@@ -47,16 +47,7 @@ async function cleanupOldTabs(db: PrismaClient, userId: string) {
 // A very heavy night can take more than a day to clear, so the estimate looks back 48 hours
 // (NIGHT_WINDOW_MS).
 
-// An edited drink time must be real, not in the future (a little slack for clock skew), and inside the window.
-const drinkTime = z
-  .string()
-  .datetime()
-  .refine((iso) => {
-    const t = Date.parse(iso);
-    return t <= Date.now() + 5 * 60 * 1000 && t >= Date.now() - NIGHT_WINDOW_MS;
-  }, "Drink time must be within the last 48 hours");
-
-// A new drink, possibly queued on a phone with a wrong clock or held offline for days: any real
+// A new or edited drink, possibly queued on a phone with a wrong clock or held offline for days: any real
 // time is accepted and moved onto the server clock (serverDrinkTime), never refused. Refusing it
 // deleted the drink from the phone's queue.
 const addTime = z.string().datetime();
@@ -257,19 +248,27 @@ export const postRouter = createTRPCRouter({
         return saved;
       }
     }),
+  // An edit from the phone's outbox: only the fields that changed, by server id or by the phone's
+  // clientId (an edit can be queued before the add has synced). Like an add, a queued time is moved
+  // onto the server clock and never refused, so an edit held offline isn't lost.
   updateDrink: consentedProcedure
     .input(z.object({
-      drinkId,
-      standards: z.number().positive().max(200), // a US handle of spirits is about 55
-      finishedAt: drinkTime,
+      target: z.union([z.object({ drinkId }), z.object({ clientId })]),
+      standards: z.number().positive().max(200).optional(), // a US handle of spirits is about 55
+      finishedAt: addTime.optional(),
+      clientNow: addTime.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await findOwnDrink(ctx.db, ctx.session.user.id, input.drinkId);
+      const userId = ctx.session.user.id;
+      const { target } = input;
+      const drink =
+        "drinkId" in target ? await findOwnDrink(ctx.db, userId, target.drinkId) : await findByClientId(ctx.db, userId, target.clientId);
+      if (!drink) throw new TRPCError({ code: "NOT_FOUND", message: "Drink not found" });
       return ctx.db.drink.update({
-        where: { id: input.drinkId },
+        where: { id: drink.id },
         data: {
-          standards: input.standards,
-          finishedAt: new Date(input.finishedAt),
+          ...(input.standards !== undefined && { standards: input.standards }),
+          ...(input.finishedAt !== undefined && { finishedAt: serverDrinkTime(input.finishedAt, input.clientNow, Date.now()) }),
         },
       });
     }),

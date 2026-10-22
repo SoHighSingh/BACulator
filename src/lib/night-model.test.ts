@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  editChange,
   isDoubleTap,
   mergeNight,
   outboxView,
+  planRemoval,
   pickRepeatAndRecents,
   prunePending,
   syncFailure,
@@ -149,5 +151,83 @@ describe("pickRepeatAndRecents", () => {
     const out = pickRepeatAndRecents(null, [r("Red"), r("Cider")], 2);
     expect(out.repeat?.name).toBe("Red");
     expect(out.others.map((o) => o.name)).toEqual(["Cider"]);
+  });
+});
+
+// The user's report (22 Oct): "I added that drink, edited it to be 3.5 hours ago and then the
+// previous drink changed to be finished JUST now." An edit was remove + add, and remove forgot a
+// queued add that had already reached the server, so the original stayed at "just now".
+describe("editing a drink", () => {
+  const at = (h: number, m: number) => new Date(2026, 9, 22, h, m);
+  const P: NightDrink = { id: "s-p", clientId: "c-p", standards: 1, finishedAt: at(23, 11), name: "Vodka soda", volumeMl: 30, abv: 40, count: 1 };
+  const X: NightDrink = { ...P, id: "s-x", clientId: "c-x", finishedAt: at(23, 17) }; // saved on the server...
+  const addX: OutboxEntry = {
+    clientId: "c-x",
+    op: "add",
+    payload: { clientId: "c-x", standards: 1, finishedAt: at(23, 17).toISOString(), details: { name: "Vodka soda" } },
+    createdAt: 0,
+    userId: "u",
+  }; // ...but its reply was lost, so it's still queued
+  const update = (finishedAt: Date, standards?: number): OutboxEntry => ({
+    clientId: "e-1",
+    op: "update",
+    payload: { target: { clientId: "c-x" }, finishedAt: finishedAt.toISOString(), standards },
+    createdAt: 0,
+    userId: "u",
+  });
+
+  it("moves only the edited drink, keeping its identity; the previous drink keeps its time", () => {
+    const { pending, removals, updates } = outboxView([addX, update(at(19, 47))]);
+    const shown = mergeNight([P, X], pending, removals, updates); // the server still returns X as it was
+    expect(shown).toHaveLength(2);
+    expect(shown.find((d) => d.id === "s-p")!.finishedAt).toEqual(at(23, 11));
+    expect(shown.find((d) => d.id === "s-x")!.finishedAt).toEqual(at(19, 47));
+  });
+
+  it("applies an edit to a drink that's still only on this phone", () => {
+    const { pending, removals, updates } = outboxView([addX, update(at(19, 47), 2)]);
+    const shown = mergeNight([P], pending, removals, updates);
+    expect(shown.map((d) => [d.id, d.finishedAt.getTime(), d.standards])).toEqual([
+      ["s-p", at(23, 11).getTime(), 1],
+      ["c-x", at(19, 47).getTime(), 2],
+    ]);
+  });
+
+  it("applies queued edits in order, so Undo puts the old values back", () => {
+    const { pending, removals, updates } = outboxView([update(at(19, 47), 2), { ...update(at(23, 17), 1), clientId: "e-2" }]);
+    const shown = mergeNight([P, X], pending, removals, updates);
+    expect(shown.find((d) => d.id === "s-x")).toMatchObject({ finishedAt: at(23, 17), standards: 1 });
+  });
+
+  it("an edit for a drink that's gone is done, not an error", () => {
+    expect(syncFailure("NOT_FOUND", "update")).toBe("done");
+  });
+
+  it("sends only what changed, and never moves a time that wasn't touched", () => {
+    const now = at(23, 30);
+    expect(editChange(X, { standards: 1, minutesAgo: 13 }, false, now)).toBeNull();
+    expect(editChange(X, { standards: 2, minutesAgo: 15 }, false, now)).toEqual({ standards: 2 });
+    expect(editChange(X, { standards: 1, minutesAgo: 210 }, true, now)).toEqual({ finishedAt: at(20, 0) });
+  });
+});
+
+describe("planRemoval", () => {
+  const X: NightDrink = { ...drink("s-x"), clientId: "c-x" };
+
+  it("deletes on the server even when the add is still queued (its reply may have been lost)", () => {
+    expect(planRemoval(X, X.id, { seq: 5 }, null)).toEqual({ forgetQueued: true, send: { clientId: "c-x" } });
+  });
+
+  it("doesn't pull an add out from under its own send", () => {
+    expect(planRemoval(X, X.id, { seq: 5 }, 5)).toEqual({ forgetQueued: false, send: { clientId: "c-x" } });
+  });
+
+  it("forgets an add that never left the phone without a network call", () => {
+    expect(planRemoval(X, X.id, { seq: -1 }, null)).toEqual({ forgetQueued: true, send: null });
+  });
+
+  it("deletes a saved drink by its server id", () => {
+    expect(planRemoval(X, X.id, undefined, null)).toEqual({ forgetQueued: false, send: { drinkId: "s-x" } });
+    expect(planRemoval(drink("old"), "old", undefined, null)).toEqual({ forgetQueued: false, send: { drinkId: "old" } });
   });
 });

@@ -9,12 +9,15 @@ import {
   markUnsynced,
   mergeNight,
   outboxView,
+  planRemoval,
   stuckExpired,
   syncFailure,
+  targetOf,
   type AddPayload,
   type NightDrink,
   type OutboxEntry,
   type Removal,
+  type UpdatePayload,
 } from "~/lib/night-model";
 import { listOutbox, markOutboxStuck, putOutbox, removeOutbox, type StoredEntry } from "~/lib/outbox";
 import { claimOfflineCache } from "~/trpc/offline-cache";
@@ -27,6 +30,12 @@ export interface NewDrink {
 }
 
 export type LoggedDrink = NightDrink;
+
+/** An edit: only what changed. */
+export interface DrinkChange {
+  standards?: number;
+  finishedAt?: Date;
+}
 
 const errorCode = (e: unknown) => (e instanceof TRPCClientError ? (e.data as { code?: string } | undefined)?.code : undefined);
 
@@ -95,8 +104,8 @@ export function useNight() {
   );
 
   const drinks = useMemo(() => {
-    const { pending, removals } = outboxView(queue);
-    const shown = mergeNight(server, pending, removals);
+    const { pending, removals, updates } = outboxView(queue);
+    const shown = mergeNight(server, pending, removals, updates);
     return markUnsynced(shown, waiting, new Set(queue.flatMap((e) => (e.stuck ? [e.clientId] : []))));
   }, [server, queue, waiting]);
 
@@ -113,21 +122,28 @@ export function useNight() {
         if (entry.op === "add") {
           // The phone's clock at send time lets the server correct a fast or slow clock.
           const created = await utils.client.post.addDrink.mutate({ ...entry.payload, clientNow: new Date().toISOString() }, { signal });
+          // A refetch that started before this landed mustn't overwrite it with an older list.
+          await utils.post.getNight.cancel();
           utils.post.getNight.setData(undefined, (prev) =>
             prev && !prev.some((d) => d.id === created.id) ? [...prev, created] : prev,
           );
+        } else if (entry.op === "update") {
+          const updated = await utils.client.post.updateDrink.mutate({ ...entry.payload, clientNow: new Date().toISOString() }, { signal });
+          await utils.post.getNight.cancel();
+          utils.post.getNight.setData(undefined, (prev) => prev?.map((d) => (d.id === updated.id ? updated : d)));
         } else {
           await utils.client.post.deleteDrink.mutate(entry.payload, { signal });
-          dropFromNight(entry.payload);
+          await dropFromNight(entry.payload);
         }
         return "done" as const;
       } catch (e) {
         const outcome = syncFailure(errorCode(e), entry.op);
-        if (outcome === "done" && entry.op === "delete") dropFromNight(entry.payload);
+        if (outcome === "done" && entry.op === "delete") await dropFromNight(entry.payload);
         return outcome;
       }
 
-      function dropFromNight(removal: Removal) {
+      async function dropFromNight(removal: Removal) {
+        await utils.post.getNight.cancel();
         utils.post.getNight.setData(undefined, (prev) =>
           prev?.filter((d) => ("drinkId" in removal ? d.id !== removal.drinkId : d.clientId !== removal.clientId)),
         );
@@ -179,11 +195,15 @@ export function useNight() {
             setError(SIGNED_OUT);
             return;
           }
-          if (outcome === "drop" && entry.op === "add") {
-            // Never delete a drink someone logged: keep it on this phone, still in the estimate.
+          if (outcome === "drop" && entry.op !== "delete") {
+            // Never lose a drink or a change someone made: keep it on this phone, still in the estimate.
             const stuck = await markOutboxStuck(entry);
             setQueue((q) => q.map((x) => (x.seq === entry.seq ? stuck : x)));
-            setError("A drink couldn't be added to your account. It's kept on this phone and still counts in your estimate.");
+            setError(
+              entry.op === "add"
+                ? "A drink couldn't be added to your account. It's kept on this phone and still counts in your estimate."
+                : "A change to a drink couldn't be saved to your account. It's kept on this phone and still counts in your estimate.",
+            );
             continue;
           }
           if (outcome === "drop") setError("A drink couldn't be removed from your account. Try removing it again.");
@@ -275,9 +295,9 @@ export function useNight() {
       const target = drinks.find((d) => d.id === id) ?? drinks.find((d) => d.clientId === id);
       const clientId = target?.clientId ?? null;
       const queuedAdd = clientId ? queue.find((e) => e.op === "add" && e.clientId === clientId) : undefined;
+      const plan = planRemoval(target, id, queuedAdd, inFlight.current);
 
-      if (queuedAdd && queuedAdd.seq !== inFlight.current) {
-        // Never sent: forget it here, and nothing ever reaches the server.
+      if (queuedAdd && plan.forgetQueued) {
         setQueue((q) => q.filter((x) => x !== queuedAdd));
         if (queuedAdd.seq < 0) {
           cancelledUnstored.current.add(`add|${queuedAdd.clientId}`);
@@ -285,15 +305,38 @@ export function useNight() {
           cancelledSeqs.current.add(queuedAdd.seq);
           void removeOutbox(queuedAdd.seq);
         }
-        return true;
       }
-      // On the server already (its id isn't the client id): delete by server id.
-      const isSaved = target && target.id !== target.clientId;
-      const payload: Removal = isSaved ? { drinkId: target.id } : clientId ? { clientId } : { drinkId: id };
-      enqueue({ clientId: clientId ?? crypto.randomUUID(), op: "delete", payload, createdAt: Date.now(), userId: userId ?? "" });
+      // A queued add may have reached the server already, so its delete goes too (NOT_FOUND is fine).
+      if (plan.send) enqueue({ clientId: clientId ?? crypto.randomUUID(), op: "delete", payload: plan.send, createdAt: Date.now(), userId: userId ?? "" });
       return true;
     },
     [drinks, queue, enqueue, userId],
+  );
+
+  /**
+   * Changes a drink in place: it keeps its id, name and place, and only the changed fields are
+   * sent, after any add still queued for it. An add the server refused is never sent again, so an
+   * edit to it is made to the add itself, on this phone.
+   */
+  const update = useCallback(
+    (drink: NightDrink, change: DrinkChange) => {
+      setError(null);
+      const payload: UpdatePayload = {
+        target: targetOf(drink),
+        ...(change.standards !== undefined && { standards: change.standards }),
+        ...(change.finishedAt && { finishedAt: change.finishedAt.toISOString() }),
+      };
+      const stuckAdd = drink.clientId ? queue.find((e) => e.op === "add" && e.stuck && e.clientId === drink.clientId) : undefined;
+      if (stuckAdd?.op === "add") {
+        const { standards = stuckAdd.payload.standards, finishedAt = stuckAdd.payload.finishedAt } = payload;
+        const edited: StoredEntry = { ...stuckAdd, payload: { ...stuckAdd.payload, standards, finishedAt } };
+        setQueue((q) => q.map((x) => (x.seq === stuckAdd.seq ? edited : x)));
+        void markOutboxStuck(edited);
+        return;
+      }
+      enqueue({ clientId: crypto.randomUUID(), op: "update", payload, createdAt: Date.now(), userId: userId ?? "" });
+    },
+    [queue, enqueue, userId],
   );
 
   return {
@@ -305,5 +348,6 @@ export function useNight() {
     error,
     add,
     remove,
+    update,
   };
 }

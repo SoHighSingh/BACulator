@@ -33,12 +33,29 @@ export interface PendingDrink {
 /** A removal waiting to reach the server, by server id or by the id this device gave the drink. */
 export type Removal = { drinkId: string } | { clientId: string };
 
+/** A change to a drink waiting to reach the server: only the fields that changed. */
+export interface UpdatePayload {
+  target: Removal;
+  standards?: number;
+  /** ISO time */
+  finishedAt?: string;
+}
+
+const matches = (target: Removal, d: Pick<NightDrink, "id" | "clientId">) =>
+  "drinkId" in target ? d.id === target.drinkId : d.clientId === target.clientId;
+
 /**
  * What to show: everything the server has, plus pending drinks that are neither undone nor already
- * in the server list, minus removals still on their way. A confirmed drink is never shown twice
- * (matched by server id or client id), and an undone one never comes back.
+ * in the server list, minus removals still on their way, with queued edits applied in order. A
+ * confirmed drink is never shown twice (matched by server id or client id), an undone one never
+ * comes back, and an edited one keeps its id and place.
  */
-export function mergeNight(server: NightDrink[], pending: PendingDrink[], removals: Removal[] = []): NightDrink[] {
+export function mergeNight(
+  server: NightDrink[],
+  pending: PendingDrink[],
+  removals: Removal[] = [],
+  updates: UpdatePayload[] = [],
+): NightDrink[] {
   const goneIds = new Set<string>();
   const goneClientIds = new Set<string>();
   for (const r of removals) {
@@ -56,7 +73,21 @@ export function mergeNight(server: NightDrink[], pending: PendingDrink[], remova
 
   const covered = coveredBy(server);
   const extra = pending.filter((p) => !p.cancelled && !covered(p) && !isGone(p.realId, p.clientId)).map((p) => p.drink);
-  return [...server.filter((d) => !isGone(d.id, d.clientId)), ...extra];
+  const shown = [...server.filter((d) => !isGone(d.id, d.clientId)), ...extra];
+  if (!updates.length) return shown;
+  return shown.map((d) =>
+    updates.reduce<NightDrink>(
+      (acc, u) =>
+        matches(u.target, acc)
+          ? {
+              ...acc,
+              ...(u.standards !== undefined && { standards: u.standards }),
+              ...(u.finishedAt !== undefined && { finishedAt: new Date(u.finishedAt) }),
+            }
+          : acc,
+      d,
+    ),
+  );
 }
 
 /** Whether the server list already has this pending drink, by server id or client id. */
@@ -99,7 +130,9 @@ export interface AddPayload {
  */
 export type OutboxEntry =
   | { clientId: string; op: "add"; payload: AddPayload; createdAt: number; userId: string }
-  | { clientId: string; op: "delete"; payload: Removal; createdAt: number; userId: string };
+  | { clientId: string; op: "delete"; payload: Removal; createdAt: number; userId: string }
+  /** clientId here is the entry's own id, not the drink's: a drink can have several edits queued. */
+  | { clientId: string; op: "update"; payload: UpdatePayload; createdAt: number; userId: string };
 
 /** The drink as shown while it's only on this device. */
 export function drinkFromPayload(payload: AddPayload, unsynced: boolean): NightDrink {
@@ -116,18 +149,63 @@ export function drinkFromPayload(payload: AddPayload, unsynced: boolean): NightD
   };
 }
 
-/** The queue as the screen sees it: drinks waiting to be added, and removals waiting to land. */
-export function outboxView(entries: OutboxEntry[]): { pending: PendingDrink[]; removals: Removal[] } {
+/** The queue as the screen sees it: drinks waiting to be added, removals waiting to land, and edits in order. */
+export function outboxView(entries: OutboxEntry[]): { pending: PendingDrink[]; removals: Removal[]; updates: UpdatePayload[] } {
   const pending: PendingDrink[] = [];
   const removals: Removal[] = [];
+  const updates: UpdatePayload[] = [];
   for (const e of entries) {
     if (e.op === "add") {
       pending.push({ tempId: e.clientId, clientId: e.clientId, drink: drinkFromPayload(e.payload, true), realId: null, cancelled: false });
-    } else {
+    } else if (e.op === "delete") {
       removals.push(e.payload);
+    } else {
+      updates.push(e.payload);
     }
   }
-  return { pending, removals };
+  return { pending, removals, updates };
+}
+
+/** Which id an edit or a removal goes by: the phone's id when it has one (it works before the add has synced). */
+export const targetOf = (drink: Pick<NightDrink, "id" | "clientId">): Removal =>
+  drink.clientId ? { clientId: drink.clientId } : { drinkId: drink.id };
+
+/**
+ * How to remove a drink. An add still in the outbox may already be on the server (its reply was
+ * lost or slow, or it landed just before the queue was trimmed), so it's forgotten here and a
+ * delete is sent too; the server answers NOT_FOUND if it never got it, which counts as done. Only
+ * an add that was never written to disk (a negative seq) can't have been sent.
+ */
+export function planRemoval(
+  target: NightDrink | undefined,
+  id: string,
+  queuedAdd: { seq: number } | undefined,
+  inFlightSeq: number | null,
+): { forgetQueued: boolean; send: Removal | null } {
+  const clientId = target?.clientId ?? null;
+  if (queuedAdd && queuedAdd.seq < 0) return { forgetQueued: true, send: null };
+  if (queuedAdd && clientId) return { forgetQueued: queuedAdd.seq !== inFlightSeq, send: { clientId } };
+  if (target && target.id !== target.clientId) return { forgetQueued: false, send: { drinkId: target.id } };
+  return { forgetQueued: false, send: clientId ? { clientId } : { drinkId: id } };
+}
+
+/**
+ * What an edit changes, or null if nothing did. The time moves only if the person touched the time
+ * control: opening and saving never nudges a drink to the nearest step or to a later "now".
+ */
+export function editChange(
+  drink: Pick<NightDrink, "standards" | "finishedAt">,
+  form: { standards: number; minutesAgo: number },
+  timeTouched: boolean,
+  now: Date,
+): { standards?: number; finishedAt?: Date } | null {
+  const change: { standards?: number; finishedAt?: Date } = {};
+  if (Math.abs(form.standards - drink.standards) > 1e-9) change.standards = form.standards;
+  if (timeTouched) {
+    const finishedAt = new Date(now.getTime() - form.minutesAgo * 60_000);
+    if (finishedAt.getTime() !== drink.finishedAt.getTime()) change.finishedAt = finishedAt;
+  }
+  return Object.keys(change).length ? change : null;
 }
 
 /**
@@ -138,7 +216,8 @@ export function outboxView(entries: OutboxEntry[]): { pending: PendingDrink[]; r
 export function syncFailure(code: string | undefined, op: OutboxEntry["op"]): "retry" | "drop" | "done" | "signedOut" {
   if (code === "UNAUTHORIZED") return "signedOut";
   // Already gone (Undo on two phones, a double tap): that's what was wanted.
-  if (code === "NOT_FOUND" && op === "delete") return "done";
+  // Edited after it was removed: nothing left to change.
+  if (code === "NOT_FOUND" && (op === "delete" || op === "update")) return "done";
   // Terms not agreed yet (the server's consent gate): keep it, it goes once they agree.
   if (code === "PRECONDITION_FAILED") return "retry";
   if (code === "BAD_REQUEST" || code === "CONFLICT" || code === "FORBIDDEN" || code === "NOT_FOUND" || code === "PARSE_ERROR") return "drop";
@@ -154,7 +233,9 @@ export const NIGHT_WINDOW_MS = 48 * 60 * 60 * 1000;
  * window it no longer affects anything and can go.
  */
 export const stuckExpired = (entry: OutboxEntry, now: number) =>
-  entry.op === "add" && Date.parse(entry.payload.finishedAt) < now - NIGHT_WINDOW_MS;
+  entry.op === "add"
+    ? Date.parse(entry.payload.finishedAt) < now - NIGHT_WINDOW_MS
+    : entry.createdAt < now - NIGHT_WINDOW_MS;
 
 /**
  * Hides "saved on this phone" while sends are going through, except on drinks the server refused:

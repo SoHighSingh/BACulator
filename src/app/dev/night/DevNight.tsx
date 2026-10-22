@@ -114,7 +114,11 @@ export function DevNight() {
         onUndo={() => {
           if (!notice) return;
           const { drink } = notice;
-          if (notice.kind === "added") {
+          if (notice.kind === "changed") {
+            const { before } = notice;
+            setDrinks((p) => p.map((x) => (x.id === drink.id ? { ...x, standards: before.standards, finishedAt: before.finishedAt } : x)));
+            setNotice({ kind: "changed", drink: before, before: drink, at: Date.now(), count: 1 });
+          } else if (notice.kind === "added") {
             setDrinks((p) => p.filter((d) => d.id !== drink.id));
             setNotice({ kind: "removed", drink, at: Date.now(), count: 1 });
           } else {
@@ -145,7 +149,9 @@ export function DevNight() {
         onClose={() => setEditing(null)}
         onSave={(d, change) => {
           setEditing(null);
+          if (!change) return;
           setDrinks((p) => p.map((x) => (x.id === d.id ? { ...x, ...change } : x)));
+          setNotice({ kind: "changed", drink: { ...d, ...change }, before: d, at: Date.now(), count: 1 });
         }}
       />
       <Sheet open={profileOpen} onOpenChange={setProfileOpen} title="You">
