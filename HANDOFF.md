@@ -2,7 +2,15 @@
 
 Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decisions) and `DESIGN.md` (what's built now). This file covers: where the code is, what the seven-agent audit found and what's still open, the three side branches waiting to merge, and the brief for the next visual direction.
 
-## 18 Oct 2026, late: landing redo, mark tone, status pill (read first)
+## 22 Oct 2026: deployed (read first)
+- **Live at baculator.com** (Worker version `84e64fcf-00f7-4517-b6b6-9eff1a7c515a`), from `cloudflare-d1-migration` (the code was not pushed to GitHub).
+- **Remote D1:** migrations 0004–0008 applied on 22 Oct (the database had 0 users before). The pre-migration export is in `backups/` (gitignored).
+- **How it was deployed:** Wrangler needs Node 22+, and the default Node here is 20, so put nvm's `C:/Users/agams/AppData/Local/nvm/v24.0.1` on PATH. Build in a throwaway worktree, because the `.env` files in the main checkout block `build:worker`.
+- **Next 15 is past OpenNext's 2-year support window:** the build needs `npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion`. Upgrading to Next 16 is the next infra task.
+- **Production console:** Cloudflare Web Analytics injects its beacon, which the CSP blocks. Turn it off in the dashboard; the privacy page promises no analytics.
+- **Still on the user:** rotate the secrets and delete `.env`/`.env.local`; publish the Google OAuth consent screen (until then only test users can sign in on production).
+
+## 18 Oct 2026, late: landing redo, mark tone, status pill
 - **Landing** rebuilt (`src/components/landing/*`): one-line headline "See where you’re at.", the range strip at window width with the number riding the tick, try-it chips that turn the hero field red once, a compact "Widmark, minute by minute" maths card (live values, no source listing), NightBar, the add-flow video (plays once in view, Play control, never autoplays under reduced motion), holding-the-phone, FAQ, region switch. The user asked: no copy that argues against other models; no "Your night is yours" section.
 - **Logo:** the original range-strip mark stays (gradient-with-dot options at `/dev/directions/logo-gradient` were rejected). `BrandMark tone="alert"` turns the band coral while not safe. Proportions changed so it no longer reads as a plus (wider band, shorter off-centre tick). `src/lib/brand-mark-svg.ts` draws it for icons; `scripts/make-icons.mjs` and `scripts/make-og.mjs` regenerate the app icons and the 1200×630 OG image ("Blood alcohol estimator", "See where you’re at.", about 0.04). `AlertFavicon` swaps the tab icon to red while not safe.
 - **Not safe to drive** is now one glass pill in the top-left chrome (`NightStatus`), with nothing under the number; the mark morphs into it when a drink tips the night into not-safe (only after an add/undo, never on load, instant under reduced motion). Frames: `/dev/directions/morph`. The red field now fades the blue out as the red comes in. Options considered: `/dev/directions/notsafe`.
