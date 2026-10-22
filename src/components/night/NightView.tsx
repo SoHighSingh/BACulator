@@ -2,7 +2,8 @@ import { UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { AlertFavicon } from "~/components/AlertFavicon";
-import type { LoggedDrink, NewDrink } from "~/hooks/useNight";
+import type { LoggedDrink } from "~/hooks/useNight";
+import type { Prefill } from "./AddSheet";
 import type { NightModel } from "~/lib/estimate-display";
 import { AddDock, type Notice, type QuickDrink } from "./AddDock";
 import { Estimate } from "./Estimate";
@@ -28,7 +29,8 @@ export interface NightViewProps {
   /** Drinks saved on this phone that haven't reached the account yet (no signal). */
   unsyncedCount?: number;
   onAdd: (drink: QuickDrink) => void;
-  onAddNew: (drink: NewDrink) => boolean;
+  /** A typed or spoken drink, read: open the add sheet on When with it. */
+  onUseParsed: (drink: Prefill) => void;
   onOpenAdd: () => void;
   onUndo: () => void;
   onEdit: (drink: LoggedDrink) => void;
@@ -167,7 +169,7 @@ export function NightView(props: NightViewProps) {
           now={now}
           unsynced={props.unsyncedCount ?? 0}
           onAdd={props.onAdd}
-          onAddNew={props.onAddNew}
+          onUseParsed={props.onUseParsed}
           onOpenAdd={props.onOpenAdd}
           onUndo={props.onUndo}
         />

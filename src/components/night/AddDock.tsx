@@ -2,7 +2,8 @@ import { Keyboard, List, Mic, Plus, Sparkles, Square, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useRegion } from "~/hooks/useRegion";
-import type { LoggedDrink, NewDrink } from "~/hooks/useNight";
+import type { LoggedDrink } from "~/hooks/useNight";
+import { useVoice } from "~/hooks/useVoice";
 import { CATALOG } from "~/lib/drinks/catalog";
 import { toDrinkDetails } from "~/lib/drinks/details";
 import { buildIndex, parseWithCatalog } from "~/lib/drinks/parse";
@@ -13,8 +14,8 @@ import { formatClock } from "~/lib/format-clock";
 import type { RegionId } from "~/lib/region";
 import { Held, usePresence } from "~/hooks/usePresence";
 import { api } from "~/trpc/react";
+import type { Prefill } from "./AddSheet";
 import { DrinkIcon, drinkKind } from "./DrinkIcon";
-import { TimeControl } from "./TimeControl";
 
 export interface QuickDrink {
   standards: number;
@@ -50,29 +51,11 @@ interface AddDockProps {
   now: Date;
   unsynced: number;
   onAdd: (drink: QuickDrink) => void;
-  /** A typed or spoken drink; returns false if it was swallowed as a double tap. */
-  onAddNew: (drink: NewDrink) => boolean;
+  /** A typed or spoken drink, read: opens the add sheet on When with its amount and name. */
+  onUseParsed: (drink: Prefill) => void;
   onOpenAdd: () => void;
   onUndo: () => void;
 }
-
-// Minimal typing for the Web Speech API (Chrome and Safari ship it prefixed).
-interface Recognition {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  start(): void;
-  stop(): void;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-}
-type RecognitionCtor = new () => Recognition;
-const speechCtor = (): RecognitionCtor | null => {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-};
 
 // One index per region: US shots are 44 ml, not the Australian 30 ml nip.
 const catalogIndexes: Partial<Record<RegionId, ReturnType<typeof buildIndex>>> = {};
@@ -102,42 +85,51 @@ export function AddDock(props: AddDockProps) {
   const { std, region } = useRegion();
   const [mode, setMode] = useState<Mode>("idle");
   const [text, setText] = useState("");
-  const [minutesAgo, setMinutesAgo] = useState(0);
+  // What's read: typed text once it has settled for a moment, spoken text at once (never a guess
+  // mid-sentence).
+  const [settled, setSettled] = useState("");
   const [server, setServer] = useState<{ text: string; result: ParseResult } | null>(null);
-  const [voiceNote, setVoiceNote] = useState<string | null>(null);
-  const [hasVoice, setHasVoice] = useState(false);
-  // While the field has focus the keyboard is up: everything folds to one-line rows.
-  const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const rec = useRef<Recognition | null>(null);
   const analyse = api.post.analyseDrink.useMutation();
 
-  useEffect(() => setHasVoice(!!speechCtor()), []);
+  const voice = useVoice({
+    regionId: region.id,
+    readsAsDrink: (t) => !!readOnDevice(t, region.id),
+    onHeard: (t) => {
+      setText(t);
+      setSettled(t);
+      setMode("typing");
+    },
+  });
 
-  const onDevice = useMemo(() => (text.trim().length >= 2 ? readOnDevice(text.trim(), region.id) : null), [text, region.id]);
-  const result = onDevice ?? (server?.text === text.trim() ? server.result : null);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(text), 250);
+    return () => clearTimeout(t);
+  }, [text]);
+
+  const read = settled.trim();
+  const onDevice = useMemo(() => (read.length >= 2 ? readOnDevice(read, region.id) : null), [read, region.id]);
+  const result = onDevice ?? (server?.text === read ? server.result : null);
   const live = notice && now.getTime() - notice.at < UNDO_WINDOW_MS ? notice : null;
 
   function close() {
-    rec.current?.stop();
+    voice.reset();
     setMode("idle");
     setText("");
+    setSettled("");
     setServer(null);
-    setMinutesAgo(0);
-    setVoiceNote(null);
     inputRef.current?.blur();
   }
 
-  function addResult(r: ParseResult) {
-    const raw = text.trim();
+  /** On to When in the add sheet, with what was read. Nothing is added until Add there. */
+  function goToWhen(r: ParseResult) {
     const standards = Math.ceil(r.totalStandards * 10 - 1e-9) / 10; // never round a drink down
     if (standards <= 0) return;
-    const added = props.onAddNew({ standards, finishedAt: new Date(Date.now() - minutesAgo * 60_000), details: toDrinkDetails(r, raw) });
-    if (added) close();
+    props.onUseParsed({ standards, details: toDrinkDetails(r, read) ?? { source: "manual", rawText: read } });
+    close();
   }
 
-  async function askBartender() {
-    const asked = text.trim();
+  async function askBartender(asked: string) {
     if (!asked || analyse.isPending) return;
     try {
       const parsed = await analyse.mutateAsync({ drinkText: asked, region: region.id });
@@ -148,31 +140,18 @@ export function AddDock(props: AddDockProps) {
   }
 
   function listen() {
-    const Ctor = speechCtor();
-    if (!Ctor) return;
-    if (mode === "listening") {
-      rec.current?.stop();
+    if (voice.state.kind === "listening") {
+      voice.stop();
       return;
     }
-    const recognition = new Ctor();
-    recognition.lang = navigator.language || "en-AU";
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    recognition.onresult = (e) => setText(Array.from(e.results, (res) => res[0]?.transcript ?? "").join(" "));
-    recognition.onerror = (e) =>
-      setVoiceNote(e.error === "not-allowed" || e.error === "service-not-allowed" ? "The microphone is off for this site. You can type it instead." : "Didn't catch that. Try again, or type it.");
-    recognition.onend = () => setMode((m) => (m === "listening" ? "typing" : m));
-    rec.current = recognition;
-    setVoiceNote(null);
     setText("");
+    setSettled("");
     setServer(null);
     setMode("listening");
-    try {
-      recognition.start();
-    } catch {
-      setMode("typing");
-    }
+    voice.listen();
   }
+  const listening = voice.state.kind === "listening";
+  const hasVoice = voice.offered;
 
   const open = mode !== "idle";
   // The composer leaves the way it came (rise-out, 200ms) before the keys come back; the keys then
@@ -183,7 +162,11 @@ export function AddDock(props: AddDockProps) {
   if (open && !composed) setComposed(true);
   const keep = (node: React.ReactNode) => <Held open={open}>{node}</Held>;
   const suggestions = [repeat, ...recents].filter((d): d is QuickDrink => !!d).slice(0, 4);
-  const unread = text.trim().length >= 2 && !result;
+  const unread = read.length >= 2 && read === text.trim() && !result;
+  let heading = result?.items.length ? "Check it" : "Tap one, or type it";
+  if (listening) heading = "Listening…";
+  else if (voice.state.kind === "failed") heading = voice.state.message;
+  else if (voice.state.kind === "heard" && voice.state.text === text) heading = `Heard “${voice.state.text}”`;
 
   let status: React.ReactNode;
   if (live) {
@@ -271,76 +254,50 @@ export function AddDock(props: AddDockProps) {
       {/* While it leaves it keeps what it showed: close() clears the text as it starts to go. */}
       {composer.mounted && keep(
         <div className="compose-in flex flex-col gap-2.5">
-          <div className={`flex items-center justify-between px-2 ${focused ? "sr-only" : ""}`}>
-            <p className="text-lg text-ink-2" aria-live="polite">
-              {mode === "listening" ? "Listening…" : result?.items.length ? "Check it, then add" : "Tap one, or type it"}
+          <div className="flex items-center justify-between gap-3 px-2">
+            <p className={`min-w-0 text-lg ${voice.state.kind === "failed" && !listening ? "text-alert" : "text-ink-2"}`} aria-live="polite">
+              {heading}
             </p>
-            <button type="button" onClick={close} aria-label="Close" className="press grid size-12 place-items-center rounded-key bg-white/10 hover:bg-white/15">
+            <button type="button" onClick={close} aria-label="Close" className="press grid size-12 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15">
               <X aria-hidden="true" className="size-5" strokeWidth={2.25} />
             </button>
           </div>
 
-          {result && result.items.length > 0 && focused ? (
-            <div className="flex items-center gap-3 rounded-key bg-white/[0.06] py-1 pr-1 pl-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
-              <DrinkIcon kind={drinkKind(result.items[0]!)} className="size-5 shrink-0 text-ink-2" />
-              <span className="min-w-0 flex-1 truncate text-lg">
-                <span className="font-medium">{result.items.map((i) => (i.count > 1 ? `${i.count} × ${i.name}` : i.name)).join(" + ")}</span>
-                <span className="text-ink-2"> · {std(result.totalStandards)} std</span>
-              </span>
-              <button
-                type="button"
-                // Adds straight away at "now"; for an earlier time, press Done to drop the keyboard first.
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => addResult(result)}
-                className="press flex min-h-12 shrink-0 items-center gap-1.5 rounded-key bg-ink px-4 text-lg font-medium text-bg"
-              >
-                <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
-                Add
-              </button>
-            </div>
-          ) : result && result.items.length > 0 ? (
-            <div className="rounded-row bg-white/[0.06] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
+          {result && result.items.length > 0 ? (
+            <div className="flex flex-col gap-3 rounded-row bg-white/[0.06] p-3">
               <ul className="flex flex-col gap-1.5 px-1">
                 {result.items.map((i, k) => (
                   <li key={k} className="flex items-center gap-3 text-lg">
-                    <DrinkIcon kind={drinkKind(i)} className="size-5 text-ink-2" />
-                    <span className="min-w-0 flex-1">
-                      <span className="font-medium">
-                        {i.count > 1 ? `${i.count} × ` : ""}
-                        {i.name}
-                      </span>
-                      <span className="text-ink-2">
-                        {" "}
-                        · {i.volumeMl} ml · {i.abv}%
-                      </span>
+                    <DrinkIcon kind={drinkKind(i)} className="size-5 shrink-0 text-ink-2" />
+                    <span className="min-w-0 flex-1 font-medium">
+                      {i.count > 1 ? `${i.count} × ` : ""}
+                      {i.name}
                     </span>
-                    <span className="font-medium tabular-nums">{std(i.standards)} std</span>
+                    <span className="shrink-0 text-ink-2 tabular-nums">{std(i.standards)} std</span>
                   </li>
                 ))}
               </ul>
-              {result.unparsed.length > 0 && <p className="mt-2 px-1 text-lg text-ink-2">Not counted: {result.unparsed.join(", ")}</p>}
-              <div className="mt-3">
-                <TimeControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={now} />
-              </div>
+              {result.unparsed.length > 0 && <p className="px-1 text-lg text-ink-2">Not counted: {result.unparsed.join(", ")}</p>}
               <button
                 type="button"
-                onClick={() => addResult(result)}
-                className="press mt-3 flex min-h-16 w-full items-center justify-center gap-2 rounded-primary bg-ink text-xl font-medium text-bg"
+                // Keeps the keyboard's focus so the tap lands before the layout moves.
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => goToWhen(result)}
+                className="press key-glow flex min-h-16 w-full items-center justify-center rounded-primary bg-ink text-xl font-medium text-bg"
               >
-                <Plus aria-hidden="true" className="size-6" strokeWidth={2.5} />
-                Add · {std(result.totalStandards)} std
+                Next: when · {std(Math.ceil(result.totalStandards * 10 - 1e-9) / 10)} std
               </button>
             </div>
           ) : unread ? (
             <div className="flex flex-col gap-2 px-1">
               <p className="text-lg text-ink-2">
-                {server?.result.status === "unavailable" ? "The bartender is unavailable right now. Pick it from the list instead." : "Not in our drink list yet."}
+                {server?.result.status === "unavailable" ? "The bartender is unavailable right now. Set it by hand instead." : "Not in our drink list yet."}
               </p>
               <div className="flex flex-wrap gap-2">
                 {server?.result.status !== "unavailable" && (
                   <button
                     type="button"
-                    onClick={() => void askBartender()}
+                    onClick={() => void askBartender(read)}
                     disabled={analyse.isPending}
                     className="press flex min-h-12 items-center gap-2 rounded-key bg-ink px-4 text-lg font-medium text-bg disabled:opacity-60"
                   >
@@ -348,13 +305,13 @@ export function AddDock(props: AddDockProps) {
                     {analyse.isPending ? "Reading it…" : "Ask the bartender"}
                   </button>
                 )}
-                <button type="button" onClick={props.onOpenAdd} className="press flex min-h-12 items-center gap-2 rounded-key px-4 text-lg shadow-[inset_0_0_0_1px_var(--color-line)]">
+                <button type="button" onClick={props.onOpenAdd} className="press flex min-h-12 items-center gap-2 rounded-key bg-white/[0.08] px-4 text-lg hover:bg-white/[0.12]">
                   <List aria-hidden="true" className="size-5" strokeWidth={2} />
-                  All drinks
+                  Set it by hand
                 </button>
               </div>
             </div>
-          ) : (
+          ) : listening ? null : (
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
               {suggestions.map((d) => (
                 <button
@@ -365,24 +322,16 @@ export function AddDock(props: AddDockProps) {
                     close();
                   }}
                   onPointerDown={(e) => e.preventDefault()}
-                  className="press flex min-h-12 shrink-0 items-center gap-2 rounded-key bg-white/[0.06] px-4 text-lg whitespace-nowrap shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)] hover:bg-white/10"
+                  aria-label={`Add ${drinkLabel(d, std)} now`}
+                  className="press flex min-h-12 shrink-0 items-center gap-2 rounded-key bg-white/[0.08] px-4 text-lg whitespace-nowrap hover:bg-white/[0.12]"
                 >
-                  <DrinkIcon kind={drinkKind(d)} className="size-5 text-ink-2" />
+                  <Plus aria-hidden="true" className="size-5 text-ink-2" strokeWidth={2.25} />
                   {drinkLabel(d, std)}
-                  <span className="text-ink-2">{std(d.standards)} std</span>
+                  <span className="text-ink-2">{std(d.standards)}</span>
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={props.onOpenAdd}
-                className="press flex min-h-12 shrink-0 items-center gap-2 rounded-key px-4 text-lg whitespace-nowrap shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/5"
-              >
-                <List aria-hidden="true" className="size-5" strokeWidth={2} />
-                All drinks
-              </button>
             </div>
           )}
-          {voiceNote && <p className="px-2 text-lg text-alert">{voiceNote}</p>}
         </div>
       )}
 
@@ -391,11 +340,13 @@ export function AddDock(props: AddDockProps) {
           inert={!open}
           onSubmit={(e) => {
             e.preventDefault();
-            // Done drops the keyboard so the full card (with its time control) has the screen.
-            if (unread) void askBartender();
+            // Done reads it at once (no wait for the pause), and asks the bartender if the list can't.
+            const typed = text.trim();
+            setSettled(text);
+            if (typed.length >= 2 && !readOnDevice(typed, region.id)) void askBartender(typed);
             inputRef.current?.blur();
           }}
-          className={`compose-bar flex min-h-14 items-center gap-2 rounded-key bg-white/[0.06] py-1 pr-1 pl-5 shadow-[inset_0_0_0_1px_var(--color-line)] focus-within:shadow-[inset_0_0_0_2px_var(--color-signal)] ${mode === "listening" ? "listening" : ""}`}
+          className={`compose-bar flex min-h-14 items-center gap-2 rounded-key bg-white/[0.06] py-1 pr-1 pl-5 shadow-[inset_0_0_0_1px_var(--color-line)] focus-within:shadow-[inset_0_0_0_2px_var(--color-signal)] ${listening ? "listening" : ""}`}
         >
           <label className="sr-only" htmlFor="compose-drink">
             Type a drink
@@ -405,12 +356,10 @@ export function AddDock(props: AddDockProps) {
             ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
             // Mounted by the add key's tap, so focusing here still brings the keyboard up on iOS.
             // While listening the mic has the floor and the keyboard stays down.
             autoFocus={mode === "typing"}
-            placeholder={mode === "listening" ? "Say it like you'd order it" : hasVoice ? "Type or say a drink" : "Type a drink"}
+            placeholder={listening ? "Say it like you'd order it" : hasVoice ? "Type or say a drink" : "Type a drink"}
             autoComplete="off"
             enterKeyHint="done"
             maxLength={200}
@@ -420,13 +369,13 @@ export function AddDock(props: AddDockProps) {
             <button
               type="button"
               onClick={listen}
-              aria-label={mode === "listening" ? "Stop listening" : "Say a drink"}
-              aria-pressed={mode === "listening"}
+              aria-label={listening ? "Stop listening" : "Say a drink"}
+              aria-pressed={listening}
               className={`press relative grid size-12 shrink-0 place-items-center rounded-key ${
-                mode === "listening" ? "mic-live bg-ink text-bg" : "bg-white/10 hover:bg-white/15"
+                listening ? "mic-live bg-ink text-bg" : "bg-white/10 hover:bg-white/15"
               }`}
             >
-              {mode === "listening" ? <Square aria-hidden="true" className="size-4" fill="currentColor" /> : <Mic aria-hidden="true" className="size-5" strokeWidth={2.25} />}
+              {listening ? <Square aria-hidden="true" className="size-4" fill="currentColor" /> : <Mic aria-hidden="true" className="size-5" strokeWidth={2.25} />}
             </button>
           )}
         </form>

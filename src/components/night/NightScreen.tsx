@@ -6,7 +6,7 @@ import { SIGNED_OUT, useNight, type DrinkChange, type LoggedDrink, type NewDrink
 import { describeNight } from "~/lib/estimate-display";
 import { drinkKey, isDoubleTap, pickRepeatAndRecents } from "~/lib/night-model";
 import { BACGraphModal } from "../BACGraphModal";
-import { AddSheet } from "./AddSheet";
+import { AddSheet, type Prefill } from "./AddSheet";
 import { EditDrinkSheet } from "./EditDrinkSheet";
 import type { Notice, QuickDrink } from "./AddDock";
 import { NightView } from "./NightView";
@@ -56,6 +56,7 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
   const [now, tick] = useMinuteClock();
   const night = useNight();
   const [addOpen, setAddOpen] = useState(false);
+  const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [editing, setEditing] = useState<LoggedDrink | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -173,8 +174,14 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         error={night.error}
         unsyncedCount={night.unsyncedCount}
         onAdd={quickAdd}
-        onAddNew={(d) => add(d, false)}
-        onOpenAdd={() => setAddOpen(true)}
+        onUseParsed={(p) => {
+          setPrefill(p);
+          setAddOpen(true);
+        }}
+        onOpenAdd={() => {
+          setPrefill(null);
+          setAddOpen(true);
+        }}
         onUndo={undo}
         onEdit={setEditing}
         onRemove={remove}
@@ -191,6 +198,7 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         onAdd={(d) => add(d, false)}
         recents={repeat ? [repeat, ...others] : others}
         onAddRecent={quickAdd}
+        prefill={prefill}
       />
       <EditDrinkSheet
         drink={editing}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { BACGraphModal } from "~/components/BACGraphModal";
-import { AddSheet } from "~/components/night/AddSheet";
+import { AddSheet, type Prefill } from "~/components/night/AddSheet";
 import { EditDrinkSheet } from "~/components/night/EditDrinkSheet";
 import { Sheet } from "~/components/night/Sheet";
 import type { Notice, QuickDrink } from "~/components/night/AddDock";
@@ -43,6 +43,7 @@ export function DevNight() {
   const [editing, setEditing] = useState<LoggedDrink | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [graphOpen, setGraphOpen] = useState(false);
   const lastTap = useRef<{ key: string; at: number } | null>(null);
   const { setRegion } = useRegion();
@@ -103,14 +104,20 @@ export function DevNight() {
         now={now}
         error={signedOut ? SIGNED_OUT : null}
         unsyncedCount={offline && drinks.length > 0 ? 1 : 0}
-        onAddNew={(d) => add(d, false)}
+        onUseParsed={(p) => {
+          setPrefill(p);
+          setAddOpen(true);
+        }}
         onEdit={setEditing}
         onOpenProfile={() => setProfileOpen(true)}
         onSignIn={signedOut ? () => setSignedOut(false) : undefined}
         onAdd={(q) =>
           add({ standards: q.standards, finishedAt: new Date(), details: { name: q.name ?? undefined, volumeMl: q.volumeMl ?? undefined, abv: q.abv ?? undefined } }, true)
         }
-        onOpenAdd={() => setAddOpen(true)}
+        onOpenAdd={() => {
+          setPrefill(null);
+          setAddOpen(true);
+        }}
         onUndo={() => {
           if (!notice) return;
           const { drink } = notice;
@@ -134,6 +141,7 @@ export function DevNight() {
         onShowTimeline={() => setGraphOpen(true)}
       />
       <AddSheet
+        prefill={prefill}
         open={addOpen}
         now={now}
         onClose={() => setAddOpen(false)}

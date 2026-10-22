@@ -60,10 +60,7 @@ export function Morph() {
         now={now}
         error={null}
         onAdd={toggle}
-        onAddNew={() => {
-          toggle();
-          return true;
-        }}
+        onUseParsed={() => toggle()}
         onOpenAdd={() => undefined}
         onUndo={toggle}
         onEdit={() => undefined}
