@@ -1,4 +1,4 @@
-import { ChevronLeft, List, Plus } from "lucide-react";
+import { List, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { NewDrink } from "~/hooks/useNight";
@@ -166,17 +166,10 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
           </div>
         ) : (
           <div key="when" ref={toSheetTop} className="compose-in flex flex-col gap-5">
-            <button
-              type="button"
-              onClick={() => setStep("amount")}
-              className="press -ml-2 flex min-h-12 w-fit max-w-full items-center gap-1 rounded-key pr-4 pl-2 text-lg text-ink-2 hover:bg-white/[0.06]"
-            >
-              <ChevronLeft aria-hidden="true" className="size-6 shrink-0" strokeWidth={2.25} />
-              <span className="truncate">
-                <span className="font-medium text-ink tabular-nums">{std(standards)} std</span>
-                {name?.name ? ` · ${name.name}` : ""}
-              </span>
-            </button>
+            <p className="truncate px-1 text-lg text-ink-2">
+              <span className="font-medium text-ink tabular-nums">{std(standards)} std</span>
+              {name?.name ? ` · ${name.name}` : ""}
+            </p>
 
             <WhenControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={openedAt} />
 
@@ -198,7 +191,7 @@ function RecentRow({ drink, onPick, onAddNow }: { drink: QuickDrink; onPick: () 
   const { std } = useRegion();
   const label = drinkLabel(drink, std);
   return (
-    <li className="flex items-center gap-2 rounded-row bg-white/[0.05] pr-2 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+    <li className="flex items-center gap-3 rounded-row bg-white/[0.05] pr-2 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
       <button
         type="button"
         onClick={onPick}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
+import { Keyboard, Minus, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { useRegion } from "~/hooks/useRegion";
@@ -40,6 +40,7 @@ export function AmountControl({ standards, onChange, onEnter }: AmountControlPro
   const shown = toRegionStandards(standards, region);
   const [typing, setTyping] = useState<string | null>(null);
   const [said, setSaid] = useState("");
+  const [bad, setBad] = useState(false);
 
   const set = (regionValue: number) => onChange(fromRegionStandards(regionValue, region));
   const words = (v: number) => `${formatStandards(v)} standard ${formatStandards(v) === "1.0" ? "drink" : "drinks"}`;
@@ -47,7 +48,12 @@ export function AmountControl({ standards, onChange, onEnter }: AmountControlPro
   function commitTyped() {
     if (typing === null) return;
     const v = parseTyped(typing);
-    if (v !== null) set(v);
+    if (v === null) {
+      setBad(true);
+      return;
+    }
+    set(v);
+    setBad(false);
     setTyping(null);
   }
 
@@ -67,9 +73,10 @@ export function AmountControl({ standards, onChange, onEnter }: AmountControlPro
               type="button"
               onClick={() => setTyping(formatStandards(shown))}
               aria-label={`${words(shown)}. Tap to type a number`}
-              className="press min-h-[72px] min-w-32 rounded-key px-3 text-[56px] leading-none font-medium tracking-[-0.02em] tabular-nums hover:bg-white/[0.06]"
+              className="press flex min-h-[72px] min-w-36 items-center justify-center gap-2 rounded-key px-3 text-[56px] leading-none font-medium tracking-[-0.02em] tabular-nums shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/[0.06]"
             >
               {formatStandards(shown)}
+              <Keyboard aria-hidden="true" className="size-5 shrink-0 text-ink-2" strokeWidth={2.25} />
             </button>
           ) : (
             <input
@@ -79,22 +86,44 @@ export function AmountControl({ standards, onChange, onEnter }: AmountControlPro
               aria-label="Standard drinks"
               value={typing}
               onFocus={(e) => e.currentTarget.select()}
-              onChange={(e) => setTyping(e.target.value)}
-              onBlur={commitTyped}
+              aria-invalid={bad || undefined}
+              aria-describedby={bad ? "amount-error" : undefined}
+              onChange={(e) => {
+                setTyping(e.target.value);
+                setBad(false);
+              }}
+              onBlur={() => {
+                // Leaving with something unreadable keeps the old amount.
+                if (typing !== null && parseTyped(typing) === null) {
+                  setBad(false);
+                  setTyping(null);
+                } else commitTyped();
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
+                  if (typing !== null && parseTyped(typing) === null) {
+                    setBad(true);
+                    return;
+                  }
                   commitTyped();
                   onEnter?.();
                 } else if (e.key === "Escape") {
                   e.stopPropagation();
+                  setBad(false);
                   setTyping(null);
                 }
               }}
               className="min-h-[72px] w-40 rounded-key bg-white/[0.08] text-center text-[56px] leading-none font-medium tracking-[-0.02em] tabular-nums shadow-[inset_0_0_0_2px_var(--color-ink)] outline-none"
             />
           )}
-          <span className="text-lg text-ink-2">standard drinks</span>
+          {bad ? (
+            <span id="amount-error" className="text-lg font-medium text-alert">
+              Type a number, like 1.5
+            </span>
+          ) : (
+            <span className="text-lg text-ink-2">{typing === null ? "standard drinks · tap to type" : "standard drinks"}</span>
+          )}
         </div>
 
         <button type="button" aria-label={`More: ${words(more)}`} disabled={shown >= MAX_TYPED - 1e-9} onClick={() => set(more)} className={KEY}>

@@ -24,6 +24,10 @@ interface EasedSliderProps {
 const THUMB = 32;
 /** The thumb answers a press this far either side of its centre (a 56 px zone). */
 const GRAB = 28;
+/** A wobble smaller than this after pressing isn't a drag (a typed 12 mustn't drop to 10 on a touch). */
+const SLOP = 4;
+/** A value changes only once the finger is this far into the next step, so a tremor can't flicker it. */
+const HYSTERESIS = 0.6;
 
 /**
  * A continuous, eased slider. The thumb follows the finger at sub-pixel resolution through the
@@ -35,7 +39,10 @@ const GRAB = 28;
  */
 export function EasedSlider({ scale, value, onChange, onCommit, reversed = false, label, valueText, pageStep }: EasedSliderProps) {
   const track = useRef<HTMLDivElement>(null);
-  const grab = useRef<{ offset: number; pointerId: number } | null>(null);
+  const grab = useRef<{ offset: number; pointerId: number; startX: number; moved: boolean } | null>(null);
+  // The latest value handed out, for the announcement on release (props lag a render behind).
+  const last = useRef(value);
+  last.current = value;
   // The finger's own position while dragging, so the thumb doesn't hop between rounded values.
   const [dragT, setDragT] = useState<number | null>(null);
 
@@ -54,26 +61,36 @@ export function EasedSlider({ scale, value, onChange, onCommit, reversed = false
     if (Math.abs(e.clientX - thumbX) > GRAB) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    grab.current = { offset: e.clientX - thumbX, pointerId: e.pointerId };
-    setDragT(pos);
+    grab.current = { offset: e.clientX - thumbX, pointerId: e.pointerId, startX: e.clientX, moved: false };
     e.currentTarget.querySelector<HTMLElement>("[role=slider]")?.focus({ preventScroll: true });
   }
 
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (grab.current?.pointerId !== e.pointerId) return;
     const g = grab.current;
+    if (!g.moved) {
+      if (Math.abs(e.clientX - g.startX) < SLOP) return;
+      // Start from where the thumb is, not where the finger has got to: no hop when the drag begins.
+      g.offset += e.clientX - g.startX;
+      g.moved = true;
+    }
     const { left, width } = geometry();
     const p = Math.min(1, Math.max(0, (e.clientX - g.offset - left) / width));
     setDragT(p);
-    const next = scale.round(scale.fromT(toPos(p)));
-    if (next !== value) onChange(next);
+    const raw = scale.fromT(toPos(p));
+    const next = scale.round(raw);
+    const current = last.current;
+    if (next === current || Math.abs(raw - current) < HYSTERESIS * Math.abs(next - current)) return;
+    last.current = next;
+    onChange(next);
   }
 
   function release(e: React.PointerEvent<HTMLDivElement>) {
     if (grab.current?.pointerId !== e.pointerId) return;
+    const moved = grab.current.moved;
     grab.current = null;
     setDragT(null);
-    onCommit?.(value);
+    if (moved) onCommit?.(last.current);
   }
 
   function onKeyDown(e: React.KeyboardEvent) {

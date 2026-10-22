@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 import { minutesAgoEased } from "~/lib/eased-scale";
@@ -8,7 +8,7 @@ import { formatClock } from "~/lib/format-clock";
 import { NIGHT_WINDOW_MS } from "~/lib/night-model";
 import { EasedSlider } from "./EasedSlider";
 
-const CHIPS = [0, 15, 30, 60, 120];
+const CHIPS = [0, 15, 30, 60];
 const MAX_AGO = NIGHT_WINDOW_MS / 60_000;
 const KEY = "press grid size-14 shrink-0 place-items-center rounded-key bg-white/10 hover:bg-white/15 disabled:opacity-40";
 
@@ -36,7 +36,8 @@ interface WhenControlProps {
 }
 
 /**
- * When: a read-out ("9:40 pm · 1 h 20 min ago") with 5-minute −/+ keys beside it, one row of
+ * When: a read-out ("9:40 pm · 1 h 20 min ago") with 5-minute earlier/later keys beside it (left is
+ * earlier, like the track), one row of
  * chips for the usual answers, and a smooth eased slider from 12 h ago (left) to now (right).
  */
 export function WhenControl({ minutesAgo, onChange, now }: WhenControlProps) {
@@ -49,14 +50,14 @@ export function WhenControl({ minutesAgo, onChange, now }: WhenControlProps) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <button type="button" aria-label="5 minutes earlier" disabled={minutesAgo >= MAX_AGO} onClick={() => onChange(fiveEarlier(minutesAgo))} className={KEY}>
-          <Minus aria-hidden="true" className="size-6" strokeWidth={2.25} />
+          <ChevronLeft aria-hidden="true" className="size-7" strokeWidth={2.25} />
         </button>
         <p className="flex min-h-[72px] min-w-0 flex-1 flex-col items-center justify-center text-center">
           <span className="text-[28px] leading-tight font-medium tabular-nums">{isNow ? "Now" : formatClock(at)}</span>
           <span className="text-lg text-ink-2 tabular-nums">{isNow ? "just finished" : agoWords(minutesAgo)}</span>
         </p>
         <button type="button" aria-label="5 minutes later" disabled={isNow} onClick={() => onChange(fiveLater(minutesAgo))} className={KEY}>
-          <Plus aria-hidden="true" className="size-6" strokeWidth={2.25} />
+          <ChevronRight aria-hidden="true" className="size-7" strokeWidth={2.25} />
         </button>
       </div>
 
