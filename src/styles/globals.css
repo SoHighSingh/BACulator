@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -219,6 +218,9 @@
    --------------------------------------------------------------------------------------------- */
 :root {
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Exits: the same decelerating family, less front-loaded. With --ease-out a sheet leaving over
+     its full height was ~80% gone in the first 60ms and read as a snap; this keeps the travel visible. */
+  --ease-exit: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-bloom: cubic-bezier(0.45, 0, 0.25, 1);
   --glass: rgb(24 24 28 / 0.62);
   --glass-strong: rgb(18 18 22 / 0.78);
@@ -486,12 +488,59 @@ html:has(.app-shell) body {
   .curve-reveal {
     animation: curve-reveal 900ms var(--ease-out) both;
   }
-  /* Sheets rise like a native sheet; the composer opens with a short rise. */
+  /* Sheets rise like a native sheet; the composer opens with a short rise.
+     Exits are the entrance in reverse at about 70% of its time, same easing (Radix keeps a
+     Dialog mounted until its closed-state animation ends; usePresence does the same for panels).
+     Scrims fade on their sheet's clock. A leaving surface takes no taps. */
   .sheet {
     animation: sheet-up 340ms var(--ease-out) both;
+    /* Springs back when a pull on the handle falls short; follows the finger while dragging. */
+    transition: translate 240ms var(--ease-out);
+  }
+  .sheet[data-dragging] {
+    transition: none;
+  }
+  .sheet[data-state="closed"] {
+    animation: sheet-down 240ms var(--ease-exit) both;
+  }
+  .sheet-scrim[data-state="open"],
+  .dialog-scrim[data-state="open"] {
+    animation: scrim-in 340ms var(--ease-out) both;
+  }
+  .sheet-scrim[data-state="closed"],
+  .dialog-scrim[data-state="closed"] {
+    animation: scrim-out 240ms var(--ease-exit) both;
+  }
+  .dialog-scrim[data-state="closed"] {
+    animation-duration: 200ms;
+  }
+  /* Centre dialogs (the big curve, Before you start): the same family, scaled instead of risen. */
+  .dialog-card[data-state="open"] {
+    animation: card-in 280ms var(--ease-out) both;
+  }
+  .dialog-card[data-state="closed"] {
+    animation: card-out 200ms var(--ease-exit) both;
   }
   .compose-in {
     animation: rise-in 280ms var(--ease-out) both;
+  }
+  .compose-in[data-state="closed"] {
+    animation: rise-out 200ms var(--ease-exit) both;
+  }
+  /* The dock: once the composer has been opened, whatever mounts (the composer and its field, or
+     the keys coming back after it) rises in; while the composer leaves, its parts sink out. Never
+     on first paint, since data-composed is only set by opening the composer. */
+  .dock-stack[data-composed] > * {
+    animation: rise-in 280ms var(--ease-out) both;
+  }
+  .dock-stack[data-leaving] > * {
+    animation: rise-out 200ms var(--ease-exit) both;
+    pointer-events: none;
+  }
+  .sheet[data-state="closed"],
+  .dialog-card[data-state="closed"],
+  .compose-in[data-state="closed"] {
+    pointer-events: none;
   }
   /* The number settles from a soft blur when it changes (never on first paint). */
   .num-in[data-changed] {
@@ -543,8 +592,44 @@ html:has(.app-shell) body {
     opacity: 0.6;
   }
 }
+/* The sheet's way out: down past the bottom edge (not just back to 24%, which would end in a pop),
+   dimming as it rose in. With --ease-out it answers at once and is mostly gone by ~100ms. */
+@keyframes sheet-down {
+  to {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+}
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes scrim-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes card-out {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
 @keyframes rise-in {
   from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes rise-out {
+  to {
     opacity: 0;
     transform: translateY(10px);
   }

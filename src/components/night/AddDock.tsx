@@ -11,6 +11,7 @@ import type { ParseResult } from "~/lib/drinks/types";
 import { drinkLabel, timeAgo } from "~/lib/estimate-display";
 import { formatClock } from "~/lib/format-clock";
 import type { RegionId } from "~/lib/region";
+import { Held, usePresence } from "~/hooks/usePresence";
 import { api } from "~/trpc/react";
 import { DrinkIcon, drinkKind } from "./DrinkIcon";
 import { TimeControl } from "./TimeControl";
@@ -174,6 +175,13 @@ export function AddDock(props: AddDockProps) {
   }
 
   const open = mode !== "idle";
+  // The composer leaves the way it came (rise-out, 200ms) before the keys come back; the keys then
+  // rise in, but only on their way back from the composer, never on first paint.
+  const composer = usePresence(open, 200);
+  const rest = !composer.mounted;
+  const [composed, setComposed] = useState(false);
+  if (open && !composed) setComposed(true);
+  const keep = (node: React.ReactNode) => <Held open={open}>{node}</Held>;
   const suggestions = [repeat, ...recents].filter((d): d is QuickDrink => !!d).slice(0, 4);
   const unread = text.trim().length >= 2 && !result;
 
@@ -200,8 +208,8 @@ export function AddDock(props: AddDockProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
-      {!open && (
+    <div className="dock-stack flex flex-col gap-2.5" data-composed={composed || undefined} data-leaving={composer.state === "closed" && composer.mounted ? "" : undefined}>
+      {rest && (
         // At rest the line is for screen readers only (the white pill already names the drink and
         // Your tab lists it); it shows when a change lands, with its Undo / Add back.
         <div className={live ? "flex min-h-12 items-center gap-3 px-2" : "sr-only"}>
@@ -218,12 +226,12 @@ export function AddDock(props: AddDockProps) {
           )}
         </div>
       )}
-      {!open && unsynced > 0 && (
+      {rest && unsynced > 0 && (
         <p className="px-2 text-lg text-ink-2">{unsynced === 1 ? "Saved on this phone, will sync" : `${unsynced} saved on this phone, will sync`}</p>
       )}
 
       {/* One add key. It opens the add sheet, recents first, so the drink you just had is the top row. */}
-      {!open && (
+      {rest && (
         <button
           type="button"
           onClick={props.onOpenAdd}
@@ -236,7 +244,7 @@ export function AddDock(props: AddDockProps) {
 
       {/* The second way in is the composer, for anything not on the list: type it, or say it with the
           mic as its own key. The field only appears once one of them is tapped. */}
-      {!open && (
+      {rest && (
         <div className="flex items-stretch gap-2">
           <button
             type="button"
@@ -260,7 +268,8 @@ export function AddDock(props: AddDockProps) {
         </div>
       )}
 
-      {open && (
+      {/* While it leaves it keeps what it showed: close() clears the text as it starts to go. */}
+      {composer.mounted && keep(
         <div className="compose-in flex flex-col gap-2.5">
           <div className={`flex items-center justify-between px-2 ${focused ? "sr-only" : ""}`}>
             <p className="text-lg text-ink-2" aria-live="polite">
@@ -377,8 +386,9 @@ export function AddDock(props: AddDockProps) {
         </div>
       )}
 
-      {open && (
+      {composer.mounted && (
         <form
+          inert={!open}
           onSubmit={(e) => {
             e.preventDefault();
             // Done drops the keyboard so the full card (with its time control) has the screen.
