@@ -1,3 +1,4 @@
+import { Held } from "~/hooks/usePresence";
 import { simulateNight } from "~/lib/bac-calculator";
 import type { Drink } from "~/types/bac";
 import { TimelineChart } from "./night/TimelineCard";
@@ -32,11 +33,14 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 px-6 pb-6">
-          {simulation && simulation.samples.length > 1 ? (
-            <TimelineChart simulation={simulation} now={now} height={300} axes />
-          ) : (
-            <p className="text-lg text-ink">Add your weight and a drink to see the curve.</p>
-          )}
+          {/* While the dialog leaves it keeps showing the curve it had, not the empty-state line. */}
+          <Held open={open}>
+            {simulation && simulation.samples.length > 1 ? (
+              <TimelineChart simulation={simulation} now={now} height={300} axes />
+            ) : (
+              <p className="text-lg text-ink">Add your weight and a drink to see the curve.</p>
+            )}
+          </Held>
           <button
             type="button"
             className="press mt-2 min-h-14 w-full rounded-key bg-white/10 text-lg font-medium text-ink hover:bg-white/15"
