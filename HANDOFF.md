@@ -7,6 +7,7 @@ Read this, then `PRODUCT.md` (who it's for, non-negotiables, the user's decision
 - **Remote D1:** migrations 0004–0008 applied on 22 Oct (the database had 0 users before). The pre-migration export is in `backups/` (gitignored).
 - **How it was deployed:** Wrangler needs Node 22+, and the default Node here is 20, so put nvm's `C:/Users/agams/AppData/Local/nvm/v24.0.1` on PATH. Build in a throwaway worktree, because the `.env` files in the main checkout block `build:worker`.
 - **Next 15 is past OpenNext's 2-year support window:** the build needs `npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion`. Upgrading to Next 16 is the next infra task.
+- **Sign-in fix (22 Oct, version `49f9a3b7`):** production sign-in had never worked. The Worker bundle resolved `@prisma/client` to its Node entry, which needs a native query engine, so every database call failed and Auth.js showed "Configuration". `src/server/db.ts` and `post.ts` now import `@prisma/client/wasm`, and Vitest aliases that back to `@prisma/client`. To test the database in the real runtime, build, run `npx wrangler dev --local`, then curl `/api/auth/session` with a session cookie.
 - **Production console:** Cloudflare Web Analytics injects its beacon, which the CSP blocks. Turn it off in the dashboard; the privacy page promises no analytics.
 - **Still on the user:** rotate the secrets and delete `.env`/`.env.local`; publish the Google OAuth consent screen (until then only test users can sign in on production).
 
