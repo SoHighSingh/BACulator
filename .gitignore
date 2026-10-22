@@ -59,3 +59,6 @@ prisma/dev.db*
 
 # Screenshots from scripts/shoot.mjs
 .shots/
+
+# Database exports (contain user data)
+backups/
