@@ -148,8 +148,8 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
         <svg aria-hidden="true" width={width} height={total} viewBox={`0 0 ${width} ${total}`} className="absolute inset-0 block overflow-visible">
           <defs>
             <linearGradient id={`wash-${id}`} x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="var(--color-signal)" stopOpacity="0.3" />
-              <stop offset="1" stopColor="var(--color-signal)" stopOpacity="0" />
+              <stop offset="0" stopColor="var(--tone)" stopOpacity="0.3" />
+              <stop offset="1" stopColor="var(--tone)" stopOpacity="0" />
             </linearGradient>
             <clipPath id={`past-${id}`}>
               <rect x={-2} y={-20} width={Math.max(0, nowX + 2)} height={total + 40} />
@@ -162,11 +162,11 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
           {/* Past: the signal over a soft wash. */}
           <g clipPath={`url(#past-${id})`}>
             <path d={paths.area} fill={`url(#wash-${id})`} />
-            <path d={paths.line} fill="none" stroke="var(--color-signal)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={paths.line} fill="none" stroke="var(--tone)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
           </g>
           {/* Future: the same line, dashed and dimmer. */}
           <g clipPath={`url(#future-${id})`}>
-            <path d={paths.line} fill="none" stroke="var(--color-signal)" strokeOpacity={0.6} strokeWidth={2} strokeDasharray="3 5" strokeLinecap="round" />
+            <path d={paths.line} fill="none" stroke="var(--tone)" strokeOpacity={0.6} strokeWidth={2} strokeDasharray="3 5" strokeLinecap="round" />
           </g>
 
           {/* Baseline (zero), with each drink as a small mark on it. */}
@@ -197,7 +197,7 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
             strokeOpacity={scrub === null ? 0.5 : 0.25}
             strokeWidth={1}
           />
-          <circle cx={nowX} cy={nowY} r={8} fill="var(--color-signal)" fillOpacity={scrub === null ? 0.35 : 0.18} />
+          <circle cx={nowX} cy={nowY} r={8} fill="var(--tone)" fillOpacity={scrub === null ? 0.35 : 0.18} />
           <circle cx={nowX} cy={nowY} r={4.5} fill="var(--color-ink)" fillOpacity={scrub === null ? 1 : 0.6} />
 
           {/* Cursor while scrubbing. */}

@@ -162,7 +162,7 @@ export function DevNight() {
       <Sheet open={profileOpen} onOpenChange={setProfileOpen} title="You">
         <p className="text-lg text-ink-2">Your details and settings open here in the real app.</p>
       </Sheet>
-      <BACGraphModal open={graphOpen} onOpenChange={setGraphOpen} drinks={drinks} userWeight={weight} userSex="female" />
+      <BACGraphModal open={graphOpen} onOpenChange={setGraphOpen} drinks={drinks} userWeight={weight} userSex="female" alert={model.alert} />
     </>
   );
 }

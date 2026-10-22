@@ -420,13 +420,25 @@
   transform: scale(0.975);
 }
 
+/* The estimate's own colour: signal blue, and the alert colour while the screen is red (the shown
+   number is 0.05 or more). The curve, its wash, the now dot and the range bar all follow it, as one
+   state for the whole reading, never split at 0.05 along the curve (no limit line on the graph). */
+:root {
+  --tone: var(--color-signal);
+  --tone-rgb: 124 180 255;
+}
+.tone-alert {
+  --tone: var(--color-alert);
+  --tone-rgb: 255 164 148;
+}
+
 /* The range bar's momentum light (Estimate, and the landing strip at its own scale): which way the
    reading is heading, built in light like a long exposure. The glow is a comet's coma, brightest on
    the now tick and tapering the way it is going; the core is the band gone white-hot at the tick,
    thinning to the ring (rising, blue-white) or to where it was an hour ago (falling, dimmer, white
    only). Static: it never moves at rest; .band-ease carries it when the value changes. */
 .momentum-glow {
-  background: radial-gradient(100% 50% at 0% 50%, rgb(250 250 250 / 0.95) 0%, rgb(250 250 250 / 0.6) 18%, rgb(124 180 255 / 0.5) 40%, rgb(124 180 255 / 0) 100%);
+  background: radial-gradient(100% 50% at 0% 50%, rgb(250 250 250 / 0.95) 0%, rgb(250 250 250 / 0.6) 18%, rgb(var(--tone-rgb) / 0.5) 40%, rgb(var(--tone-rgb) / 0) 100%);
   filter: blur(3px);
   pointer-events: none;
 }
@@ -434,7 +446,7 @@
   background: radial-gradient(100% 50% at 0% 50%, rgb(250 250 250 / 0.55) 0%, rgb(250 250 250 / 0.3) 25%, rgb(250 250 250 / 0) 100%);
 }
 .momentum-core {
-  background: linear-gradient(to right, rgb(250 250 250 / 1), rgb(250 250 250 / 0.85) 30%, rgb(124 180 255 / 0.4) 70%, rgb(124 180 255 / 0));
+  background: linear-gradient(to right, rgb(250 250 250 / 1), rgb(250 250 250 / 0.85) 30%, rgb(var(--tone-rgb) / 0.4) 70%, rgb(var(--tone-rgb) / 0));
 }
 .momentum-core-fall {
   background: linear-gradient(to right, rgb(250 250 250 / 0.7), rgb(250 250 250 / 0.3) 50%, rgb(250 250 250 / 0));

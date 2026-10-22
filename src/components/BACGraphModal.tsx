@@ -5,6 +5,8 @@ import { TimelineChart } from "./night/TimelineCard";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 
 interface BACGraphModalProps {
+  /** The screen is red (the shown number is 0.05 or more): the curve takes the alert colour too. */
+  alert?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   drinks: Drink[];
@@ -13,7 +15,7 @@ interface BACGraphModalProps {
 }
 
 /** The bigger curve: same chart as the main screen, with hour labels and the top value. */
-export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex }: BACGraphModalProps) {
+export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex, alert = false }: BACGraphModalProps) {
   const now = new Date();
   const simulation = open && userWeight && userSex ? simulateNight(drinks, userWeight, userSex, now) : null;
 
@@ -25,7 +27,7 @@ export function BACGraphModal({ open, onOpenChange, drinks, userWeight, userSex 
         if (next && document.activeElement instanceof HTMLElement) document.activeElement.blur();
       }}
     >
-      <DialogContent className="fixed top-1/2 left-1/2 z-[130] mx-auto w-[94vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-panel border-0 bg-surface p-0">
+      <DialogContent className={`${alert ? "tone-alert" : ""} fixed top-1/2 left-1/2 z-[130] mx-auto w-[94vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-panel border-0 bg-surface p-0`}>
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-2xl font-bold text-ink">Tonight&apos;s curve</DialogTitle>
           <DialogDescription className="text-lg text-ink-2">

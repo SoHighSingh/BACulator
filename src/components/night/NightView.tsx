@@ -99,7 +99,7 @@ export function NightView(props: NightViewProps) {
           <div className={`glass-field ${model.alert ? "is-alert" : ""} ${animateAlert ? "is-anim" : ""}`} aria-hidden="true" />
           <AlertFavicon alert={model.alert} />
           <div
-            className="night-cols relative mx-auto flex w-full max-w-[480px] flex-col gap-4 px-4 pt-[max(12px,env(safe-area-inset-top))]"
+            className={`night-cols ${model.alert ? "tone-alert" : ""} relative mx-auto flex w-full max-w-[480px] flex-col gap-4 px-4 pt-[max(12px,env(safe-area-inset-top))]`}
             style={{ paddingBottom: dockHeight + 24 }}
           >
             {/* No bar: the mark (with the hazard key beside it once the range reaches 0.05) and the You

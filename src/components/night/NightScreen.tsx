@@ -203,7 +203,7 @@ export function NightScreen({ userWeight, userSex, onOpenUserInfo }: NightScreen
         }}
       />
 
-      <BACGraphModal open={timelineOpen} onOpenChange={setTimelineOpen} drinks={drinks} userWeight={userWeight} userSex={userSex} />
+      <BACGraphModal open={timelineOpen} onOpenChange={setTimelineOpen} drinks={drinks} userWeight={userWeight} userSex={userSex} alert={model.alert} />
     </>
   );
 }

@@ -107,7 +107,7 @@ export function Estimate({ bac, peak, status, hourAgo = null, size = "md", onOpe
           <span aria-hidden="true" className="absolute inset-x-0 top-6 h-1 rounded-circle bg-white/10" />
           <span
             aria-hidden="true"
-            className="band-ease absolute top-6 h-1 rounded-circle bg-signal shadow-[0_0_16px_2px_rgb(124_180_255/0.55)]"
+            className="band-ease absolute top-6 h-1 rounded-circle bg-[var(--tone)] shadow-[0_0_16px_2px_rgb(var(--tone-rgb)/0.55)]"
             style={{ left: pct(bac * BAND_LOW), width: `calc(${pct(bac * BAND_HIGH)} - ${pct(bac * BAND_LOW)})` }}
           />
           {lightStyle && (
