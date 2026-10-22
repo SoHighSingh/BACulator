@@ -231,7 +231,17 @@ export function AddDock(props: AddDockProps) {
             className="press flex min-h-14 min-w-0 flex-1 items-center justify-center gap-2 rounded-key bg-white/[0.05] px-4 text-lg font-medium shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/10"
           >
             <Keyboard aria-hidden="true" className="size-6 shrink-0" strokeWidth={2} />
-            <span className="truncate">{hasVoice ? "Type or say a drink" : "Type a drink"}</span>
+            {/* Under 360px the mic key isn't beside it, so the label doesn't promise it. */}
+            <span className="truncate">
+              {hasVoice ? (
+                <>
+                  <span className="min-[360px]:hidden">Type a drink</span>
+                  <span className="hidden min-[360px]:inline">Type or say a drink</span>
+                </>
+              ) : (
+                "Type a drink"
+              )}
+            </span>
           </button>
           {/* Under 360px the label needs the width; the mic is still inside the composer. */}
           {hasVoice && (

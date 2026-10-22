@@ -40,7 +40,7 @@ const STEP = 5 * 60_000;
  * solid over a soft wash up to now and dashed, dimmer after. A hairline and a ringed dot mark now;
  * hour labels sit along the bottom. Nothing else: no value axis, no grid, no band. No horizontal
  * line ever reads as a limit. The bigger graph adds the whole night, the likely range as a band
- * (the doubt, not a limit) and each drink as a dot on the curve. Drag or arrow across it to read any time; the header reads the time.
+ * (the doubt, not a limit) and each drink as a dot on the curve. Drag, tap or arrow across it to read any time; the reading stays up after the finger lifts, and a tap on it clears it.
  * Everything is in CSS pixels (measured, never stretched), so strokes stay exact at every width.
  */
 export function SignalChart({ simulation, now, height, events = [], onPick, readout = false, smooth = true, ariaLabel, whole = false, band = false, marks = [] }: SignalChartProps) {
@@ -48,6 +48,8 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [scrub, setScrub] = useState<number | null>(null);
+  // A reading stays up after the finger lifts, to be read; a tap (no drag) on a pinned reading clears it.
+  const press = useRef<{ x: number; moved: boolean; wasPinned: boolean } | null>(null);
   const { samples } = simulation;
   const nowT = now.getTime();
 
@@ -153,11 +155,25 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
       style={{ height: total }}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
+        press.current = { x: e.clientX, moved: false, wasPinned: scrub !== null };
+        if (scrub === null) pickClient(e.clientX);
+      }}
+      onPointerMove={(e) => {
+        const p = press.current;
+        if (!p || !e.buttons) return;
+        if (!p.moved && Math.abs(e.clientX - p.x) < 6) return;
+        p.moved = true;
         pickClient(e.clientX);
       }}
-      onPointerMove={(e) => e.buttons && pickClient(e.clientX)}
-      onPointerUp={() => pickAt(null)}
-      onPointerCancel={() => pickAt(null)}
+      onPointerUp={() => {
+        const p = press.current;
+        press.current = null;
+        if (p && !p.moved && p.wasPinned) pickAt(null);
+      }}
+      onPointerCancel={() => {
+        press.current = null;
+        pickAt(null);
+      }}
       onKeyDown={onKey}
       onBlur={() => scrub !== null && pickAt(null)}
     >
