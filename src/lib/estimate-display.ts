@@ -9,9 +9,11 @@ export const BAND_LOW = 0.75;
 export const BAND_HIGH = 1.4;
 // Elimination runs about 0.010–0.025 g/dL/h around the model's 0.015 (Jones 2010), so a slow
 // eliminator reaches zero about 1.5× later than the model; body-water variance stretches that further.
-const ZERO_EARLY = 0.75;
+// The screen shows the model's own time (user decision, 23 Oct 2026: a 0.75–1.6× window ran to six
+// hours and was useless; "it's a prediction and we have clarified that"); ZERO_LATE only keeps the
+// model's own slow-eliminator tail.
 const ZERO_LATE = 1.6;
-const QUARTER_HOUR_MS = 15 * 60 * 1000;
+const FIVE_MIN_MS = 5 * 60 * 1000;
 // One threshold for every region (stricter than the US 0.08). User decision, 18 Oct 2026 late: the
 // screen goes red when the shown number reaches it, and the hazard key appears once the top of the
 // likely range reaches it. Neither is framed as a driving or legal state.
@@ -26,11 +28,11 @@ export interface EstimateDisplay {
   /** The likely range around it: "0.05–0.08", "under 0.01" or "0.00" */
   band: string;
   status: "rising" | "falling" | "none";
-  /** "between 2:30 and 4:00 am", or null when nothing is left to wear off */
+  /** "about 3:45 am", or null when nothing is left to wear off */
   backToZero: string | null;
   /**
-   * When the red field ends, as the same kind of window: "between 1:00 and 3:15 am". Null when the
-   * shown number is under 0.05 and stays there, or is still above at the model's horizon.
+   * When the red field ends, the same way: "about 1:10 am". Null when the shown number is under
+   * 0.05 and stays there, or is still above at the model's horizon.
    */
   belowAlert: string | null;
   /** True whenever any alcohol is counted, including drinks still being absorbed */
@@ -98,25 +100,14 @@ export function isHazard(bac: number | null): boolean {
   return Math.max(ceil2(bac * BAND_HIGH), low + 0.01) >= ALERT_AT;
 }
 
-function roundToQuarterHour(ms: number) {
-  return new Date(Math.round(ms / QUARTER_HOUR_MS) * QUARTER_HOUR_MS);
-}
-
-const clockTime = (date: Date, withPeriod: boolean) => formatClock(date, { period: withPeriod });
-
+/**
+ * The model's own time for it, rounded UP to five minutes (never earlier than the model says), with
+ * "about": "about 3:45 am". Null when nothing is left to wear off.
+ */
 export function formatBackToZero(hoursToZero: number, now: Date): string | null {
   if (hoursToZero <= 0) return null;
-  const early = roundToQuarterHour(now.getTime() + hoursToZero * ZERO_EARLY * 3_600_000);
-  let late = roundToQuarterHour(now.getTime() + hoursToZero * ZERO_LATE * 3_600_000);
-  // Always a window, never one clock time (a single time reads like a target).
-  if (late.getTime() <= early.getTime()) late = new Date(early.getTime() + QUARTER_HOUR_MS);
-  const samePeriod = early.getHours() < 12 === late.getHours() < 12;
-  return `between ${clockTime(early, !samePeriod)} and ${clockTime(late, true)}`;
-}
-
-/** A window as a table value: "between 2:30 and 6:15 am" → "2:30 to 6:15 am". */
-export function asRange(window: string): string {
-  return window.replace(/^between /, "").replace(" and ", " to ");
+  const at = Math.ceil((now.getTime() + hoursToZero * 3_600_000) / FIVE_MIN_MS) * FIVE_MIN_MS;
+  return `about ${formatClock(new Date(at), { period: true })}`;
 }
 
 /**

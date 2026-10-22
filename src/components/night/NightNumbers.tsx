@@ -1,17 +1,17 @@
-import { asRange, type NightModel } from "~/lib/estimate-display";
+import type { NightModel } from "~/lib/estimate-display";
 
 /**
  * The two forward-looking times, as table rows (user decision, 22 Oct 2026): Back to zero, and
- * Below 0.05, which is when the red field ends (the drawn number drops under 0.050). Both are
- * windows, never one clock time. Peak lives on the bar, the count lives in Your tab, and the one
+ * Below 0.05, which is when the red field ends (the drawn number drops under 0.050). Both are the
+ * model's own time with "about" (user decision, 23 Oct 2026). Peak lives on the bar, the count lives in Your tab, and the one
  * disclaimer lives in the details sheet.
  */
 export function nightRows(model: NightModel): [string, string][] {
   const rows: [string, string][] = [];
   const zero = model.estimate?.backToZero;
   const below = model.estimate?.belowAlert;
-  if (zero) rows.push(["Back to zero", asRange(zero)]);
-  if (below) rows.push(["Below 0.05", asRange(below)]);
+  if (zero) rows.push(["Back to zero", zero]);
+  if (below) rows.push(["Below 0.05", below]);
   return rows;
 }
 

@@ -39,7 +39,7 @@ export function CodePanel({ demo }: { demo: DemoNight }) {
   const point = aboutPoint(bac)[1];
   const band = formatBand(bac).replace("–", " to ");
   const hours = result?.timeToSober ?? 0;
-  const zero = formatBackToZero(hours, now)?.replace("between ", "") ?? "now";
+  const zero = formatBackToZero(hours, now) ?? "now";
 
   const lines: { name: string; formula: ReactNode; value: string }[] = [
     { name: "drinks", formula: <>{drinks.length} × <N>10</N> g</>, value: `${grams} g` },
@@ -47,7 +47,7 @@ export function CodePanel({ demo }: { demo: DemoNight }) {
     { name: "all at once", formula: <>grams ÷ (r × kg × <N>10</N>)</>, value: (Math.ceil(allAtOnce * 100) / 100).toFixed(2) },
     { name: "now", formula: <>absorbed over <N>30</N> min, cleared <N>0.015</N> an hour, rounded up</>, value: `about ${point}` },
     { name: "likely", formula: <>now × <N>0.75</N> … <N>1.4</N></>, value: band },
-    { name: "zero", formula: <>{hours > 0 ? hoursMinutes(hours) : "now"} × <N>0.75</N> … <N>1.6</N></>, value: zero },
+    { name: "zero", formula: <>{hours > 0 ? hoursMinutes(hours) : "now"} from now, rounded up</>, value: zero },
   ];
 
   return (

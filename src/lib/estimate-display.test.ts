@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { calculateBACAtTime, findTimeToTarget } from "./bac-calculator";
 import {
-  asRange,
   describeEstimate,
   describeNight,
   displayPoint,
@@ -56,12 +55,11 @@ describe("formatBackToZero", () => {
     expect(formatBackToZero(0, now)).toBeNull();
   });
 
-  it("gives a quarter-hour window that starts before and ends after the point estimate", () => {
-    expect(formatBackToZero(4, now)).toBe("between 2:00 and 5:30 am");
-  });
-
-  it("names both periods when the window crosses noon", () => {
-    expect(formatBackToZero(14, now)).toMatch(/^between \d{1,2}:\d{2} am and \d{1,2}:\d{2} pm$/);
+  it("is the model's own time, rounded up to five minutes, never earlier", () => {
+    const text = formatBackToZero(4, now)!;
+    expect(text).toMatch(/^about \d{1,2}:\d{2} (am|pm)$/);
+    expect(formatBackToZero(4 + 1 / 60, now)).not.toBe(text); // a minute later rounds up past it
+    expect(Number(/:(\d{2})/.exec(text)![1]) % 5).toBe(0);
   });
 });
 
@@ -147,12 +145,11 @@ describe("the Below 0.05 window", () => {
     finishedAt: new Date(now.getTime() - minutesAgo * 60000),
   });
 
-  it("is a window like Back to zero, and comes before it, while the screen is red", () => {
+  it("reads like Back to zero, while the screen is red", () => {
     const m = describeNight([drink(90, 2), drink(45, 2), drink(15, 2)], 75, "male", now);
     expect(m.alert).toBe(true);
-    expect(m.estimate!.belowAlert).toMatch(/^between \d{1,2}:\d{2}( am| pm)? and \d{1,2}:\d{2} (am|pm)$/);
-    expect(m.estimate!.backToZero).not.toBeNull();
-    expect(asRange(m.estimate!.belowAlert!)).toMatch(/ to /);
+    expect(m.estimate!.belowAlert).toMatch(/^about \d{1,2}:\d{2} (am|pm)$/);
+    expect(m.estimate!.backToZero).toMatch(/^about \d{1,2}:\d{2} (am|pm)$/);
   });
 
   it("is keyed on the same moment the red ends, to the minute", () => {
@@ -174,11 +171,6 @@ describe("the Below 0.05 window", () => {
     expect(describeNight([drink(30, 4)], null, null, now).estimate).toBeNull();
   });
 
-  it("never collapses to a single clock time", () => {
-    expect(formatBackToZero(0.05, now)).toMatch(/^between .+ and .+$/);
-    const [a, b] = asRange(formatBackToZero(0.05, now)!).split(" to ");
-    expect(a).not.toBe(b!.replace(/ (am|pm)$/, ""));
-  });
 });
 
 describe("red and the hazard key (user decision, 18 Oct 2026 late: 0.05, by what is shown)", () => {

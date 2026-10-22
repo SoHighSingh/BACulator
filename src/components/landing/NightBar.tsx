@@ -28,7 +28,7 @@ export function NightBar({ demo }: { demo: DemoNight }) {
   const stages = [
     { key: "in", from: start, to: inEnd, title: "Going in", note: `Drinks from ${formatClock(new Date(start))}, each mostly absorbed within 30 minutes.`, cls: "bg-signal text-bg" },
     { key: "out", from: inEnd, to: clearEnd, title: "Clearing", note: "Your body clears about 0.015 an hour, at its own pace.", cls: "bg-signal/35 text-ink" },
-    { key: "zero", from: clearEnd, to: end, title: "Back to zero", note: `Likely ${formatBackToZero(result.timeToSober, now) ?? "now"}.`, cls: "nightbar-tail text-ink" },
+    { key: "zero", from: clearEnd, to: end, title: "Back to zero", note: `${formatBackToZero(result.timeToSober, now) ?? "Now"}.`, cls: "nightbar-tail text-ink" },
   ];
   // Each stretch as wide as it lasts, with a floor so a short one still holds its title.
   const raw = stages.map((s) => Math.max(20, ((s.to - s.from) / span) * 100));
