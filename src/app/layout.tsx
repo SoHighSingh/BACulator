@@ -7,7 +7,8 @@ import UserInfoSlideOutProvider from "../components/UserInfoSlideOutProvider";
 import { RegionProvider } from "~/hooks/useRegion";
 
 const SITE_URL = "https://www.baculator.com";
-const TITLE = "BACulator — Blood Alcohol & Standard Drinks Calculator";
+// The tab always reads just "BACulator" (user decision, 22 Oct 2026); the description carries the rest.
+const TITLE = "BACulator";
 const DESCRIPTION =
   "Free BAC calculator. Add beers, wine, spirits or cocktails in one tap and estimate your blood alcohol and when it'll be back to zero. An estimate only — not a measure of fitness to drive.";
 

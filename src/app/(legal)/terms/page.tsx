@@ -3,7 +3,7 @@ import { type Metadata } from "next";
 import { CONTACT_EMAIL, LAST_UPDATED } from "../contact";
 
 export const metadata: Metadata = {
-  title: "Terms of Use - BACulator",
+  title: "BACulator",
   description: "The terms for using BACulator.",
 };
 

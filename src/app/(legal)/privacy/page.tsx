@@ -5,7 +5,7 @@ import { CONTACT_EMAIL, LAST_UPDATED, OAIC_COMPLAINTS_URL } from "../contact";
 // DRAFT for the owner's review (17 Oct 2026). Not legal advice; open questions are listed in the PR.
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - BACulator",
+  title: "BACulator",
   description: "What BACulator stores, why, where it goes, and how to see, download or delete it.",
 };
 
