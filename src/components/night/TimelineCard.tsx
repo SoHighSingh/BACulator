@@ -21,11 +21,29 @@ interface ChartProps {
   events?: number[];
   /** Reports the scrubbed time (null at rest), so a header can read it. */
   onPick?: (t: number | null, bac: number) => void;
+  /** The bigger graph's extras: the whole night, the likely band, drinks as dots on the curve. */
+  whole?: boolean;
+  band?: boolean;
+  marks?: { t: number; key: string }[];
+  selected?: string | null;
 }
 
 /** Tonight's curve (see chart/SignalChart). The bigger graph uses it too, with a readout. */
-export function TimelineChart({ simulation, now, height, axes = false, events, onPick }: ChartProps) {
-  return <SignalChart simulation={simulation} now={now} height={height} events={events} onPick={onPick} readout={axes} />;
+export function TimelineChart({ simulation, now, height, axes = false, events, onPick, whole, band, marks, selected }: ChartProps) {
+  return (
+    <SignalChart
+      simulation={simulation}
+      now={now}
+      height={height}
+      events={events}
+      onPick={onPick}
+      readout={axes}
+      whole={whole}
+      band={band}
+      marks={marks}
+      selected={selected}
+    />
+  );
 }
 
 interface TimelineCardProps {

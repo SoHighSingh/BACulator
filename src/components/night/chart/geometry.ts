@@ -34,13 +34,14 @@ export interface ChartWindow {
  * The time window: from the first drink, looking ahead as far as has already passed (at least 3 h),
  * so tonight isn't squashed into a corner by the long tail.
  */
-export function chartWindow(sim: NightSimulation, now: Date): ChartWindow {
+/** `whole`: the whole night, from the first drink to the model's zero (the bigger graph). */
+export function chartWindow(sim: NightSimulation, now: Date, whole = false): ChartWindow {
   const { samples } = sim;
   const nowT = now.getTime();
   const t0 = samples[0]?.t ?? nowT;
   const last = samples[samples.length - 1]?.t ?? t0 + 1;
   const ahead = Math.max(3 * HOUR, nowT - t0);
-  const t1 = Math.max(nowT + 30 * MINUTE, Math.min(last, nowT + ahead));
+  const t1 = whole ? Math.max(nowT + 30 * MINUTE, last) : Math.max(nowT + 30 * MINUTE, Math.min(last, nowT + ahead));
   const end = samples.findIndex((s) => s.t > t1);
   const shown = end === -1 ? samples : samples.slice(0, end + 1);
   const top = Math.max(0.02, ...shown.map((s) => s.bac));

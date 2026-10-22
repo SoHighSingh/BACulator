@@ -3,7 +3,7 @@
 import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { NightSimulation } from "~/lib/bac-calculator";
-import { formatPoint } from "~/lib/estimate-display";
+import { BAND_HIGH, BAND_LOW, formatPoint } from "~/lib/estimate-display";
 import { formatClock, formatHour } from "~/lib/format-clock";
 
 import { chartWindow, crisp, monotonePath, polyline, thin, valueAt } from "./geometry";
@@ -22,6 +22,13 @@ export interface SignalChartProps {
   /** Draw the samples as a smooth monotone curve (default) or as the raw polyline. */
   smooth?: boolean;
   ariaLabel?: string;
+  /** The bigger graph: the whole night to zero, not the next few hours. */
+  whole?: boolean;
+  /** The bigger graph: the likely range (0.75–1.4× of the curve) as a soft band around it. */
+  band?: boolean;
+  /** The bigger graph: each drink as a dot on the curve; `selected` is drawn large with a guide. */
+  marks?: { t: number; key: string }[];
+  selected?: string | null;
 }
 
 const AXIS_H = 26;
@@ -33,10 +40,11 @@ const STEP = 5 * 60_000;
  * passes through every sample and never overshoots, so the peak and each drink's rise are honest),
  * solid over a soft wash up to now and dashed, dimmer after. A hairline and a ringed dot mark now;
  * hour labels sit along the bottom. Nothing else: no value axis, no grid, no band. No horizontal
- * line ever reads as a limit. Drag or arrow across it to read any time; the header reads the time.
+ * line ever reads as a limit. The bigger graph adds the whole night, the likely range as a band
+ * (the doubt, not a limit) and each drink as a dot on the curve. Drag or arrow across it to read any time; the header reads the time.
  * Everything is in CSS pixels (measured, never stretched), so strokes stay exact at every width.
  */
-export function SignalChart({ simulation, now, height, events = [], onPick, readout = false, smooth = true, ariaLabel }: SignalChartProps) {
+export function SignalChart({ simulation, now, height, events = [], onPick, readout = false, smooth = true, ariaLabel, whole = false, band = false, marks = [], selected = null }: SignalChartProps) {
   const id = useId().replace(/:/g, "");
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -54,10 +62,12 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
     return () => ro.disconnect();
   }, []);
 
-  const win = useMemo(() => chartWindow(simulation, now), [simulation, now]);
+  const win = useMemo(() => chartWindow(simulation, now, whole), [simulation, now, whole]);
+  // With the band drawn, the scale leaves room for its top edge.
+  const top = band ? win.top * BAND_HIGH : win.top;
   const H = height;
   const x = useCallback((t: number) => ((t - win.t0) / (win.t1 - win.t0)) * width, [win.t0, win.t1, width]);
-  const y = useCallback((b: number) => PAD_TOP + (1 - b / win.top) * (H - PAD_TOP), [win.top, H]);
+  const y = useCallback((b: number) => PAD_TOP + (1 - b / top) * (H - PAD_TOP), [top, H]);
   const baseY = crisp(y(0));
 
   const paths = useMemo(() => {
@@ -69,8 +79,14 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
     const lastX = pts[pts.length - 1]?.[0] ?? 0;
     const firstX = pts[0]?.[0] ?? 0;
     const area = `${line} L${lastX.toFixed(2)} ${y(0).toFixed(2)} L${firstX.toFixed(2)} ${y(0).toFixed(2)} Z`;
-    return { line, area };
-  }, [win.shown, x, y, smooth]);
+    let range = "";
+    if (band) {
+      const hi = thin(win.shown.map((s): [number, number] => [x(s.t), y(s.bac * BAND_HIGH)]), 2);
+      const lo = thin(win.shown.map((s): [number, number] => [x(s.t), y(s.bac * BAND_LOW)]), 2).reverse();
+      range = `${monotonePath(hi)} L${polyline(lo).slice(1)} Z`;
+    }
+    return { line, area, range };
+  }, [win.shown, x, y, smooth, band]);
 
   const nowX = x(nowT);
   const nowY = y(valueAt(samples, nowT));
@@ -159,6 +175,9 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
             </clipPath>
           </defs>
 
+          {/* The likely range: a soft band around the whole curve, past and future alike. */}
+          {paths.range && <path d={paths.range} fill="var(--tone)" fillOpacity={0.14} />}
+
           {/* Past: the signal over a soft wash. */}
           <g clipPath={`url(#past-${id})`}>
             <path d={paths.area} fill={`url(#wash-${id})`} />
@@ -199,6 +218,21 @@ export function SignalChart({ simulation, now, height, events = [], onPick, read
           />
           <circle cx={nowX} cy={nowY} r={8} fill="var(--tone)" fillOpacity={scrub === null ? 0.35 : 0.18} />
           <circle cx={nowX} cy={nowY} r={4.5} fill="var(--color-ink)" fillOpacity={scrub === null ? 1 : 0.6} />
+
+          {/* Drinks, as dots on the curve; the chosen one large, with a guide down to its time. */}
+          {marks
+            .filter((m) => m.t >= win.t0 && m.t <= win.t1)
+            .map((m) => {
+              const on = m.key === selected;
+              const mx = x(m.t);
+              const my = y(valueAt(samples, m.t));
+              return (
+                <g key={m.key}>
+                  {on && <line x1={crisp(mx)} x2={crisp(mx)} y1={my} y2={baseY} stroke="var(--color-ink)" strokeOpacity={0.6} strokeWidth={1} />}
+                  <circle cx={mx} cy={my} r={on ? 7 : 4.5} fill={on ? "var(--color-ink)" : "var(--color-surface)"} stroke="var(--tone)" strokeWidth={2} />
+                </g>
+              );
+            })}
 
           {/* Cursor while scrubbing. */}
           {scrub !== null && (
