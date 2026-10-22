@@ -24,7 +24,10 @@ The kickoff prompt is in `docs/next-session/KICKOFF.md`. The user's own list, wo
 - In production a just-added drink isn't counted for up to 30 s, because `now` isn't refreshed on add.
 - The first drink shows 0.00 with no bar, then "under 0.01", then 0.01: three layout shapes. This ties into the engine lag in `docs/analysis/06-bac-engine.md`.
 
-## 23 Oct 2026: the next-session list, in progress (local commits, not deployed)
+## 23 Oct 2026: the next-session list, done and deployed
+- **Live at baculator.com,** Worker version `3a3bd458-3d47-4ba3-b237-8cd4fe222c32`, from commit 7d95426 on `cloudflare-d1-migration` (not pushed to GitHub). No D1 migrations were needed. Checked live: the landing opens at 0.04, the maths card has no drive row or raw decimals and reads "zero … about 4:20 am", `/api/auth/session` answers, `/dev/night` is 404.
+- **Big graph:** a centred glass card (glass-strong, the sheets' header and close key) with the whole night, the range band and drink dots (user: keep the card, make it glassy).
+- **Follow-up:** the landing maths card's first row says "2 × 10 g → 26 g" (it counts drinks, but the grams come from 2.6 standards); it should read "2.6 std × 10 g".
 User decisions: recents keep an inline "Add now" (repeat = 2 taps); the Numbers row says "Below 0.05"; red follows the shown three-decimal value; Remove lives in the Change sheet.
 - **P0 done:** the landing maths card has no drive row or raw decimals; one rounding rule (`loggedStandards`); the edit bug is fixed with a real `update` outbox op (`planRemoval`, `editChange`, regression tests in `night-model.test.ts`), "Changed … [Undo]" restores the old values, and the clock moves on at once after add/edit/remove/undo. The user said to wait before deploying.
 - **P1 done:** two-step Add a drink (How much / When) with continuous eased sliders (`eased-scale.ts`, `add/EasedSlider.tsx`, measured 1 px of thumb per 1 px of finger, 4 px slop, 60% hysteresis, settles on release). Change drink uses the same controls.
