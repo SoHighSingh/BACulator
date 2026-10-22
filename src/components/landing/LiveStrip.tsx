@@ -59,7 +59,8 @@ export function LiveStrip({ demo }: { demo: DemoNight }) {
   const changed = useChanged(point);
   const [lo, hi] = formatBand(bac).split("–");
   const rising = model.peak && model.peak.bac > bac + 0.004 ? model.peak : null;
-  const falling = !rising && bac > 0.004;
+  // Falling only when the engine says so: a peak just 0.003 ahead is still rising, not falling.
+  const falling = !rising && model.estimate?.status === "falling" && bac > 0.004;
   // Where the model was an hour ago: the falling tail runs back to it.
   const hourAgo = model.simulation ? valueAt(model.simulation.samples, demo.now.getTime() - 3_600_000) : 0;
   const tailTo = falling && hourAgo > bac + 0.004 ? hourAgo : null;

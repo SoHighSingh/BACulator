@@ -8,8 +8,9 @@ import { calculateBAC } from "~/lib/bac-calculator";
 import { describeNight } from "~/lib/estimate-display";
 
 /**
- * The landing page's sample night: a stated demo person (75 kg) and four drinks over the last hour
- * and a half, run through the real engine. Visitors add drinks to it and can switch the Widmark
+ * The landing page's sample night: a stated demo person (75 kg) and two drinks in the last hour,
+ * run through the real engine. It opens calm (about 0.03, blue), so the first thing a visitor sees
+ * isn't the alarm state; a couple of taps on the drinks take it red. Visitors add drinks to it and can switch the Widmark
  * ratio between female and male; nothing is saved.
  */
 export const DEMO_WEIGHT = 75;
@@ -17,10 +18,8 @@ export type DemoSex = "female" | "male";
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 const sample = (): LoggedDrink[] => [
-  { id: "a", standards: 1.6, finishedAt: minutesAgo(95), name: "Schooner of lager", volumeMl: 425, abv: 4.8, count: 1 },
-  { id: "b", standards: 1.6, finishedAt: minutesAgo(50), name: "Schooner of lager", volumeMl: 425, abv: 4.8, count: 1 },
-  { id: "c", standards: 1.6, finishedAt: minutesAgo(20), name: "Glass of red", volumeMl: 150, abv: 13.5, count: 1 },
-  { id: "d", standards: 1, finishedAt: minutesAgo(6), name: "Vodka soda", volumeMl: 30, abv: 40, count: 1 },
+  { id: "a", standards: 1.6, finishedAt: minutesAgo(70), name: "Schooner of lager", volumeMl: 425, abv: 4.8, count: 1 },
+  { id: "b", standards: 1, finishedAt: minutesAgo(10), name: "Vodka soda", volumeMl: 30, abv: 40, count: 1 },
 ];
 
 export const DEMO_DRINKS: QuickDrink[] = [
@@ -84,7 +83,7 @@ export function useDemoNight() {
     setNow(new Date());
   }
 
-  /** Back to the sample night (which is above zero, so the field is red again). */
+  /** Back to the sample night (calm again, about 0.03). */
   function reset() {
     setDrinks(sample());
     setLastAdded(null);
