@@ -71,7 +71,7 @@ export function WhenControl({ minutesAgo, onChange, now }: WhenControlProps) {
         valueText={text}
         pageStep={30}
       />
-      <div aria-hidden="true" className="-mt-3 flex justify-between px-1 text-base text-ink-2">
+      <div aria-hidden="true" className="-mt-3 flex justify-between px-1 text-lg text-ink-2">
         <span>12 h ago</span>
         <span>now</span>
       </div>
@@ -88,8 +88,8 @@ export function WhenControl({ minutesAgo, onChange, now }: WhenControlProps) {
                 onChange(m);
                 setSaid(text(m));
               }}
-              className={`press min-h-12 flex-auto rounded-key px-2 text-lg whitespace-nowrap ${
-                on ? "bg-ink font-medium text-bg" : "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]"
+              className={`press min-h-12 min-w-12 flex-auto rounded-key px-2 text-lg whitespace-nowrap ${
+                on ? "bg-ink font-medium text-bg" : "bg-white/[0.08] hover:bg-white/[0.12]"
               }`}
             >
               {chipLabel(m)}

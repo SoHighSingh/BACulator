@@ -1,6 +1,6 @@
 "use client";
 
-import { Keyboard, Minus, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { useRegion } from "~/hooks/useRegion";
@@ -73,10 +73,9 @@ export function AmountControl({ standards, onChange, onEnter }: AmountControlPro
               type="button"
               onClick={() => setTyping(formatStandards(shown))}
               aria-label={`${words(shown)}. Tap to type a number`}
-              className="press flex min-h-[72px] min-w-36 items-center justify-center gap-2 rounded-key px-3 text-[56px] leading-none font-medium tracking-[-0.02em] tabular-nums shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-white/[0.06]"
+              className="press min-h-[72px] min-w-36 rounded-key bg-white/[0.06] px-4 text-[56px] leading-none font-medium tracking-[-0.02em] tabular-nums hover:bg-white/[0.1]"
             >
               {formatStandards(shown)}
-              <Keyboard aria-hidden="true" className="size-5 shrink-0 text-ink-2" strokeWidth={2.25} />
             </button>
           ) : (
             <input
@@ -114,15 +113,15 @@ export function AmountControl({ standards, onChange, onEnter }: AmountControlPro
                   setTyping(null);
                 }
               }}
-              className="min-h-[72px] w-40 rounded-key bg-white/[0.08] text-center text-[56px] leading-none font-medium tracking-[-0.02em] tabular-nums shadow-[inset_0_0_0_2px_var(--color-ink)] outline-none"
+              className="min-h-[72px] w-36 rounded-key bg-white/[0.14] text-center text-[56px] leading-none font-medium tracking-[-0.02em] tabular-nums caret-signal outline-none"
             />
           )}
           {bad ? (
-            <span id="amount-error" className="text-lg font-medium text-alert">
+            <span id="amount-error" className="mt-1 text-lg font-medium text-alert">
               Type a number, like 1.5
             </span>
           ) : (
-            <span className="text-lg text-ink-2">{typing === null ? "standard drinks · tap to type" : "standard drinks"}</span>
+            <span className="mt-1 text-lg text-ink-2">standard drinks</span>
           )}
         </div>
 
@@ -140,7 +139,7 @@ export function AmountControl({ standards, onChange, onEnter }: AmountControlPro
         valueText={words}
         pageStep={1}
       />
-      <div aria-hidden="true" className="-mt-2 flex justify-between px-1 text-base text-ink-2 tabular-nums">
+      <div aria-hidden="true" className="-mt-2 flex justify-between px-1 text-lg text-ink-2 tabular-nums">
         <span>0.1</span>
         <span>10+, type it</span>
       </div>

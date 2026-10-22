@@ -22,6 +22,7 @@ interface EasedSliderProps {
 }
 
 const THUMB = 32;
+const LIFT = "shadow-[0_2px_10px_rgb(0_0_0/0.5)]"; // taste-skill-ignore: the thumb really is lifted off the track
 /** The thumb answers a press this far either side of its centre (a 56 px zone). */
 const GRAB = 28;
 /** A wobble smaller than this after pressing isn't a drag (a typed 12 mustn't drop to 10 on a touch). */
@@ -143,7 +144,7 @@ export function EasedSlider({ scale, value, onChange, onCommit, reversed = false
       >
         <span
           aria-hidden="true"
-          className={`block size-8 rounded-circle bg-ink shadow-[0_2px_10px_rgb(0_0_0/0.5)] ${dragging ? "scale-110" : ""} motion-safe:transition-transform motion-safe:duration-150`}
+          className={`block size-8 rounded-circle bg-ink ${LIFT} ${dragging ? "scale-110" : ""} motion-safe:transition-transform motion-safe:duration-150`}
         />
       </div>
     </div>

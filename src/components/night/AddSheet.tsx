@@ -7,10 +7,9 @@ import { drinkLabel } from "~/lib/estimate-display";
 import { drinkKey } from "~/lib/night-model";
 import type { QuickDrink } from "./AddDock";
 import { AmountControl } from "./add/AmountControl";
-import { DrinkPicker, ICON_TILE, toSheetTop, type Picked } from "./add/DrinkPicker";
+import { DrinkPicker, toSheetTop, type Picked } from "./add/DrinkPicker";
 import { StepTabs, type Step } from "./add/StepTabs";
 import { WhenControl } from "./add/WhenControl";
-import { DrinkIcon, drinkKind } from "./DrinkIcon";
 import { Sheet } from "./Sheet";
 
 interface AddSheetProps {
@@ -30,7 +29,7 @@ type Named = Omit<Picked, "standards"> & { standards: number; source: "recent" |
 
 export const PRIMARY = "press key-glow flex min-h-16 w-full items-center justify-center gap-2 rounded-primary bg-ink text-xl font-medium text-bg disabled:opacity-40";
 /** The sticky key at the bottom of a sheet, over a fade so the content scrolls under it. */
-export const STICKY = "sticky -bottom-5 -mx-5 mt-auto -mb-5 bg-gradient-to-t from-[var(--glass-strong)] from-70% to-transparent px-5 pt-4 pb-5";
+export const STICKY = "sticky -bottom-5 -mx-5 mt-auto -mb-5 bg-gradient-to-t from-[var(--glass-strong)] from-70% to-transparent px-5 pt-4 pb-5"; // taste-skill-ignore: a neutral scrim, so content scrolls under the key
 
 /**
  * Add a drink in two steps, then Add. How much: a big typeable number, −/+ and a smooth slider,
@@ -121,7 +120,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
                   Recent
                 </h3>
                 <ul className="flex flex-col gap-2">
-                  {recents.slice(0, 4).map((d) => (
+                  {recents.slice(0, 3).map((d) => (
                     <RecentRow
                       key={drinkKey(d)}
                       drink={d}
@@ -166,10 +165,7 @@ export function AddSheet({ open, onClose, now, onAdd, recents = [], onAddRecent 
           </div>
         ) : (
           <div key="when" ref={toSheetTop} className="compose-in flex flex-col gap-5">
-            <p className="truncate px-1 text-lg text-ink-2">
-              <span className="font-medium text-ink tabular-nums">{std(standards)} std</span>
-              {name?.name ? ` · ${name.name}` : ""}
-            </p>
+            {name?.name && <p className="truncate px-1 text-lg font-medium">{name.name}</p>}
 
             <WhenControl minutesAgo={minutesAgo} onChange={setMinutesAgo} now={openedAt} />
 
@@ -191,27 +187,22 @@ function RecentRow({ drink, onPick, onAddNow }: { drink: QuickDrink; onPick: () 
   const { std } = useRegion();
   const label = drinkLabel(drink, std);
   return (
-    <li className="flex items-center gap-3 rounded-row bg-white/[0.05] pr-2 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+    <li className="flex items-center gap-3 rounded-row bg-white/[0.05] pr-2">
       <button
         type="button"
         onClick={onPick}
         aria-label={`${label}, ${std(drink.standards)} standard drinks. Choose when`}
-        className="press flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-l-row py-2 pr-1 pl-3 text-left hover:bg-white/[0.04]"
+        className="press flex min-h-16 min-w-0 flex-1 items-center justify-between gap-3 rounded-l-row py-2 pl-4 text-left"
       >
-        <span className={ICON_TILE}>
-          <DrinkIcon kind={drinkKind(drink)} className="size-6" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-lg leading-snug font-medium">{label}</span>
-          <span className="block text-lg leading-snug text-ink-2 tabular-nums">{std(drink.standards)} std</span>
-        </span>
+        <span className="line-clamp-2 text-lg leading-snug font-medium">{label}</span>
+        <span className="shrink-0 text-lg text-ink-2 tabular-nums">{std(drink.standards)}</span>
       </button>
       {onAddNow && (
         <button
           type="button"
           onClick={onAddNow}
           aria-label={`Add ${label} now`}
-          className="press flex min-h-12 shrink-0 items-center gap-1 rounded-key bg-white/[0.1] pr-4 pl-3 text-lg font-medium shadow-[inset_0_0_0_1px_rgb(255_255_255/0.18)] hover:bg-white/15"
+          className="press flex min-h-12 shrink-0 items-center gap-1 rounded-key bg-white/[0.1] pr-4 pl-3 text-lg font-medium hover:bg-white/15"
         >
           <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
           Add now

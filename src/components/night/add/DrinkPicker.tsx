@@ -12,7 +12,7 @@ import { sizesFor } from "./sizes";
 const MAX_COUNT = 6;
 
 export const ROW =
-  "press flex w-full items-center gap-4 rounded-row bg-white/[0.05] px-4 py-3 text-left shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] hover:bg-white/[0.08]";
+  "press flex w-full items-center gap-4 rounded-row bg-white/[0.05] px-4 py-3 text-left hover:bg-white/[0.08]";
 export const ICON_TILE = "grid size-11 shrink-0 place-items-center rounded-tile bg-white/[0.06] text-ink-2";
 
 /** A new view in a sheet starts at its top, so its back key and heading are never scrolled away. */
@@ -102,7 +102,7 @@ export function DrinkPicker({ onPick, onBack }: { onPick: (p: Picked) => void; o
                 role="radio"
                 aria-checked={on}
                 onClick={() => setVolumeMl(s.volumeMl)}
-                className={`${ROW} min-h-16 ${on ? "bg-white/[0.12] shadow-[inset_0_0_0_2px_var(--color-ink)]" : ""}`}
+                className={`${ROW} min-h-16 ${on ? "bg-white/[0.14]" : ""}`}
               >
                 <span className="min-w-0 flex-1">
                   <span className="block text-lg leading-snug font-medium">{s.size}</span>
@@ -110,7 +110,7 @@ export function DrinkPicker({ onPick, onBack }: { onPick: (p: Picked) => void; o
                     {formatVolume(s.volumeMl, region)} · {std(loggedStandards(rawStandards(1, s.volumeMl, serve.abv), region))} std
                   </span>
                 </span>
-                <span className={`grid size-7 shrink-0 place-items-center rounded-circle ${on ? "bg-ink text-bg" : "shadow-[inset_0_0_0_1.5px_var(--color-line)]"}`}>
+                <span className={`grid size-7 shrink-0 place-items-center rounded-circle ${on ? "bg-ink text-bg" : "bg-white/10"}`}>
                   {on && <Check aria-hidden="true" className="size-4" strokeWidth={3} />}
                 </span>
               </button>
@@ -119,7 +119,7 @@ export function DrinkPicker({ onPick, onBack }: { onPick: (p: Picked) => void; o
         </div>
       </section>
 
-      <div className="flex min-h-16 items-center justify-between gap-3 rounded-row bg-white/[0.04] px-4 py-2 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+      <div className="flex min-h-16 items-center justify-between gap-3 rounded-row bg-white/[0.04] px-4 py-2">
         <p className="text-lg font-semibold whitespace-nowrap">How many</p>
         <div className="flex items-center gap-2">
           <button type="button" aria-label="One fewer" disabled={count <= 1} onClick={() => setCount((c) => Math.max(1, c - 1))} className="press grid size-12 place-items-center rounded-key bg-white/10 disabled:opacity-40">
