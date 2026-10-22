@@ -1,6 +1,8 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { PrismaD1 } from "@prisma/adapter-d1";
-import { PrismaClient } from "@prisma/client";
+// The WASM build: the default entry can resolve to the Node engine in the Worker bundle, which
+// cannot run on Cloudflare ("could not locate the Query Engine"), breaking every DB call.
+import { PrismaClient } from "@prisma/client/wasm";
 
 import { env } from "~/env";
 

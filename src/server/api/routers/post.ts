@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client/wasm";
 
 import { TERMS_VERSION } from "~/lib/consent";
 import { NIGHT_WINDOW_MS, serverDrinkTime } from "~/lib/night-model";
