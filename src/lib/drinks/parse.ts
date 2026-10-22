@@ -330,11 +330,44 @@ export interface SegmentParse {
   mixerOnly: boolean;
   /** The mixer, so a mixer on its own ("a coke") can still be shown as a non-alcoholic drink. */
   mixer?: CatalogEntry;
+  /** Display names of the mixers in a mixer-only segment ("Red Bull"), for the spirit next to it. */
+  mixerLabels?: string[];
   /** True when the segment contained nothing that looks like a drink (stopwords, numbers). */
   empty: boolean;
 }
 
 const isAlcoholic = (e: CatalogEntry) => e.category !== "non_alcoholic";
+
+// Mixer words that describe how a spirit is served rather than what it is mixed with.
+const GARNISHES = new Set(["ice", "rock", "on the rock", "neat", "splash", "mint", "lime wedge"]);
+const MIXER_DISPLAY: Record<string, string> = { redbull: "Red Bull", oj: "OJ", "7up": "7UP", bitter: "Bitters", "coca cola": "Coca-Cola" };
+
+/** "red bull" -> "Red Bull": the user's own mixer words (as matched), for the drink's name. */
+function mixerLabels(matches: Match[]): string[] {
+  const labels: string[] = [];
+  for (const m of [...matches].sort((a, b) => a.start - b.start)) {
+    if (m.phrase.entry?.isMixer !== true) continue;
+    const words = m.phrase.tokens.join(" ");
+    if (GARNISHES.has(words)) continue;
+    const label = MIXER_DISPLAY[words] ?? words.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+    if (!labels.includes(label)) labels.push(label);
+  }
+  return labels;
+}
+
+/** Spirits and liqueurs take a mixer; a beer next to a coke is two drinks. */
+const takesMixer = (item: ParsedItem) =>
+  item.source === "catalog" && (item.category === "spirit" || item.category === "liqueur");
+
+/** "Vodka" + ["Red Bull"] -> "Vodka & Red Bull". The mixer adds no alcohol, so standards are unchanged. */
+function addMixers(item: ParsedItem, labels: string[]) {
+  const all = [...(item.mixer ? item.mixer.split(/, | & /) : []), ...labels.filter((l) => !item.mixer?.includes(l))];
+  if (all.length === 0) return;
+  const base = item.mixer ? item.name.slice(0, item.name.length - item.mixer.length - 3) : item.name;
+  const mixer = all.length === 1 ? all[0]! : `${all.slice(0, -1).join(", ")} & ${all[all.length - 1]!}`;
+  item.mixer = mixer;
+  item.name = `${base} & ${mixer}`;
+}
 
 function preprocess(text: string, index: CatalogIndex) {
   let norm = normaliseText(text);
@@ -428,6 +461,13 @@ function parseSegment(text: string, index: CatalogIndex): SegmentParse[] {
   // wins over a serve ("a cup of tea", "a pint of lemonade") except for spirit measures
   // ("a double with coke").
   const impliesSpirit = serve?.impliesCategory === "spirit";
+  // Only a glass and words we do not know ("blue lagoon jug", "a pint of blue lagoon"): the glass
+  // says nothing about what is in it, so leave it unread for the bartender (or the user) rather than
+  // guess a jug of beer. A bare glass ("a pint", "3 shots") is still its usual drink, and so is a
+  // glass whose strength is stated ("a shot of everclear 95%"): size and strength are all it needs.
+  if (!entry && q.leftovers.length > 0 && q.abv === null && (serve || pack) && (nonAlc.length === 0 || impliesSpirit)) {
+    return [{ text, item: null, mixerOnly: false, empty: false }];
+  }
   if (!entry && serve?.impliesCategory && (nonAlc.length === 0 || impliesSpirit)) {
     entry = index.genericByCategory[serve.impliesCategory];
   }
@@ -435,7 +475,9 @@ function parseSegment(text: string, index: CatalogIndex): SegmentParse[] {
   if (!entry && nonAlc.length > 0) {
     const mixer = nonAlc[0]!.phrase.entry!;
     if (mixer.isMixer === true && !negator) {
-      return [{ text, item: null, mixerOnly: true, empty: false, mixer }];
+      // "blue lagoon lemonade": an unknown drink with a mixer is not a lemonade.
+      if (q.leftovers.length > 0) return [{ text, item: null, mixerOnly: false, empty: false }];
+      return [{ text, item: null, mixerOnly: true, empty: false, mixer, mixerLabels: mixerLabels(nonAlc) }];
     }
     entry = mixer;
     confidence = 0.9;
@@ -501,6 +543,11 @@ function parseSegment(text: string, index: CatalogIndex): SegmentParse[] {
     catalogId: entry.id,
     assumed,
   };
+  if (best && takesMixer(item)) {
+    // "double gin and tonic" -> "Double Gin & Tonic": keep the serve word for a generic spirit.
+    if (!entry.brand && (serve?.id === "double" || serve?.id === "triple")) item.name = `${serve.name} ${item.name}`;
+    if (!negator) addMixers(item, mixerLabels(nonAlc));
+  }
   return [{ text, item, mixerOnly: false, empty: false }];
 }
 
@@ -515,6 +562,16 @@ export interface CatalogParse {
 export function parseWithCatalog(text: string, index: CatalogIndex): CatalogParse {
   const norm = preprocess(text, index);
   const segments = splitSegments(norm).flatMap((s) => parseSegment(s, index));
+
+  // A mixer split off by " and " ("vodka and red bull", "coke and rum") joins the spirit right
+  // next to it, preferring the one before it.
+  segments.forEach((seg, i) => {
+    if (!seg.mixerOnly || !seg.mixerLabels?.length) return;
+    const prev = segments[i - 1]?.item;
+    const next = segments[i + 1]?.item;
+    const target = prev && takesMixer(prev) ? prev : next && takesMixer(next) ? next : null;
+    if (target) addMixers(target, seg.mixerLabels);
+  });
 
   const items: ParsedItem[] = [];
   const unparsed: string[] = [];

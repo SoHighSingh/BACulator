@@ -7,7 +7,8 @@ import type { Category, ParsedItem, ParseResult, ParseSource } from "./types";
 
 /** Bump when parsing rules or the catalog change in a way that should invalidate cached parses. */
 // 3: "handle" is no longer a 285 ml pot, US shots are 44 ml, ABV up to 95%, "proof" is read.
-export const PARSER_VERSION = 3;
+// 4: mixed drinks keep the mixer in their name ("Vodka & Red Bull"); an unknown drink in a known glass is unread.
+export const PARSER_VERSION = 4;
 
 /*
  * The parse cache is shared by everyone, so it only keeps short phrases that read like a drink

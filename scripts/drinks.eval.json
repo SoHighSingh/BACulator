@@ -206,7 +206,8 @@
         "spirit",
         "mixer"
       ],
-      "note": "30 ml nip × 40%"
+      "note": "30 ml nip × 40%",
+      "expectName": "Vodka & Red Bull"
     },
     {
       "text": "3 vodka red bulls",
@@ -216,7 +217,8 @@
         "mixer",
         "multiple"
       ],
-      "note": "3 × 30 × 40%"
+      "note": "3 × 30 × 40%",
+      "expectName": "Vodka & Red Bull"
     },
     {
       "text": "double rum and coke",
@@ -225,7 +227,8 @@
         "spirit",
         "mixer"
       ],
-      "note": "60 × 37–40%"
+      "note": "60 × 37–40%",
+      "expectName": "Double Rum & Coke"
     },
     {
       "text": "jack and coke",
@@ -235,7 +238,8 @@
         "mixer",
         "slang"
       ],
-      "note": "30 × 40%"
+      "note": "30 × 40%",
+      "expectName": "Jack Daniel's Old No. 7 & Coke"
     },
     {
       "text": "gin and tonic",
@@ -244,7 +248,8 @@
         "spirit",
         "mixer"
       ],
-      "note": "30 × 40%"
+      "note": "30 × 40%",
+      "expectName": "Gin & Tonic"
     },
     {
       "text": "2 shots of tequila",
@@ -301,7 +306,7 @@
     },
     {
       "text": "2 vodka cruisers",
-      "expected": 2.0,
+      "expected": 2,
       "tags": [
         "rtd",
         "multiple"
@@ -565,6 +570,131 @@
         "ai_only"
       ],
       "note": "~250 ml × 3%: not in the catalog, needs the AI layer"
+    },
+    {
+      "text": "vodka and red bull",
+      "expected": 0.95,
+      "expectName": "Vodka & Red Bull",
+      "tags": [
+        "spirit",
+        "mixer"
+      ],
+      "note": "30 ml nip × 40%; the mixer adds no alcohol"
+    },
+    {
+      "text": "red bull vodka",
+      "expected": 0.95,
+      "expectName": "Vodka & Red Bull",
+      "tags": [
+        "spirit",
+        "mixer"
+      ],
+      "note": "30 ml nip × 40%; the mixer adds no alcohol"
+    },
+    {
+      "text": "rum and coke",
+      "expected": 0.95,
+      "expectName": "Rum & Coke",
+      "tags": [
+        "spirit",
+        "mixer"
+      ],
+      "note": "30 ml nip × 40%; the mixer adds no alcohol"
+    },
+    {
+      "text": "vodka soda",
+      "expected": 0.95,
+      "expectName": "Vodka & Soda",
+      "tags": [
+        "spirit",
+        "mixer"
+      ],
+      "note": "30 ml nip × 40%; the mixer adds no alcohol"
+    },
+    {
+      "text": "vodka lime soda",
+      "expected": 0.95,
+      "expectName": "Vodka & Lime Soda",
+      "tags": [
+        "spirit",
+        "mixer"
+      ],
+      "note": "30 ml nip × 40%; the mixer adds no alcohol"
+    },
+    {
+      "text": "uh vodka red bull please",
+      "expected": 0.95,
+      "expectName": "Vodka & Red Bull",
+      "tags": [
+        "spirit",
+        "mixer",
+        "speech"
+      ],
+      "note": "30 ml nip × 40%; the mixer adds no alcohol"
+    },
+    {
+      "text": "2 vodka red bulls",
+      "expected": 1.89,
+      "expectName": "Vodka & Red Bull",
+      "tags": [
+        "spirit",
+        "mixer",
+        "multiple"
+      ],
+      "note": "2 × 30 × 40%"
+    },
+    {
+      "text": "double vodka red bull",
+      "expected": 1.89,
+      "expectName": "Double Vodka & Red Bull",
+      "tags": [
+        "spirit",
+        "mixer",
+        "serve"
+      ],
+      "note": "60 ml double × 40%"
+    },
+    {
+      "text": "double gin and tonic",
+      "expected": 1.89,
+      "expectName": "Double Gin & Tonic",
+      "tags": [
+        "spirit",
+        "mixer",
+        "serve"
+      ],
+      "note": "60 ml double × 40%"
+    },
+    {
+      "text": "can I get a double vodka red bull",
+      "expected": 1.89,
+      "expectName": "Double Vodka & Red Bull",
+      "tags": [
+        "spirit",
+        "mixer",
+        "speech"
+      ],
+      "note": "60 ml double × 40%"
+    },
+    {
+      "text": "vodka red bull and a vodka soda",
+      "expected": 1.89,
+      "tags": [
+        "spirit",
+        "mixer",
+        "multiple"
+      ],
+      "note": "two 30 ml nips × 40%"
+    },
+    {
+      "text": "red bull",
+      "expected": 0,
+      "noDrinks": true,
+      "tags": [
+        "non_alcoholic",
+        "mixer"
+      ],
+      "note": "a mixer on its own"
     }
   ]
 }

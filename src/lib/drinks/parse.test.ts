@@ -56,6 +56,106 @@ describe("catalog parser", () => {
   });
 });
 
+describe("mixed drinks keep their mixer", () => {
+  const one = (text: string) => {
+    const r = parseWithCatalog(text, index);
+    expect(r.items, text).toHaveLength(1);
+    expect(r.unparsed, text).toEqual([]);
+    return r.items[0]!;
+  };
+
+  it.each([
+    ["vodka red bull", "Vodka & Red Bull"],
+    ["vodka redbull", "Vodka & Red Bull"],
+    ["a vodka red bull", "Vodka & Red Bull"],
+    ["vodka & red bull", "Vodka & Red Bull"],
+    ["Vodka and Red Bull", "Vodka & Red Bull"],
+    ["red bull vodka", "Vodka & Red Bull"],
+    ["uh vodka red bull please", "Vodka & Red Bull"],
+    ["vodka, red bull", "Vodka & Red Bull"],
+    ["rum and coke", "Rum & Coke"],
+    ["gin tonic", "Gin & Tonic"],
+    ["gin and tonic", "Gin & Tonic"],
+    ["vodka soda", "Vodka & Soda"],
+    ["vodka lime soda", "Vodka & Lime Soda"],
+    ["vodka cranberry", "Vodka & Cranberry"],
+    ["jaeger and red bull", "Jägermeister & Red Bull"],
+  ])("%s -> %s, with the spirit's standards", (text, name) => {
+    const item = one(text);
+    expect(item.name).toBe(name);
+    expect(item.mixer).toBe(name.split(" & ")[1]);
+    expect(item.standards).toBe(computeStandards(1, 30, item.abv));
+    expect(item.volumeMl).toBe(30);
+  });
+
+  it("keeps a branded spirit's name", () => {
+    const item = one("jack and coke");
+    expect(item.name).toBe("Jack Daniel's Old No. 7 & Coke");
+    expect(item.standards).toBe(computeStandards(1, 30, 40));
+  });
+
+  it("keeps counts and serve sizes", () => {
+    const two = one("2 vodka red bulls");
+    expect(two.name).toBe("Vodka & Red Bull");
+    expect(two.count).toBe(2);
+    expect(two.standards).toBe(computeStandards(2, 30, 40));
+
+    const double = one("double vodka red bull");
+    expect(double.name).toBe("Double Vodka & Red Bull");
+    expect(double.volumeMl).toBe(60);
+    expect(double.standards).toBe(computeStandards(1, 60, 40));
+
+    expect(one("double gin and tonic").name).toBe("Double Gin & Tonic");
+    expect(one("can I get a double vodka red bull").standards).toBe(computeStandards(1, 60, 40));
+  });
+
+  it("names each mixed drink in a list", () => {
+    const r = parseWithCatalog("vodka red bull and a vodka soda", index);
+    expect(r.items.map((i) => i.name)).toEqual(["Vodka & Red Bull", "Vodka & Soda"]);
+  });
+
+  it("does not name garnishes or attach mixers to beer", () => {
+    expect(one("vodka on the rocks").name).toBe("Vodka");
+    expect(one("vodka neat").name).toBe("Vodka");
+    const r = parseWithCatalog("a schooner of vb and a coke", index);
+    expect(r.items.map((i) => i.name)).toEqual(["Victoria Bitter"]);
+  });
+
+  it("still counts alcoholic mixers and premixes", () => {
+    expect(one("jim beam and cola").category).toBe("rtd");
+    expect(total("vodka and alcoholic ginger beer")).toBeCloseTo(computeStandards(1, 30, 40) + computeStandards(1, 330, 4.5));
+  });
+
+  it("treats a mixer on its own as non-alcoholic", () => {
+    const r = parseWithCatalog("red bull", index);
+    expect(r.onlyNonAlcoholic).toBe(true);
+    expect(total("red bull")).toBe(0);
+  });
+});
+
+describe("serve words with no drink", () => {
+  it("leaves unknown drinks in a known glass unread", () => {
+    const r = parseWithCatalog("blue lagoon jug", index);
+    expect(r.items).toEqual([]);
+    expect(r.unparsed).toEqual(["blue lagoon jug"]);
+    expect(parseWithCatalog("a pint of blue lagoon", index).items).toEqual([]);
+  });
+
+  it("still reads a bare glass as its usual drink", () => {
+    expect(total("a jug")).toBe(computeStandards(1, 1140, 4.8));
+    expect(total("a pint")).toBe(computeStandards(1, 570, 4.8));
+    expect(total("2 schooners")).toBe(computeStandards(2, 425, 4.8));
+    expect(total("3 shots")).toBe(computeStandards(3, 30, 40));
+    expect(total("jug of carlton dry")).toBe(computeStandards(1, 1140, 4.5));
+  });
+
+  it("does not read an unknown drink with a mixer as a soft drink", () => {
+    const r = parseWithCatalog("blue lagoon lemonade", index);
+    expect(r.items).toEqual([]);
+    expect(r.unparsed).not.toHaveLength(0);
+  });
+});
+
 describe("pipeline", () => {
   it("returns unavailable, never a silent 0, when the AI is down", async () => {
     const r = await parseDrinks("a tumbler of chicha", { index, ai: null });
@@ -133,8 +233,15 @@ describe("AI output validation", () => {
 
 describe("eval set (offline)", () => {
   const { cases } = JSON.parse(readFileSync(new URL("../../../scripts/drinks.eval.json", import.meta.url), "utf8")) as {
-    cases: { text: string; expected: number; noDrinks?: boolean; tags: string[] }[];
+    cases: { text: string; expected: number; noDrinks?: boolean; expectName?: string; tags: string[] }[];
   };
+
+  it("names mixed drinks as the eval set expects", async () => {
+    for (const c of cases.filter((x) => x.expectName)) {
+      const r = await parseDrinks(c.text, { index, ai: null });
+      expect(r.items.map((i) => i.name), c.text).toEqual([c.expectName]);
+    }
+  });
 
   it("meets the accuracy and safety targets without the AI layer", async () => {
     let passed = 0;

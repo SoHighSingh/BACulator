@@ -21,6 +21,8 @@ interface EvalCase {
   text: string;
   expected: number;
   noDrinks?: boolean;
+  /** Name the single parsed item must have ("Vodka & Red Bull"), when the name matters. */
+  expectName?: string;
   tags: string[];
   note?: string;
 }
@@ -56,7 +58,8 @@ async function main() {
     const r = await parseDrinks(c.text, { index, ai });
     const actual = r.totalStandards;
     const diff = Math.round((actual - c.expected) * 100) / 100;
-    const pass = c.noDrinks ? actual === 0 : Math.abs(diff) <= TOLERANCE + 1e-9 && r.status !== "unavailable";
+    const nameOk = c.expectName === undefined || (r.items.length === 1 && r.items[0]!.name === c.expectName);
+    const pass = nameOk && (c.noDrinks ? actual === 0 : Math.abs(diff) <= TOLERANCE + 1e-9 && r.status !== "unavailable");
     // "unavailable" shows manual entry rather than a number, so it is a miss but not an under-estimate.
     const under = !c.noDrinks && r.status !== "unavailable" && diff < MAX_UNDER;
     rows.push({ c, r, diff, pass, under });
